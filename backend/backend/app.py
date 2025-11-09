@@ -23,13 +23,13 @@ def get_note(req: Request) -> Note | None:
     return ensure_note(data)
 
 
-@app.route("/api/get_notes")
+@app.route("/api/get_notes", methods=["GET"])
 def get_notes() -> Response:
     print("testing 123", flush=True)
     return jsonify({"data": notes})
 
 
-@app.route("/api/add_note")
+@app.route("/api/add_note", methods=["POST"])
 def add_note() -> Response:
     if (note := get_note(request)) is not None:
         return jsonify()
@@ -40,7 +40,7 @@ def add_note() -> Response:
     return jsonify()
 
 
-@app.route("/api/delete_note")
+@app.route("/api/delete_note", methods=["POST"])
 def delete_note() -> Response:
     if (note := get_note(request)) is not None:
         return jsonify()

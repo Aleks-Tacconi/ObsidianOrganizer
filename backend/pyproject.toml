@@ -6,10 +6,11 @@ authors = [
     {name = "Aleks Tacconi",email = "aleks.tacconi@gmail.com"}
 ]
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.13,<4.0"
 dependencies = [
     "flask (>=3.1.2,<4.0.0)",
-    "flask-sqlalchemy (>=3.1.1,<4.0.0)"
+    "flask-sqlalchemy (>=3.1.1,<4.0.0)",
+    "flask-cors (>=6.0.1,<7.0.0)"
 ]
 
 

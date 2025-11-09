@@ -25,7 +25,7 @@ const apiPost = async (path: string, data: object) => {
 const apiGet = async (path: string) => {
     const prefix = "Error in axios get request: ";
     _helper(prefix, async () => {
-        await axios.post(APIUrl + path);
+        await axios.get(APIUrl + path);
     })
 }
 
