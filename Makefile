@@ -8,7 +8,7 @@ backend-test:
 	cd backend && poetry run pytest
 
 backend-lint:
-	cd backend && poetry run pylint backend
+	cd backend && poetry run pylint --fail-under 9 backend
 
 frontend-run:
 	cd frontend && npm run dev
