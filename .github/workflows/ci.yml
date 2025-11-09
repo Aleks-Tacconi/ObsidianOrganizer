@@ -1,0 +1,56 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - Issue-2
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    name: Run Python and React linting
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Install Poetry
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
+
+    - name: Install dependencies (Python and Node.js)
+      run: |
+        sudo apt-get install make
+        make backend-install
+        make frontend-install
+
+    - name: Run backend linting (Python with pylint)
+      run: make backend-lint 
+
+    - name: Run frontend linting (React with eslint)
+      run: make frontend-lint
+
+  test:
+    runs-on: ubuntu-latest
+    name: Run Python and React tests
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Install Poetry
+      run: |
+        curl -sSL https://install.python-poetry.org | python3 -
+
+    - name: Install dependencies (Python and Node.js)
+      run: |
+        sudo apt-get install make
+        make backend-install
+        make frontend-install
+
+    - name: Run backend tests (Python with pytest)
+      run: make backend-test
