@@ -10,9 +10,9 @@ on:
       - main
 
 jobs:
-  lint:
+  lint-python:
     runs-on: ubuntu-latest
-    name: Run Python and React linting
+    name: Run python linting
 
     steps:
     - name: Checkout code
@@ -27,21 +27,33 @@ jobs:
       with:
         python-version: '3.13'
 
-    - name: Install dependencies (Python and Node.js)
+    - name: Install dependencies
       run: |
         sudo apt-get install make
         make backend-install
-        make frontend-install
 
-    - name: Run backend linting (Python with pylint)
+    - name: Run pylint
       run: make backend-lint 
 
-    - name: Run frontend linting (React with eslint)
+  lint-react:
+    runs-on: ubuntu-latest
+    name: Run react linting
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get install make
+        make frontend-install
+
+    - name: Run eslint
       run: make frontend-lint
 
-  test:
+  test-python:
     runs-on: ubuntu-latest
-    name: Run Python and React tests
+    name: Run pytest
 
     steps:
     - name: Checkout code
@@ -56,11 +68,10 @@ jobs:
       with:
         python-version: '3.13'
 
-    - name: Install dependencies (Python and Node.js)
+    - name: Install dependencies
       run: |
         sudo apt-get install make
         make backend-install
-        make frontend-install
 
-    - name: Run backend tests (Python with pytest)
+    - name: Run pytest
       run: make backend-test
