@@ -25,6 +25,7 @@ def get_note(req: Request) -> Note | None:
 
 @app.route("/api/get_notes")
 def get_notes() -> Response:
+    print("testing 123", flush=True)
     return jsonify({"data": notes})
 
 
