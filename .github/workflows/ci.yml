@@ -34,8 +34,18 @@ jobs:
         make frontend-install
 
     - name: Run backend linting (Python with pylint)
-      run: make backend-lint 
-
+      run: |
+        pylint_output=$(make backend-lint) 
+        echo "$pylint_output"
+        
+        score=$(echo "$pylint_output" | grep "Your code has been rated" | sed 's/.*rated at \([0-9]*\.[0-9]*\)\/10/\1/')
+        
+        threshold=9.0
+        
+        if (( $(echo "$score < $threshold" | bc -l) )); then
+          echo "pylint score of $score is below threshold of $threshold. Failing the build."
+          exit 1
+        fi
     - name: Run frontend linting (React with eslint)
       run: make frontend-lint
 
