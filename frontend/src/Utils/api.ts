@@ -2,9 +2,11 @@ import axios from "axios"
 
 const APIUrl = "http://localhost:5001/api/"
 
-const _helper = async (prefix: string, callable: Function) => {
+type apiFunction = () => any;
+
+const _helper = async (prefix: string, callable: apiFunction) => {
     try {
-        callable();
+        return callable();
     } catch (e: unknown) {
         if (e instanceof Error) {
             console.log(prefix, e.message);
@@ -17,15 +19,17 @@ const _helper = async (prefix: string, callable: Function) => {
 
 const apiPost = async (path: string, data: object) => {
     const prefix = "Error in axios post request: ";
-    _helper(prefix, async () => {
-        await axios.post(APIUrl + path, data);
+    return _helper(prefix, async () => {
+        const result = await axios.post(APIUrl + path, data);
+        return result;
     })
 }
 
 const apiGet = async (path: string) => {
     const prefix = "Error in axios get request: ";
-    _helper(prefix, async () => {
-        await axios.get(APIUrl + path);
+    return _helper(prefix, async () => {
+        const result = await axios.get(APIUrl + path);
+        return result;
     })
 }
 

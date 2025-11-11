@@ -1,0 +1,12 @@
+body,
+html,
+#root {
+    background-color: #1e1e1e;
+    font-family: Nunito, sans-serif;
+    overflow: hidden;
+    color: #fff;
+}
+
+div {
+    border-radius: 14px;
+}

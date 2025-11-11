@@ -1,55 +1,31 @@
-from flask import Request, Response, jsonify, request
+from datetime import datetime
+
+from api import expose_endpoints
 from utils import app, db
-from utils.note import Note, ensure_note
+from utils.note import Note, NoteProps
 
 with app.app_context():
+    db.drop_all()
     db.create_all()
-    notes = Note.query.all()
 
-
-def get_data(req: Request) -> dict:
-    json = req.json
-
-    if json is None:
-        return {}
-
-    return json.get("data")
-
-
-def get_note(req: Request) -> Note | None:
-    if (data := get_data(req)) == {}:
-        return None
-
-    return ensure_note(data)
-
-
-@app.route("/api/get_notes", methods=["GET"])
-def get_notes() -> Response:
-    print("testing 123", flush=True)
-    return jsonify({"data": notes})
-
-
-@app.route("/api/add_note", methods=["POST"])
-def add_note() -> Response:
-    if (note := get_note(request)) is not None:
-        return jsonify()
-
+    props: NoteProps = {
+        "title": "testing 123",
+        "identifier_tag": "identifier tag",
+        "identifier_color": "#5555ee",
+        "obsidian_link_tags": ["tag1", "tag2"],
+        "description": "short description",
+        "urls": [["www.example.com", "example.com"], ["google.com", "the google search engine"]],
+        "datetime": datetime.now(),
+        "id": None,
+    }
+    note = Note(props)
     db.session.add(note)
     db.session.commit()
 
-    return jsonify()
+    notes = Note.query.all()
+    print(f"\n\n{notes=}", flush=True)
 
-
-@app.route("/api/delete_note", methods=["POST"])
-def delete_note() -> Response:
-    if (note := get_note(request)) is not None:
-        return jsonify()
-
-    db.session.delete(note)
-    db.session.commit()
-
-    return jsonify()
-
+expose_endpoints()
 
 if __name__ == "__main__":
     app.run(debug=True, port=5001)

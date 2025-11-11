@@ -1,14 +1,11 @@
-import api from "./Utils/api";
-import { useEffect } from "react";
+import Note from "./Components/Note/Note";
+
+import "./App.css";
 
 export default function App() {
-    useEffect(() => {
-        api.apiGet("get_notes");
-    }, [])
-
     return (
-        <>
-        </>
-    )
+        <div style={{ width: "30%" }}>
+            <Note id="1" />
+        </div>
+    );
 }
-
