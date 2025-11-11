@@ -47,7 +47,7 @@ export default function Note({ id }: NoteProps) {
                         <div className="icon">
                             <FaTrashCan />
                         </div>
-                        <div className="icon">
+                        <div className="icon" style={{transform: "translateY(1px)"}}>
                             <FaRegSquare />
                         </div>
                     </div>

@@ -3,3 +3,8 @@
     font-weight: 600;
     color: #ddd;
 }
+
+.note-date-time svg {
+    transform: translateY(2px);
+    margin-right: 5px;
+}

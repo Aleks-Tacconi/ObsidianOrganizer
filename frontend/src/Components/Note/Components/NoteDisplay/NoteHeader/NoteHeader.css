@@ -1,5 +1,7 @@
 .note-header-title p {
     font-size: 1.6rem;
     font-weight: 600;
-    margin: 15px 0;
+    margin: 0;
+    margin-bottom: 15px;
+    margin-top: 3px;
 }
