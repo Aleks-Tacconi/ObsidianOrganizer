@@ -14,12 +14,13 @@ class NoteProps(TypedDict):
     identifier_color: str
     obsidian_link_tags: List[str]
     description: str
+    complete: bool
     urls: List[List[str]]
     id: int | None
     datetime: dt | None
 
 
-class Note(db.Model):
+class Note(db.Model):  # pylint: disable=R0902
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(255))
     identifier_tag = db.Column(db.String(50))
@@ -27,19 +28,22 @@ class Note(db.Model):
     obsidian_link_tags = db.Column(db.String(255))
     description = db.Column(db.String(500))
     datetime = db.Column(db.DateTime, default=dt.now())
+    complete = db.Column(db.Boolean)
     urls = db.Column(db.JSON)
 
     def __init__(self, props: NoteProps) -> None:
+        self.update(props)
+
+    def update(self, props: NoteProps) -> None:
         self.title = props.get("title")
         self.identifier_tag = props.get("identifier_tag")
         self.identifier_color = props.get("identifier_color")
         self.obsidian_link_tags = json.dumps(props.get("obsidian_link_tags"))
         self.description = props.get("description")
+        self.complete = props.get("complete")
         self.urls = json.dumps(props.get("urls"))
 
-        datetime = props.get("datetime")
-
-        if datetime is not None:
+        if (datetime := props.get("datetime")) is not None:
             self.datetime = datetime
 
     def as_props(self) -> NoteProps:
@@ -51,6 +55,7 @@ class Note(db.Model):
             "obsidian_link_tags": json.loads(self.obsidian_link_tags),
             "description": self.description,
             "datetime": self.datetime,
+            "complete": self.complete,
             "urls": json.loads(self.urls),
         }
 

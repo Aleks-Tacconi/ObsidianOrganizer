@@ -18,6 +18,4 @@ def get_note() -> Response:
     if (note := db.session.get(Note, _id)) is None:
         return jsonify()
 
-    print(note, flush=True)
-
     return jsonify({"data": note.as_props()})

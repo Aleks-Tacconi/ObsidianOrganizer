@@ -5,6 +5,7 @@ export type Note = {
     identifier_color: string;
     obsidian_link_tags: string[];
     description: string;
+    complete: boolean;
     datetime: Date;
     urls: [string, string][];
 };

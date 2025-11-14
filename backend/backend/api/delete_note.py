@@ -9,6 +9,6 @@ def delete_note() -> Response:
         return jsonify()
 
     db.session.delete(note)
-    # db.session.commit()
+    db.session.commit()
 
     return jsonify()

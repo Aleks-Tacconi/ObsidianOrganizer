@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type MouseEventHandler } from "react";
 
-import { FaPenToSquare, FaTrashCan, FaRegSquare } from "react-icons/fa6";
+import { FaPenToSquare, FaTrashCan, FaRegSquare, FaRegSquareCheck } from "react-icons/fa6";
 
 import api from "../../Utils/api";
 
@@ -25,6 +25,19 @@ export default function Note({ id }: NoteProps) {
         getNote();
     }, [id]);
 
+    const toggleComplete = () => {
+        if (note === null) {
+            return;
+        }
+
+        setNote({ ...note, complete: !note.complete });
+
+        const postNote = async () => {
+            await api.apiPost("set_note", { note });
+        };
+        postNote();
+    };
+
     return (
         <>
             {note === null ? (
@@ -47,8 +60,8 @@ export default function Note({ id }: NoteProps) {
                         <div className="icon">
                             <FaTrashCan />
                         </div>
-                        <div className="icon" style={{transform: "translateY(1px)"}}>
-                            <FaRegSquare />
+                        <div className="icon" style={{ transform: "translateY(1px)" }} onClick={toggleComplete}>
+                            {note.complete ? <FaRegSquare /> : <FaRegSquareCheck />}
                         </div>
                     </div>
                 </div>
