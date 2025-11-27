@@ -4,7 +4,7 @@ import { FaTag } from "react-icons/fa6";
 import "./NoteTags.css";
 
 type NoteTagsProps = {
-    tags: string[];
+    tags: string[] | null[];
     identifier_tag: string;
     identifier_color: string;
 };

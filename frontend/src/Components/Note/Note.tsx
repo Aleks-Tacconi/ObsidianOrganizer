@@ -10,7 +10,7 @@ import NoteDisplay from "./Components/NoteDisplay/NoteDisplay";
 import "./Note.css";
 
 type NoteProps = {
-    id: string;
+    id: number;
 };
 
 export default function Note({ id }: NoteProps) {
@@ -18,23 +18,28 @@ export default function Note({ id }: NoteProps) {
 
     useEffect(() => {
         const getNote = async () => {
-            const result = await api.post("get_note", { id });
-            setNote(result?.data?.data);
+            const result = await api.get<Note>(`notes/${id}/`);
+            if (!result) return;
+            setNote(result.data);
         };
         getNote();
     }, [id]);
 
-    const toggleComplete = () => {
-        if (note === null) {
-            return;
-        }
+    const toggleComplete = async () => {
+        if (note === null) return;
 
-        setNote({ ...note, complete: !note.complete });
+        const updated = { ...note, completed: !note.completed };
+        setNote(updated);
 
-        const postNote = async () => {
-            await api.post("set_note", { note });
-        };
-        postNote();
+        await api.put(`notes/${id}/`, {
+            completed: updated.completed,
+            name: updated.name,
+            description: updated.description,
+            date: updated.date,
+            primary_tag_id: updated.primary_tag?.id ?? null,
+            subtags_ids: updated.subtags.map((st) => st.id),
+            urls_ids: updated.urls.map((u) => u.id),
+        });
     };
 
     return (
@@ -43,24 +48,26 @@ export default function Note({ id }: NoteProps) {
                 <></>
             ) : (
                 <div className="note-frame">
-                    <div className="left">
-                        <NoteDisplay note={note} />
-                    </div>
+                    <div className="note-frame-inner">
+                        <div className="left">
+                            <NoteDisplay note={note} />
+                        </div>
 
-                    <div className="right">
-                        <div
-                            className="icon"
-                            onClick={() => {
-                                console.log("@@@");
-                            }}
-                        >
-                            <FaPenToSquare />
-                        </div>
-                        <div className="icon">
-                            <FaTrashCan />
-                        </div>
-                        <div className="icon" style={{ transform: "translateY(1px)" }} onClick={toggleComplete}>
-                            {note.complete ? <FaRegSquare /> : <FaRegSquareCheck />}
+                        <div className="right">
+                            <div
+                                className="icon"
+                                onClick={() => {
+                                    console.log("@@@");
+                                }}
+                            >
+                                <FaPenToSquare />
+                            </div>
+                            <div className="icon">
+                                <FaTrashCan />
+                            </div>
+                            <div className="icon" style={{ transform: "translateY(1px)" }} onClick={toggleComplete}>
+                                {note.completed ? <FaRegSquare /> : <FaRegSquareCheck />}
+                            </div>
                         </div>
                     </div>
                 </div>

@@ -1,4 +1,7 @@
-.note-desctiption p {
+.note-description p {
+    display: flex;
+    align-items: flex-start;
+    gap: 5px;
     font-size: 0.989rem;
 }
 

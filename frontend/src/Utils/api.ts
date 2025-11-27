@@ -1,6 +1,6 @@
 import axios, { type AxiosResponse } from "axios";
 
-const APIUrl = "http://localhost:5001/api/";
+const APIUrl = "http://localhost:8000/api/";
 
 type ApiFunction<T> = () => Promise<AxiosResponse<T>>;
 
@@ -21,9 +21,19 @@ const post = async <T>(path: string, data: object): Promise<AxiosResponse<T> | u
     return _helper(prefix, async () => axios.post<T>(APIUrl + path, data));
 };
 
-const get = async <T>(path: string): Promise<AxiosResponse<T> | undefined> => {
+const get = async <T>(path: string, data: object | null = null): Promise<AxiosResponse<T> | undefined> => {
     const prefix = "Error in axios get request: ";
-    return _helper(prefix, async () => axios.get<T>(APIUrl + path));
+
+    if (data == null) {
+        return _helper(prefix, async () => axios.get<T>(APIUrl + path));
+    } else {
+        return _helper(prefix, async () => axios.post<T>(APIUrl + path, data));
+    }
 };
 
-export default { post, get };
+const put = async <T>(path: string, data: object): Promise<AxiosResponse<T> | undefined> => {
+    const prefix = "Error in axios put request: ";
+    return _helper(prefix, async () => axios.put<T>(APIUrl + path, data));
+};
+
+export default { post, get, put };
