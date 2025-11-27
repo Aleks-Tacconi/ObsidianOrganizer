@@ -2,17 +2,15 @@ name: CI Pipeline
 
 on:
   push:
-    branches:
-      - main
-      - Issue-2
+    branches: ["*"]
   pull_request:
     branches:
       - main
 
 jobs:
-  lint-python:
+  pylint:
     runs-on: ubuntu-latest
-    name: Run python linting
+    name: Pylint
 
     steps:
     - name: Checkout code
@@ -30,14 +28,14 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get install make
-        make backend-install
+        cd backend && make install
 
     - name: Run pylint
-      run: make backend-lint 
+      run: cd backend && make lint
 
-  lint-react:
+  eslint:
     runs-on: ubuntu-latest
-    name: Run react linting
+    name: Eslint
 
     steps:
     - name: Checkout code
@@ -46,14 +44,15 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get install make
-        make frontend-install
+        cd frontend && make install
 
     - name: Run eslint
-      run: make frontend-lint
+      run: | 
+        cd frontend && make lint
 
-  test-python:
+  pytest:
     runs-on: ubuntu-latest
-    name: Run pytest
+    name: Pytest
 
     steps:
     - name: Checkout code
@@ -71,7 +70,9 @@ jobs:
     - name: Install dependencies
       run: |
         sudo apt-get install make
-        make backend-install
+        cd backend && make install
 
     - name: Run pytest
-      run: make backend-test
+      run: | 
+        cd backend && make test
+
