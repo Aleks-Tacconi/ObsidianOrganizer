@@ -1,11 +1,25 @@
 export type Note = {
-    id: string;
-    title: string;
-    identifier_tag: string;
-    identifier_color: string;
-    obsidian_link_tags: string[];
+    id: number;
+    name: string;
     description: string;
-    complete: boolean;
-    datetime: Date;
-    urls: [string, string][];
+    completed: boolean;
+    date: string;
+
+    primary_tag: {
+        id: number;
+        name: string;
+        color: string;
+    } | null;
+
+    subtags: {
+        id: number;
+        name: string;
+        parent: number;
+    }[];
+
+    urls: {
+        id: number;
+        alias: string;
+        url: string;
+    }[];
 };

@@ -1,5 +1,6 @@
 .note-display {
-    background-color: #111;
+    background-color: transparent;
+    width: calc(100% + 75px);
     margin: 5px;
     padding: 6px;
 }

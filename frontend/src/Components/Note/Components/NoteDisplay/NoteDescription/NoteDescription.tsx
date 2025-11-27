@@ -1,4 +1,6 @@
-import "./NoteDescription.css"
+import "./NoteDescription.css";
+
+import { FaTumblr } from "react-icons/fa6";
 
 type NoteDescriptionProps = {
     description: string;
@@ -6,8 +8,11 @@ type NoteDescriptionProps = {
 
 export default function NoteDescription({ description }: NoteDescriptionProps) {
     return (
-        <div className="description">
-            <p>{description}</p>
+        <div className="note-description">
+            <p>
+                <FaTumblr />
+                {description}
+            </p>
         </div>
     );
 }

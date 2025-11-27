@@ -1,36 +1,39 @@
-import axios from "axios"
+import axios, { type AxiosResponse } from "axios";
 
-const APIUrl = "http://localhost:5001/api/"
+const APIUrl = "http://localhost:8000/api/";
 
-type apiFunction = () => any;
+type ApiFunction<T> = () => Promise<AxiosResponse<T>>;
 
-const _helper = async (prefix: string, callable: apiFunction) => {
+const _helper = async <T>(prefix: string, callable: ApiFunction<T>): Promise<AxiosResponse<T> | undefined> => {
     try {
-        return callable();
+        return await callable();
     } catch (e: unknown) {
         if (e instanceof Error) {
             console.log(prefix, e.message);
         } else {
-            console.log(prefix, e)
+            console.log(prefix, e);
         }
-
     }
-}
+};
 
-const apiPost = async (path: string, data: object) => {
+const post = async <T>(path: string, data: object): Promise<AxiosResponse<T> | undefined> => {
     const prefix = "Error in axios post request: ";
-    return _helper(prefix, async () => {
-        const result = await axios.post(APIUrl + path, data);
-        return result;
-    })
-}
+    return _helper(prefix, async () => axios.post<T>(APIUrl + path, data));
+};
 
-const apiGet = async (path: string) => {
+const get = async <T>(path: string, data: object | null = null): Promise<AxiosResponse<T> | undefined> => {
     const prefix = "Error in axios get request: ";
-    return _helper(prefix, async () => {
-        const result = await axios.get(APIUrl + path);
-        return result;
-    })
-}
 
-export default { apiPost, apiGet };
+    if (data == null) {
+        return _helper(prefix, async () => axios.get<T>(APIUrl + path));
+    } else {
+        return _helper(prefix, async () => axios.post<T>(APIUrl + path, data));
+    }
+};
+
+const put = async <T>(path: string, data: object): Promise<AxiosResponse<T> | undefined> => {
+    const prefix = "Error in axios put request: ";
+    return _helper(prefix, async () => axios.put<T>(APIUrl + path, data));
+};
+
+export default { post, get, put };

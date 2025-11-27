@@ -12,8 +12,8 @@ export default function NoteUrls({ urls }: NoteUrlsProps) {
             {urls.map((url, i) => (
                 <div className="url" key={i}>
                     <FaLink color="#0080FF" />
-                    <a href={url[0]} target="_blank" rel="noopener noreferrer">
-                        {url[1]}
+                    <a href={url[1]} target="_blank" rel="noopener noreferrer">
+                        {url[0]}
                     </a>
                 </div>
             ))}
