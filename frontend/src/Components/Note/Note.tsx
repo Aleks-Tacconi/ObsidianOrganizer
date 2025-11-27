@@ -49,23 +49,23 @@ export default function Note({ id }: NoteProps) {
             ) : (
                 <div className="note-frame">
                     <div className="note-frame-inner">
-                        <div className="left">
+                        <div className="note-frame-left">
                             <NoteDisplay note={note} />
                         </div>
 
-                        <div className="right">
+                        <div className="note-frame-right">
                             <div
-                                className="icon"
+                                className="note-frame-icon"
                                 onClick={() => {
                                     console.log("@@@");
                                 }}
                             >
                                 <FaPenToSquare />
                             </div>
-                            <div className="icon">
+                            <div className="note-frame-icon">
                                 <FaTrashCan />
                             </div>
-                            <div className="icon" style={{ transform: "translateY(1px)" }} onClick={toggleComplete}>
+                            <div className="note-frame-icon" style={{ transform: "translateY(1px)" }} onClick={toggleComplete}>
                                 {note.completed ? <FaRegSquare /> : <FaRegSquareCheck />}
                             </div>
                         </div>

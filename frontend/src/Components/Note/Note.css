@@ -33,13 +33,13 @@
     opacity: 1;
 }
 
-.note-frame .left {
+.note-frame-left {
     flex: 1;
     padding-left: 4px;
     width: calc(100% - 100px);
 }
 
-.note-frame .right {
+.note-frame-right {
     display: flex;
     gap: 12px;
     padding-right: 16px;
@@ -47,16 +47,16 @@
     width: 100px;
 }
 
-.note-frame .icon {
+.note-frame-icon {
     padding-top: 18px;
     width: 20px;
     font-size: 20px;
 }
 
-.note-frame .icon svg {
+.note-frame-icon svg {
     transition: transform 0.2s;
 }
 
-.note-frame .icon svg:hover {
+.note-frame-icon svg:hover {
     transform: scale(1.2);
 }

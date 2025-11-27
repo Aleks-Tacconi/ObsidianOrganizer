@@ -1,0 +1,22 @@
+.dashboard {
+    display: flex;
+    flex-direction: row;
+    gap: 20px;
+    margin: 0;
+    width: 100vw;
+    height: 100vh;
+}
+
+.dashboard-left {
+    width: 30%;
+    padding: 10px;
+    border-radius: 14px;
+    background-color: #1e1e1e;
+}
+
+.dashboard-right {
+    width: 70%;
+    padding: 10px;
+    border-radius: 14px;
+    background-color: #1e1e1e;
+}
