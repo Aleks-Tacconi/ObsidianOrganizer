@@ -1,4 +1,5 @@
-import { FaHashtag } from "react-icons/fa6";
+// import { FaHashtag } from "react-icons/fa6";
+import { FaTag } from "react-icons/fa6";
 
 import "./NoteTags.css";
 
@@ -13,7 +14,7 @@ export default function NoteTags({ tags, identifier_tag, identifier_color }: Not
         <div className="note-tags">
             <div className="tag" style={{ backgroundColor: identifier_color }}>
                 <p>
-                    <FaHashtag /> {identifier_tag}
+                    <FaTag /> {identifier_tag}
                 </p>
             </div>
 
@@ -21,7 +22,7 @@ export default function NoteTags({ tags, identifier_tag, identifier_color }: Not
                 <div key={i}>
                     <div className="tag secondary-tag">
                         <p>
-                            <FaHashtag /> {t}
+                            <FaTag /> {t}
                         </p>
                     </div>
                 </div>

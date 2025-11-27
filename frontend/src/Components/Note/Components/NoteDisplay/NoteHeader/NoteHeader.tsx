@@ -1,3 +1,5 @@
+import { FaNoteSticky } from "react-icons/fa6";
+
 import "./NoteHeader.css";
 
 type NoteHeaderProps = {
@@ -7,7 +9,10 @@ type NoteHeaderProps = {
 export default function NoteHeader({ title }: NoteHeaderProps) {
     return (
         <div className="note-header-title">
-            <p>{title}</p>
+            <p>
+                <FaNoteSticky/>
+                {title}
+            </p>
         </div>
     );
 }

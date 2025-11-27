@@ -1,9 +1,8 @@
-import { useEffect, useState, type MouseEventHandler } from "react";
+import { useEffect, useState } from "react";
 
 import { FaPenToSquare, FaTrashCan, FaRegSquare, FaRegSquareCheck } from "react-icons/fa6";
 
 import api from "../../Utils/api";
-
 import type { Note } from "../../Utils/types";
 
 import NoteDisplay from "./Components/NoteDisplay/NoteDisplay";
@@ -19,8 +18,8 @@ export default function Note({ id }: NoteProps) {
 
     useEffect(() => {
         const getNote = async () => {
-            const result = await api.apiPost("get_note", { id });
-            setNote(result.data.data);
+            const result = await api.post("get_note", { id });
+            setNote(result?.data?.data);
         };
         getNote();
     }, [id]);
@@ -33,7 +32,7 @@ export default function Note({ id }: NoteProps) {
         setNote({ ...note, complete: !note.complete });
 
         const postNote = async () => {
-            await api.apiPost("set_note", { note });
+            await api.post("set_note", { note });
         };
         postNote();
     };

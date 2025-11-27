@@ -5,12 +5,13 @@ description = ""
 authors = [
     {name = "Aleks Tacconi",email = "aleks.tacconi@gmail.com"}
 ]
+license = {text = "GPLv3"}
 readme = "README.md"
-requires-python = ">=3.13,<4.0"
+requires-python = ">=3.12"
 dependencies = [
-    "flask (>=3.1.2,<4.0.0)",
-    "flask-sqlalchemy (>=3.1.1,<4.0.0)",
-    "flask-cors (>=6.0.1,<7.0.0)"
+    "django-cors-headers (>=4.9.0,<5.0.0)",
+    "django (>=5.2.8,<6.0.0)",
+    "djangorestframework (>=3.16.1,<4.0.0)"
 ]
 
 
@@ -18,8 +19,8 @@ dependencies = [
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
-[dependency-groups]
-dev = [
-    "pylint (>=4.0.2,<5.0.0)",
-    "pytest (>=9.0.0,<10.0.0)"
-]
+[tool.poetry.group.dev.dependencies]
+djangorestframework-stubs = "^3.16.5"
+pytest = "^9.0.1"
+pylint = "^4.0.3"
+

@@ -1,3 +1,9 @@
 .note-desctiption p {
     font-size: 0.989rem;
 }
+
+.note-description p svg {
+    transform: translateY(1px);
+    margin-right: 6px;
+    font-size: 13px;
+}

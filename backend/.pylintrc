@@ -1,2 +1,6 @@
+[TYPECHECK]
+ignored-classes=OneToOneField,ForeignKey,ManyToManyField
+
 [MESSAGES CONTROL]
 disable=C0111,C0103
+
