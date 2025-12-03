@@ -36,4 +36,9 @@ const put = async <T>(path: string, data: object): Promise<AxiosResponse<T> | un
     return _helper(prefix, async () => axios.put<T>(APIUrl + path, data));
 };
 
-export default { post, get, put };
+const del = async <T>(path: string): Promise<AxiosResponse<T> | undefined> => {
+    const prefix = "Error in axios delete request: ";
+    return _helper(prefix, async () => axios.delete<T>(APIUrl + path));
+};
+
+export default { post, get, put, del };

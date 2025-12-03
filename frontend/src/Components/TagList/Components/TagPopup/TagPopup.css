@@ -1,0 +1,23 @@
+.popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgb(12, 12, 12, 50%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+}
+
+.popup-content {
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    padding: 1rem 2rem;
+    border-radius: 6px;
+    gap: 1rem;
+    width: 400px;
+    padding-top: 30px;
+}

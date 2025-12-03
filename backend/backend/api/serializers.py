@@ -15,12 +15,75 @@ class SubTagSerializer(serializers.ModelSerializer):
         fields = ["id", "name", "parent"]
 
 
+class GradeSerializer(serializers.ModelSerializer):
+    module_info_id = serializers.PrimaryKeyRelatedField(
+        queryset=ModuleInfo.objects.all(), source="module_info", write_only=True
+    )
+
+    class Meta:
+        model = Grade
+        fields = ["id", "name", "percentage", "scored", "module_info_id"]
+
+
+class SectionSerializer(serializers.ModelSerializer):
+    notes = serializers.SerializerMethodField()
+    subtag = SubTagSerializer(read_only=True)
+    subtag_id = serializers.PrimaryKeyRelatedField(
+        queryset=SubTag.objects.all(), source="subtag", write_only=True
+    )
+    module_info_id = serializers.PrimaryKeyRelatedField(
+        queryset=ModuleInfo.objects.all(), source="module_info", write_only=True
+    )
+    median_date = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Section
+        fields = ["id", "subtag", "subtag_id", "module_info_id", "notes", "median_date"]
+
+    def get_notes(self, obj):
+        notes = Note.objects.filter(
+            subtags=obj.subtag, primary_tag=obj.module_info.primary_tag
+        ).order_by("date")
+
+        return NoteSerializer(notes, many=True).data
+
+    def get_median_date(self, obj):
+        notes = Note.objects.filter(
+            subtags=obj.subtag, primary_tag=obj.module_info.primary_tag
+        ).order_by("date")
+
+        if not notes:
+            return None
+
+        dates = [note.date for note in notes]
+        n = len(dates)
+        middle = n // 2
+
+        if n % 2 == 1:
+            median = dates[middle]
+        else:
+            delta = dates[middle] - dates[middle - 1]
+            median = dates[middle - 1] + delta / 2
+
+        return median
+
+
 class PrimaryTagSerializer(serializers.ModelSerializer):
     subtags = SubTagSerializer(many=True, read_only=True)
 
     class Meta:
         model = PrimaryTag
         fields = ["id", "name", "color", "subtags"]
+
+
+class ModuleInfoSerializer(serializers.ModelSerializer):
+    grades = GradeSerializer(many=True, read_only=True)
+    sections = SectionSerializer(many=True, read_only=True)
+    primary_tag = PrimaryTagSerializer(read_only=True)
+
+    class Meta:
+        model = ModuleInfo
+        fields = ["primary_tag", "description", "grades", "sections"]
 
 
 class NoteSerializer(serializers.ModelSerializer):
@@ -45,15 +108,6 @@ class NoteSerializer(serializers.ModelSerializer):
         write_only=True,
     )
 
-    section_id = serializers.PrimaryKeyRelatedField(
-        queryset=Section.objects.all(),
-        source="section",
-        write_only=True,
-        required=False,
-        allow_null=True,
-    )
-    section = serializers.StringRelatedField(read_only=True)
-
     class Meta:
         model = Note
         fields = [
@@ -68,30 +122,4 @@ class NoteSerializer(serializers.ModelSerializer):
             "subtags_ids",
             "urls",
             "urls_ids",
-            "section",
-            "section_id",
         ]
-
-
-class GradeSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Grade
-        fields = ["id", "name", "percentage", "scored"]
-
-
-class SectionSerializer(serializers.ModelSerializer):
-    notes = NoteSerializer(many=True, read_only=True)
-    subtag = SubTagSerializer(read_only=True)
-
-    class Meta:
-        model = Section
-        fields = ["id", "subtag", "notes"]
-
-
-class ModuleInfoSerializer(serializers.ModelSerializer):
-    grades = GradeSerializer(many=True, read_only=True)
-    sections = SectionSerializer(many=True, read_only=True)
-
-    class Meta:
-        model = ModuleInfo
-        fields = ["id", "primary_tag", "description", "grades", "sections"]

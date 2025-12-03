@@ -1,6 +1,5 @@
 .note-frame {
     display: flex;
-    background-color: #111;
     padding: 3px;
     position: relative;
     transition:
@@ -12,25 +11,7 @@
 
 .note-frame-inner {
     display: flex;
-    background-color: #111;
     width: 100%;
-}
-
-.note-frame::before {
-    content: "";
-    position: absolute;
-    border-radius: 14px;
-    inset: 1px;
-    background: linear-gradient(to right, #3acfd5, #3a4ed5);
-    mask-composite: exclude;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.3s;
-    z-index: -1;
-}
-
-.note-frame:hover::before {
-    opacity: 1;
 }
 
 .note-frame-left {

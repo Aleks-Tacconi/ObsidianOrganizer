@@ -1,0 +1,11 @@
+.taglist-container {
+    padding: 1rem;
+    width: 400px;
+}
+
+.taglist-item.add-new {
+    justify-content: right;
+    display: flex;
+    padding-right: 5px;
+    margin-bottom: 2px;
+}

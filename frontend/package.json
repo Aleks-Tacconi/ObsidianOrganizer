@@ -7,9 +7,13 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "orval:gen": "orval --config src/orval.config.ts"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/material": "^7.3.5",
     "axios": "^1.13.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
@@ -27,6 +31,7 @@
     "eslint-plugin-react-refresh": "^0.4.22",
     "globals": "^16.5.0",
     "jiti": "^2.6.1",
+    "orval": "^7.17.0",
     "stylelint": "^16.25.0",
     "stylelint-config-standard": "^39.0.1",
     "typescript": "~5.9.3",

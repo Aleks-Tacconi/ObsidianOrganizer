@@ -29,7 +29,7 @@ class NoteURL(models.Model):
 
 class ModuleInfo(models.Model):
     primary_tag = models.OneToOneField(
-        "PrimaryTag", related_name="module_info", on_delete=models.CASCADE
+        "PrimaryTag", related_name="module_info", on_delete=models.CASCADE, primary_key=True
     )
     description = models.TextField(blank=True)
 
@@ -59,9 +59,6 @@ class Note(models.Model):
     )
     subtags = models.ManyToManyField(SubTag, related_name="notes", blank=True)
     urls = models.ManyToManyField(NoteURL, related_name="notes", blank=True)
-    section = models.ForeignKey(
-        Section, related_name="notes", on_delete=models.SET_NULL, null=True, blank=True
-    )
 
     class Meta:
         ordering = ["date"]
