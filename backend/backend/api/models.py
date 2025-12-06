@@ -29,7 +29,10 @@ class NoteURL(models.Model):
 
 class ModuleInfo(models.Model):
     primary_tag = models.OneToOneField(
-        "PrimaryTag", related_name="module_info", on_delete=models.CASCADE, primary_key=True
+        "PrimaryTag",
+        related_name="module_info",
+        on_delete=models.CASCADE,
+        primary_key=True,
     )
     description = models.TextField(blank=True)
 
