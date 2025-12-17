@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import api from "../../Utils/api";
 import Note from "../Note/Note";
+import CreateNoteDialog from "./Components/CreateNoteDialogue";
 
 import "./ModulePannel.css";
 
@@ -13,7 +14,7 @@ import { FaPlus, FaAngleRight, FaAngleDown } from "react-icons/fa6";
 export default function ModulePannel({ moduleId }: { moduleId: PrimaryTag }) {
     const [moduleInfo, setModuleInfo] = useState<ModuleInfo | null>(null);
     const [expandedSections, setExpandedSections] = useState<number[]>([]);
-    const [open, setOpen] = useState(true);
+    const [open, setOpen] = useState(false);
 
     useEffect(() => {
         api.get<ModuleInfo>(`module-info/${moduleId.id}/`).then((res) => {
@@ -30,6 +31,8 @@ export default function ModulePannel({ moduleId }: { moduleId: PrimaryTag }) {
 
     return (
         <>
+            <CreateNoteDialog open={open} onClose={() => setOpen(false)} primaryTagId={moduleInfo?.primary_tag.id ?? 0} />
+
             <IconButton onClick={() => setOpen(true)} sx={{ position: "fixed", top: 12, right: 12, zIndex: 2000 }}>
                 <FaPlus />
             </IconButton>

@@ -1,19 +1,17 @@
 import { useEffect, useState } from "react";
-
+import { Card, CardContent, CardActions, IconButton, Stack, Tooltip } from "@mui/material";
 import { FaPenToSquare, FaTrashCan, FaRegSquare, FaRegSquareCheck } from "react-icons/fa6";
 
 import api from "../../Utils/api";
-import type { Note } from "../../Utils/types";
-
-import NoteDisplay from "./Components/NoteDisplay/NoteDisplay";
-
-import "./Note.css";
+import type { Note } from "../../Utils/types/api.schemas";
+import NoteDisplay from "./Components/NoteDisplay";
 
 type NoteProps = {
     id: number;
+    onDelete?: (id: number) => void;
 };
 
-export default function Note({ id }: NoteProps) {
+export default function Note({ id, onDelete }: NoteProps) {
     const [note, setNote] = useState<Note | null>(null);
 
     useEffect(() => {
@@ -26,7 +24,7 @@ export default function Note({ id }: NoteProps) {
     }, [id]);
 
     const toggleComplete = async () => {
-        if (note === null) return;
+        if (!note) return;
 
         const updated = { ...note, completed: !note.completed };
         setNote(updated);
@@ -42,36 +40,43 @@ export default function Note({ id }: NoteProps) {
         });
     };
 
-    return (
-        <>
-            {note === null ? (
-                <></>
-            ) : (
-                <div className="note-frame">
-                    <div className="note-frame-inner">
-                        <div className="note-frame-left">
-                            <NoteDisplay note={note} />
-                        </div>
+    const handleDelete = async () => {
+        await api.delete(`notes/${id}/`);
+        onDelete?.(id); // notify parent if needed
+    };
 
-                        <div className="note-frame-right">
-                            <div
-                                className="note-frame-icon"
-                                onClick={() => {
-                                    console.log("@@@");
-                                }}
-                            >
-                                <FaPenToSquare />
-                            </div>
-                            <div className="note-frame-icon">
-                                <FaTrashCan />
-                            </div>
-                            <div className="note-frame-icon" style={{ transform: "translateY(1px)" }} onClick={toggleComplete}>
-                                {note.completed ? <FaRegSquare /> : <FaRegSquareCheck />}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
-        </>
+    const handleEdit = () => {
+        // you can open your existing Create/Edit dialog here
+        console.log("Edit note", id);
+    };
+
+    if (!note) return null;
+
+    return (
+        <Card variant="outlined" sx={{ mb: 2, position: "relative", margin: "5px", padding: 0 }}>
+            <CardContent>
+                <NoteDisplay note={note} />
+            </CardContent>
+
+            <CardActions sx={{ justifyContent: "flex-end" }}>
+                <Stack direction="row" spacing={1}>
+                    <Tooltip title="Edit">
+                        <IconButton onClick={handleEdit} size="small">
+                            <FaPenToSquare />
+                        </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Delete">
+                        <IconButton onClick={handleDelete} size="small">
+                            <FaTrashCan />
+                        </IconButton>
+                    </Tooltip>
+                    <Tooltip title={note.completed ? "Mark as not done" : "Mark as done"}>
+                        <IconButton onClick={toggleComplete} size="small">
+                            {note.completed ? <FaRegSquareCheck /> : <FaRegSquare />}
+                        </IconButton>
+                    </Tooltip>
+                </Stack>
+            </CardActions>
+        </Card>
     );
 }
