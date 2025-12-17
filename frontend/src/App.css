@@ -3,7 +3,7 @@ html,
 #root {
     background-color: #eee;
     font-family: Nunito, sans-serif;
-    overflow: hidden;
+    overflow-x: hidden;
     color: #000;
     height: 100vh;
     margin: 0;

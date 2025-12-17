@@ -5,6 +5,7 @@ import { FaPenToSquare, FaTrashCan, FaRegSquare, FaRegSquareCheck } from "react-
 import api from "../../Utils/api";
 import type { Note } from "../../Utils/types/api.schemas";
 import NoteDisplay from "./Components/NoteDisplay";
+import NoteDialog from "../NoteDialogue/NoteDialogue";
 
 type NoteProps = {
     id: number;
@@ -13,6 +14,7 @@ type NoteProps = {
 
 export default function Note({ id, onDelete }: NoteProps) {
     const [note, setNote] = useState<Note | null>(null);
+    const [editing, setEditing] = useState(false);
 
     useEffect(() => {
         const getNote = async () => {
@@ -42,41 +44,39 @@ export default function Note({ id, onDelete }: NoteProps) {
 
     const handleDelete = async () => {
         await api.delete(`notes/${id}/`);
-        onDelete?.(id); // notify parent if needed
-    };
-
-    const handleEdit = () => {
-        // you can open your existing Create/Edit dialog here
-        console.log("Edit note", id);
+        onDelete?.(id);
     };
 
     if (!note) return null;
 
     return (
-        <Card variant="outlined" sx={{ mb: 2, position: "relative", margin: "5px", padding: 0 }}>
-            <CardContent>
-                <NoteDisplay note={note} />
-            </CardContent>
+        <>
+            <Card variant="outlined" sx={{ mb: 2, position: "relative", margin: "5px", padding: 0 }}>
+                <CardContent>
+                    <NoteDisplay note={note} />
+                </CardContent>
 
-            <CardActions sx={{ justifyContent: "flex-end" }}>
-                <Stack direction="row" spacing={1}>
-                    <Tooltip title="Edit">
-                        <IconButton onClick={handleEdit} size="small">
-                            <FaPenToSquare />
-                        </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Delete">
-                        <IconButton onClick={handleDelete} size="small">
-                            <FaTrashCan />
-                        </IconButton>
-                    </Tooltip>
-                    <Tooltip title={note.completed ? "Mark as not done" : "Mark as done"}>
-                        <IconButton onClick={toggleComplete} size="small">
-                            {note.completed ? <FaRegSquareCheck /> : <FaRegSquare />}
-                        </IconButton>
-                    </Tooltip>
-                </Stack>
-            </CardActions>
-        </Card>
+                <CardActions sx={{ justifyContent: "flex-end" }}>
+                    <Stack direction="row" spacing={1}>
+                        <Tooltip title="Edit">
+                            <IconButton onClick={() => setEditing(true)} size="small">
+                                <FaPenToSquare />
+                            </IconButton>
+                        </Tooltip>
+                        <Tooltip title="Delete">
+                            <IconButton onClick={handleDelete} size="small">
+                                <FaTrashCan />
+                            </IconButton>
+                        </Tooltip>
+                        <Tooltip title={note.completed ? "Mark as not done" : "Mark as done"}>
+                            <IconButton onClick={toggleComplete} size="small">
+                                {note.completed ? <FaRegSquareCheck /> : <FaRegSquare />}
+                            </IconButton>
+                        </Tooltip>
+                    </Stack>
+                </CardActions>
+            </Card>
+            <NoteDialog open={editing} onClose={() => setEditing(false)} primaryTagId={note.primary_tag?.id ?? 0} note={note} />
+        </>
     );
 }

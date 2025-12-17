@@ -1,15 +1,12 @@
 import { useEffect, useState } from "react";
+import { IconButton, Paper, Typography, Stack, Collapse, Container } from "@mui/material";
+import { FaPlus, FaAngleRight, FaAngleDown } from "react-icons/fa6";
 
 import api from "../../Utils/api";
 import Note from "../Note/Note";
-import CreateNoteDialog from "./Components/CreateNoteDialogue";
-
-import "./ModulePannel.css";
+import CreateNoteDialog from "../NoteDialogue/NoteDialogue";
 
 import type { PrimaryTag, ModuleInfo } from "../../Utils/types/api.schemas";
-
-import { Divider, IconButton } from "@mui/material";
-import { FaPlus, FaAngleRight, FaAngleDown } from "react-icons/fa6";
 
 export default function ModulePannel({ moduleId }: { moduleId: PrimaryTag }) {
     const [moduleInfo, setModuleInfo] = useState<ModuleInfo | null>(null);
@@ -18,10 +15,7 @@ export default function ModulePannel({ moduleId }: { moduleId: PrimaryTag }) {
 
     useEffect(() => {
         api.get<ModuleInfo>(`module-info/${moduleId.id}/`).then((res) => {
-            if (res?.data) {
-                setModuleInfo(res.data);
-                console.log(res.data);
-            }
+            if (res?.data) setModuleInfo(res.data);
         });
     }, [moduleId]);
 
@@ -30,55 +24,40 @@ export default function ModulePannel({ moduleId }: { moduleId: PrimaryTag }) {
     };
 
     return (
-        <>
+        <div style={{ width: "100vw" }}>
             <CreateNoteDialog open={open} onClose={() => setOpen(false)} primaryTagId={moduleInfo?.primary_tag.id ?? 0} />
 
             <IconButton onClick={() => setOpen(true)} sx={{ position: "fixed", top: 12, right: 12, zIndex: 2000 }}>
                 <FaPlus />
             </IconButton>
 
-            <div style={{ width: "calc(100% - 30vw)", margin: "0 15vw" }}>
-                <h2>{moduleInfo?.primary_tag.name}</h2>
-                <p>{moduleInfo?.description}</p>
+            <Container maxWidth="md" sx={{ mt: 4 }}>
+                <Typography variant="h4" align="center" gutterBottom>
+                    {moduleInfo?.primary_tag.name}
+                </Typography>
+                <Typography variant="body1" align="center" gutterBottom>
+                    {moduleInfo?.description}
+                </Typography>
 
-                <div style={{ marginTop: "20px", width: "70vw" }}>
+                <Stack spacing={2} mt={2} sx={{ marginBottom: "15px" }}>
                     {moduleInfo?.sections.map((section) => (
-                        <div
-                            key={section.id}
-                            style={{
-                                marginBottom: "10px",
-                                borderRadius: "14px",
-                                background: "white",
-                            }}
-                        >
-                            <div
-                                style={{
-                                    padding: "2px 20px",
-                                    marginBottom: "-10px",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "10px",
-                                }}
-                                onClick={() => toggleSection(section.id)}
-                            >
+                        <Paper key={section.id} sx={{ borderRadius: 2, p: 1, backgroundColor: "white" }} elevation={1}>
+                            <Stack direction="row" alignItems="center" spacing={1} sx={{ cursor: "pointer", p: 1 }} onClick={() => toggleSection(section.id)}>
                                 {expandedSections.includes(section.id) ? <FaAngleDown /> : <FaAngleRight />}
-                                <h3>{section.subtag.name}</h3>
-                            </div>
+                                <Typography variant="h6">{section.subtag.name}</Typography>
+                            </Stack>
 
-                            {expandedSections.includes(section.id) && (
-                                <>
-                                    <div className="section-notes">
-                                        {section.notes.map((note) => (
-                                            <Note key={note.id} id={note.id} />
-                                        ))}
-                                    </div>
-                                    <Divider />
-                                </>
-                            )}
-                        </div>
+                            <Collapse in={expandedSections.includes(section.id)} sx={{ paddingRight: "25px", paddingBottom: "20px" }}>
+                                <Stack spacing={1} mt={1} ml={4}>
+                                    {section.notes.map((note) => (
+                                        <Note key={note.id} id={note.id} />
+                                    ))}
+                                </Stack>
+                            </Collapse>
+                        </Paper>
                     ))}
-                </div>
-            </div>
-        </>
+                </Stack>
+            </Container>
+        </div>
     );
 }
