@@ -96,6 +96,9 @@ export default function NoteDialog({ open, onClose, onSaved, primaryTagId, note 
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required
+                    sx={{
+                        marginTop: "5px"
+                    }}
                 />
                 <TextField
                     label="Description"
@@ -139,7 +142,7 @@ export default function NoteDialog({ open, onClose, onSaved, primaryTagId, note 
                 </Stack>
 
                 {urls.length > 0 && (
-                    <Stack direction="row" spacing={1} flexWrap="wrap">
+                    <Stack direction="column" spacing={1} flexWrap="wrap">
                         {urls.map((u, i) => (
                             <Chip
                                 key={i}

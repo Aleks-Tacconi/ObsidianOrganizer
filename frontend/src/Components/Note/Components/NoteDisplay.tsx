@@ -1,6 +1,6 @@
 import type { Note } from "../../../Utils/types/api.schemas";
 import { Card, CardHeader, CardContent, Typography, Stack, Chip } from "@mui/material";
-import { FaTumblr, FaCalendarDay, FaLink } from "react-icons/fa6";
+import { FaCalendarDay, FaLink } from "react-icons/fa6";
 
 type NoteDisplayProps = {
     note: Note;
@@ -31,7 +31,6 @@ export default function NoteDisplay({ note }: NoteDisplayProps) {
             <CardContent sx={{ padding: "5px", marginBottom: 0, paddingBottom: 0 }}>
                 {note.description && (
                     <Stack direction="row" alignItems="center" spacing={1} mb={1}>
-                        <FaTumblr />
                         <Typography variant="body2">{note.description}</Typography>
                     </Stack>
                 )}
