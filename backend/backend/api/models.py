@@ -45,7 +45,7 @@ class Section(models.Model):
         ModuleInfo, related_name="sections", on_delete=models.CASCADE
     )
     subtag = models.ForeignKey(
-        "SubTag", related_name="sections", on_delete=models.SET_NULL, null=True
+        "SubTag", related_name="sections", on_delete=models.CASCADE, null=True
     )
 
     def __str__(self) -> str:

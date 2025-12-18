@@ -3,26 +3,21 @@ import { Card, CardContent, CardActions, IconButton, Stack, Tooltip } from "@mui
 import { FaPenToSquare, FaTrashCan, FaRegSquare, FaRegSquareCheck } from "react-icons/fa6";
 
 import api from "../../Utils/api";
-import type { Note } from "../../Utils/types/api.schemas";
+import type { Note as NoteType } from "../../Utils/types/api.schemas";
 import NoteDisplay from "./Components/NoteDisplay";
 import NoteDialog from "../NoteDialogue/NoteDialogue";
 
-type NoteProps = {
+type Props = {
     id: number;
-    onDelete?: (id: number) => void;
+    Updated: () => void;
 };
 
-export default function Note({ id, onDelete }: NoteProps) {
-    const [note, setNote] = useState<Note | null>(null);
+export default function Note({ id, Updated }: Props) {
+    const [note, setNote] = useState<NoteType | null>(null);
     const [editing, setEditing] = useState(false);
 
     useEffect(() => {
-        const getNote = async () => {
-            const result = await api.get<Note>(`notes/${id}/`);
-            if (!result) return;
-            setNote(result.data);
-        };
-        getNote();
+        api.get<NoteType>(`notes/${id}/`).then((r) => r && setNote(r.data));
     }, [id]);
 
     const toggleComplete = async () => {
@@ -37,21 +32,21 @@ export default function Note({ id, onDelete }: NoteProps) {
             description: updated.description,
             date: updated.date,
             primary_tag_id: updated.primary_tag?.id ?? null,
-            subtags_ids: updated.subtags.map((st) => st.id),
+            subtags_ids: updated.subtags.map((s) => s.id),
             urls_ids: updated.urls.map((u) => u.id),
         });
     };
 
     const handleDelete = async () => {
-        await api.delete(`notes/${id}/`);
-        onDelete?.(id);
+        await api.del(`notes/${id}/`);
+        Updated();
     };
 
     if (!note) return null;
 
     return (
         <>
-            <Card variant="outlined" sx={{ mb: 2, position: "relative", margin: "5px", padding: 0 }}>
+            <Card sx={{ mb: 2 }}>
                 <CardContent>
                     <NoteDisplay note={note} />
                 </CardContent>
@@ -59,24 +54,33 @@ export default function Note({ id, onDelete }: NoteProps) {
                 <CardActions sx={{ justifyContent: "flex-end" }}>
                     <Stack direction="row" spacing={1}>
                         <Tooltip title="Edit">
-                            <IconButton onClick={() => setEditing(true)} size="small">
+                            <IconButton onClick={() => setEditing(true)}>
                                 <FaPenToSquare />
                             </IconButton>
                         </Tooltip>
+
                         <Tooltip title="Delete">
-                            <IconButton onClick={handleDelete} size="small">
+                            <IconButton onClick={handleDelete}>
                                 <FaTrashCan />
                             </IconButton>
                         </Tooltip>
+
                         <Tooltip title={note.completed ? "Mark as not done" : "Mark as done"}>
-                            <IconButton onClick={toggleComplete} size="small">
+                            <IconButton onClick={toggleComplete}>
                                 {note.completed ? <FaRegSquareCheck /> : <FaRegSquare />}
                             </IconButton>
                         </Tooltip>
                     </Stack>
                 </CardActions>
             </Card>
-            <NoteDialog open={editing} onClose={() => setEditing(false)} primaryTagId={note.primary_tag?.id ?? 0} note={note} />
+
+            <NoteDialog
+                open={editing}
+                onClose={() => setEditing(false)}
+                onSaved={Updated}
+                primaryTagId={note.primary_tag?.id ?? 0}
+                note={note}
+            />
         </>
     );
 }

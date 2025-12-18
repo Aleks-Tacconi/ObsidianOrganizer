@@ -10,7 +10,13 @@ import TagPopup from "./Components/TagPopup/TagPopup";
 import "./TagList.css";
 import { Divider, IconButton, List } from "@mui/material";
 
-export default function TagList({ onSelect }: { onSelect: (tag: PrimaryTag) => void }) {
+export default function TagList({
+    onSelect,
+    onChanged,
+}: {
+    onSelect: (tag: PrimaryTag) => void;
+    onChanged: () => void;
+}) {
     const [tags, setTags] = useState<PrimaryTag[]>([]);
     const [editingTag, setEditingTag] = useState<PrimaryTag | null>(null);
     const [popupOpen, setPopupOpen] = useState(false);
@@ -66,6 +72,7 @@ export default function TagList({ onSelect }: { onSelect: (tag: PrimaryTag) => v
                 });
         }
 
+        onChanged();
         closePopup();
     };
 
@@ -80,6 +87,8 @@ export default function TagList({ onSelect }: { onSelect: (tag: PrimaryTag) => v
             .catch((err) => {
                 console.log(err.message);
             });
+
+        onChanged();
     };
 
     return (
@@ -90,7 +99,13 @@ export default function TagList({ onSelect }: { onSelect: (tag: PrimaryTag) => v
             <Divider sx={{ marginTop: "15px" }} />
             <List>
                 {tags.map((tag) => (
-                    <TagItem key={tag.id} tag={tag} onEdit={() => openPopup(tag)} onDelete={() => deleteTag(tag.id)} onClick={() => onSelect(tag)} />
+                    <TagItem
+                        key={tag.id}
+                        tag={tag}
+                        onEdit={() => openPopup(tag)}
+                        onDelete={() => deleteTag(tag.id)}
+                        onClick={() => onSelect(tag)}
+                    />
                 ))}
             </List>
             {popupOpen && <TagPopup tag={editingTag} onClose={closePopup} onSave={saveTag} />}{" "}

@@ -11,6 +11,9 @@ import type { PrimaryTag } from "../../Utils/types/api.schemas";
 export default function Dashboard() {
     const [selectedTag, setSelectedTag] = useState<PrimaryTag | null>(null);
     const [open, setOpen] = useState(true);
+    const [refresh, setRefresh] = useState(0);
+
+    const triggerRefresh = () => setRefresh((r) => r + 1);
 
     useEffect(() => {
         setOpen(false);
@@ -18,21 +21,18 @@ export default function Dashboard() {
 
     return (
         <div style={{ display: "flex" }}>
-            <IconButton onClick={() => setOpen(!open)} sx={{ position: "fixed", top: 12, left: 12, zIndex: 2000 }}>
+            <IconButton
+                onClick={() => setOpen(!open)}
+                sx={{ position: "fixed", top: 12, left: 12, zIndex: 2000 }}
+            >
                 <FaBars />
             </IconButton>
 
             <Drawer variant="persistent" anchor="left" open={open}>
-                <TagList onSelect={setSelectedTag} />
+                <TagList onSelect={setSelectedTag} onChanged={triggerRefresh} />
             </Drawer>
 
-            <main
-                style={{
-                    transition: "margin 0.2s ease",
-                }}
-            >
-                {selectedTag ? <ModulePannel moduleId={selectedTag} /> : <></>}
-            </main>
+            <main>{selectedTag && <ModulePannel moduleId={selectedTag} refresh={refresh} />}</main>
         </div>
     );
 }
