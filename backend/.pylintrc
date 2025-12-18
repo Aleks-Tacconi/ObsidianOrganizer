@@ -2,5 +2,5 @@
 ignored-classes=OneToOneField,ForeignKey,ManyToManyField
 
 [MESSAGES CONTROL]
-disable=C0111,C0103
+disable=C0111,C0103,E1101,R0903,C0415
 

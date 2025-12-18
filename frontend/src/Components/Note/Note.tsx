@@ -1,32 +1,27 @@
 import { useEffect, useState } from "react";
-
+import { Card, CardContent, CardActions, IconButton, Stack, Tooltip } from "@mui/material";
 import { FaPenToSquare, FaTrashCan, FaRegSquare, FaRegSquareCheck } from "react-icons/fa6";
 
 import api from "../../Utils/api";
-import type { Note } from "../../Utils/types";
+import type { Note as NoteType } from "../../Utils/types/api.schemas";
+import NoteDisplay from "./Components/NoteDisplay";
+import NoteDialog from "../NoteDialogue/NoteDialogue";
 
-import NoteDisplay from "./Components/NoteDisplay/NoteDisplay";
-
-import "./Note.css";
-
-type NoteProps = {
+type Props = {
     id: number;
+    Updated: () => void;
 };
 
-export default function Note({ id }: NoteProps) {
-    const [note, setNote] = useState<Note | null>(null);
+export default function Note({ id, Updated }: Props) {
+    const [note, setNote] = useState<NoteType | null>(null);
+    const [editing, setEditing] = useState(false);
 
     useEffect(() => {
-        const getNote = async () => {
-            const result = await api.get<Note>(`notes/${id}/`);
-            if (!result) return;
-            setNote(result.data);
-        };
-        getNote();
+        api.get<NoteType>(`notes/${id}/`).then((r) => r && setNote(r.data));
     }, [id]);
 
     const toggleComplete = async () => {
-        if (note === null) return;
+        if (!note) return;
 
         const updated = { ...note, completed: !note.completed };
         setNote(updated);
@@ -37,41 +32,55 @@ export default function Note({ id }: NoteProps) {
             description: updated.description,
             date: updated.date,
             primary_tag_id: updated.primary_tag?.id ?? null,
-            subtags_ids: updated.subtags.map((st) => st.id),
+            subtags_ids: updated.subtags.map((s) => s.id),
             urls_ids: updated.urls.map((u) => u.id),
         });
     };
 
+    const handleDelete = async () => {
+        await api.del(`notes/${id}/`);
+        Updated();
+    };
+
+    if (!note) return null;
+
     return (
         <>
-            {note === null ? (
-                <></>
-            ) : (
-                <div className="note-frame">
-                    <div className="note-frame-inner">
-                        <div className="left">
-                            <NoteDisplay note={note} />
-                        </div>
+            <Card sx={{ mb: 2 }}>
+                <CardContent>
+                    <NoteDisplay note={note} />
+                </CardContent>
 
-                        <div className="right">
-                            <div
-                                className="icon"
-                                onClick={() => {
-                                    console.log("@@@");
-                                }}
-                            >
+                <CardActions sx={{ justifyContent: "flex-end" }}>
+                    <Stack direction="row" spacing={1}>
+                        <Tooltip title="Edit">
+                            <IconButton onClick={() => setEditing(true)}>
                                 <FaPenToSquare />
-                            </div>
-                            <div className="icon">
+                            </IconButton>
+                        </Tooltip>
+
+                        <Tooltip title="Delete">
+                            <IconButton onClick={handleDelete}>
                                 <FaTrashCan />
-                            </div>
-                            <div className="icon" style={{ transform: "translateY(1px)" }} onClick={toggleComplete}>
-                                {note.completed ? <FaRegSquare /> : <FaRegSquareCheck />}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            )}
+                            </IconButton>
+                        </Tooltip>
+
+                        <Tooltip title={note.completed ? "Mark as not done" : "Mark as done"}>
+                            <IconButton onClick={toggleComplete}>
+                                {note.completed ? <FaRegSquareCheck /> : <FaRegSquare />}
+                            </IconButton>
+                        </Tooltip>
+                    </Stack>
+                </CardActions>
+            </Card>
+
+            <NoteDialog
+                open={editing}
+                onClose={() => setEditing(false)}
+                onSaved={Updated}
+                primaryTagId={note.primary_tag?.id ?? 0}
+                note={note}
+            />
         </>
     );
 }

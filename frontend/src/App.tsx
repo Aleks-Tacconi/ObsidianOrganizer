@@ -1,11 +1,6 @@
-import Note from "./Components/Note/Note";
-
 import "./App.css";
+import Dashboard from "./Pages/Dashboard/Dashboard";
 
 export default function App() {
-    return (
-        <div style={{ width: "30%" }}>
-            <Note id="1" />
-        </div>
-    );
+    return <Dashboard />;
 }
