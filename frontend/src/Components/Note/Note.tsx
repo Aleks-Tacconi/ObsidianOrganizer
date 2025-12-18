@@ -46,7 +46,15 @@ export default function Note({ id, Updated }: Props) {
 
     return (
         <>
-            <Card sx={{ mb: 2 }}>
+            <Card
+                sx={{
+                    mb: 2,
+                    borderLeft: "2px solid #444",
+                    boxShadow: "0 2px 6px rgba(0, 0, 0, 0.15)",
+                    borderTopLeftRadius: "1px",
+                    borderBottomLeftRadius: "1px",
+                }}
+            >
                 <CardContent>
                     <NoteDisplay note={note} />
                 </CardContent>

@@ -36,25 +36,27 @@ export default function NoteDisplay({ note }: NoteDisplayProps) {
                     </Stack>
                 )}
                 {note.urls.length > 0 && (
-                    <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ marginTop: "15px" }}>
+                    <Stack direction="column" spacing={1} sx={{ marginTop: "15px" }}>
                         {note.urls.map((u, i) => (
                             <Chip
                                 key={i}
                                 icon={<FaLink color="#0080FF" size={16} />}
-                                label={
-                                    <>
-                                        {u.alias} ({u.url})
-                                    </>
-                                }
+                                label={`${u.alias} (${u.url})`}
                                 component="a"
                                 href={u.url}
                                 target="_blank"
                                 clickable
-                                sx={{ paddingLeft: "5px", color: "#0080FF" }}
+                                sx={{
+                                    paddingLeft: "5px",
+                                    color: "#0080FF",
+                                    width: "auto",
+                                    justifyContent: "flex-start",
+                                }}
                             />
                         ))}
                     </Stack>
-                )}
+                )}{" "}
+
             </CardContent>
         </Card>
     );
