@@ -3,31 +3,30 @@ name = "backend"
 version = "0.1.0"
 description = ""
 authors = [
-    {name = "Aleks Tacconi",email = "aleks.tacconi@gmail.com"},
+    { name = "Aleks Tacconi", email = "aleks.tacconi@gmail.com" }
 ]
-license = {text = "GPLv3"}
+license = { text = "GPLv3" }
 readme = "README.md"
-requires-python = ">=3.12,<4.0"
+requires-python = ">=3.11"
+
 dependencies = [
-    "django (>=5.2.8,<6.0.0)",
-    "djangorestframework (>=3.16.1,<4.0.0)",
-    "djangorestframework-simplejwt (>=5.5.1,<6.0.0)",
-    "python-dotenv (>=1.2.1,<2.0.0)",
-    "django-cors-headers (>=4.9.0,<5.0.0)",
-    "requests (>=2.32.5,<3.0.0)",
-    "drf-spectacular (>=0.29.0,<0.30.0)",
-    "drf-spectacular-sidecar (>=2025.10.1,<2026.0.0)",
+    "django >=5.0,<6.0",
+    "djangorestframework >=3.15,<4.0",
+    "djangorestframework-simplejwt >=5.3,<6.0",
+    "python-dotenv >=1.0,<2.0",
+    "django-cors-headers >=4.3,<5.0",
+    "requests >=2.31,<3.0",
+    "drf-spectacular >=0.27,<0.30",
+    "drf-spectacular-sidecar >=2024.7,<2026.0",
 ]
 
+[dependency-groups]
+dev = [
+    "pylint >=3.0,<4.0",
+    "django-types >=0.22,<0.23",
+]
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
-
-[dependency-groups]
-dev = [
-    "pylint (>=4.0.3,<5.0.0)",
-    "django-types (>=0.22.0,<0.23.0)",
-    "djangorestframework-stubs (>=3.16.5,<4.0.0)"
-]
 
