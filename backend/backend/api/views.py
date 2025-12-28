@@ -108,7 +108,7 @@ def match_tags_view(request):
 
 
 def get_file_content(file) -> str:
-    lines = [line.strip() for line in file.readlines()]
+    lines = [line.rstrip() for line in file.readlines()]
 
     for i, line in enumerate(lines):
         if (i >= 1) and "---" in line:
