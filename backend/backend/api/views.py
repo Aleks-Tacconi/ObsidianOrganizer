@@ -107,6 +107,16 @@ def match_tags_view(request):
     return JsonResponse({"files": files})
 
 
+def get_file_content(file) -> str:
+    lines = [line.strip() for line in file.readlines()]
+
+    for i, line in enumerate(lines):
+        if (i >= 1) and "---" in line:
+            return "\n".join(lines[i + 1 :])
+
+    return "\n".join(lines)
+
+
 @csrf_exempt
 def obsidian_file_view(request):
     body = json.loads(request.body)
@@ -117,17 +127,16 @@ def obsidian_file_view(request):
 
     try:
         with open(path, "r", encoding="utf-8") as f:
-            content = f.read()
+            return JsonResponse(
+                {
+                    "path": path,
+                    "name": os.path.basename(path),
+                    "content": get_file_content(f),
+                }
+            )
     except FileNotFoundError:
-        return JsonResponse({"error": "Not found"}, status=404)
-
-    return JsonResponse(
-        {
-            "path": path,
-            "name": os.path.basename(path),
-            "content": content,
-        }
-    )
+        pass
+    return JsonResponse({"error": "Not found"}, status=404)
 
 
 @csrf_exempt
@@ -143,7 +152,7 @@ def obsidian_file_by_name(request):
                 return JsonResponse(
                     {
                         "name": file,
-                        "content": f.read(),
+                        "content": get_file_content(f),
                     }
                 )
 

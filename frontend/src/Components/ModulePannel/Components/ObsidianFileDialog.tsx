@@ -13,6 +13,11 @@ import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
 import { FaAngleLeft, FaAngleRight } from "react-icons/fa6";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
+
+import "./ObsidianFileDialog.css"
 
 export interface ObsidianFileDialogHandle {
   navigate: (file: { name: string; content: string }) => void;
@@ -61,7 +66,7 @@ export default forwardRef(function ObsidianFileDialog(
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>
-        <Box display="flex" alignItems="center" gap={1}>
+        <Box display="flex" alignItems="center" gap={1} >
           <IconButton
             size="small"
             onClick={goBack}
@@ -80,10 +85,16 @@ export default forwardRef(function ObsidianFileDialog(
           {currentFile.name}
         </Box>
       </DialogTitle>
-      <DialogContent dividers>
+      <DialogContent
+        dividers
+        sx={{
+          height: "70vh",
+          overflowY: "auto",
+        }}
+      >
         <ReactMarkdown
-          remarkPlugins={[remarkBreaks, remarkGfm]} // <-- add remarkGfm here
-          rehypePlugins={[rehypeRaw]}
+          remarkPlugins={[remarkBreaks, remarkGfm, remarkMath]}
+          rehypePlugins={[rehypeRaw, rehypeKatex]}
           components={{
             wikilink: ({ node, children }) => (
               <Typography
