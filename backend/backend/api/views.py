@@ -134,6 +134,7 @@ def obsidian_file_view(request):
 def obsidian_file_by_name(request):
     body = json.loads(request.body)
     name = body.get("name")
+    print("name: ", name)
 
     for file in os.listdir(VAULT):
         if file == f"{name}.md":
