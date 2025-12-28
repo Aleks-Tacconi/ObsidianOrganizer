@@ -1,10 +1,11 @@
 import { Dialog, DialogTitle, DialogContent, Typography } from "@mui/material";
 import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
+import rehypeRaw from "rehype-raw";
 
-function wikilinksToMarkdown(text: string) {
+function wikilinksToTokens(text: string) {
   return text.replace(/\[\[([^\]]+)\]\]/g, (_, name) => {
-    return `[${name}](wikilink:${name})`;
+    return `<wikilink>${name}</wikilink>`;
   });
 }
 
@@ -27,34 +28,28 @@ export default function ObsidianFileDialog({
       <DialogContent dividers>
         <ReactMarkdown
           remarkPlugins={[remarkBreaks]}
+          rehypePlugins={[rehypeRaw]}
           components={{
-            a: ({ href, children }) => {
-              if (href?.startsWith("wikilink:")) {
-                const noteName = href.replace("wikilink:", "");
+            wikilink: ({ children }) => {
+              const name = String(children);
 
-                return (
-                  <Typography
-                    component="span"
-                    sx={{
-                      color: "#7b5cff",
-                      cursor: "pointer",
-                      textDecoration: "underline",
-                    }}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      onWikiLink(noteName);
-                    }}
-                  >
-                    {children}
-                  </Typography>
-                );
-              }
-
-              return <a href={href}>{children}</a>;
+              return (
+                <Typography
+                  component="span"
+                  sx={{
+                    color: "#7b5cff",
+                    cursor: "pointer",
+                    textDecoration: "underline",
+                  }}
+                  onClick={() => onWikiLink(name)}
+                >
+                  {children}
+                </Typography>
+              );
             },
           }}
         >
-          {wikilinksToMarkdown(file.content)}
+          {wikilinksToTokens(file.content)}
         </ReactMarkdown>
       </DialogContent>
     </Dialog>
