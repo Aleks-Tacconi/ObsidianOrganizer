@@ -9,6 +9,9 @@ from .views import (
     PrimaryTagView,
     SectionView,
     SubTagView,
+    match_tags_view,
+    obsidian_file_by_name,
+    obsidian_file_view,
 )
 
 router = DefaultRouter()
@@ -22,4 +25,7 @@ router.register(r"sections", SectionView)
 
 urlpatterns = [
     path("", include(router.urls)),
+    path("match-tags/", match_tags_view),
+    path("obsidian-file/", obsidian_file_view),
+    path("obsidian-file-by-name/", obsidian_file_by_name),
 ]
