@@ -117,7 +117,12 @@ export default forwardRef(function ObsidianFileDialog(
                     display="flex"
                     alignItems="center"
                     gap={0.5}
-                    sx={{ cursor: "pointer" }}
+                    sx={{
+                      cursor: "pointer",
+                      textAlign: "center",
+                      display: "flex",
+                      justifyContent: "center",
+                    }}
                     onClick={() => onWikiLink(name)}
                     title={name}
                   >
