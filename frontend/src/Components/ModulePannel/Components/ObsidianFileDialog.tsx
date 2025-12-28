@@ -12,12 +12,12 @@ import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
-import { FaAngleLeft, FaAngleRight } from "react-icons/fa6";
+import { FaAngleLeft, FaAngleRight, FaRegImage } from "react-icons/fa6";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 
-import "./ObsidianFileDialog.css"
+import "./ObsidianFileDialog.css";
 
 export interface ObsidianFileDialogHandle {
   navigate: (file: { name: string; content: string }) => void;
@@ -58,15 +58,15 @@ export default forwardRef(function ObsidianFileDialog(
   const currentFile = historyIndex !== null ? history[historyIndex] : file;
   if (!currentFile) return null;
 
-  const contentWithWikiLinks = currentFile.content.replace(
-    /\[\[([^\]|]+)(\|([^\]]+))?\]\]/g,
-    (_, name, __, alias) => `<wikilink name="${name}">${alias || name}</wikilink>`,
+  const fileHeading = `## ${currentFile.name.replace(/\.md$/, "")}\n\n`;
+  const contentWithWikiLinks = fileHeading + currentFile.content.replace(
+    /!?(\[\[([^\]|]+)(\|([^\]]+))?\]\])/g,
+    (_, fullMatch, name, __, alias) => `<wikilink name="${name}">${alias || name}</wikilink>`,
   );
-
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle>
-        <Box display="flex" alignItems="center" gap={1} >
+        <Box display="flex" alignItems="center" gap={1}>
           <IconButton
             size="small"
             onClick={goBack}
@@ -96,16 +96,42 @@ export default forwardRef(function ObsidianFileDialog(
           remarkPlugins={[remarkBreaks, remarkGfm, remarkMath]}
           rehypePlugins={[rehypeRaw, rehypeKatex]}
           components={{
-            wikilink: ({ node, children }) => (
-              <Typography
-                component="span"
-                sx={{ color: "#7b5cff", cursor: "pointer", textDecoration: "underline" }}
-                title={(node.properties as any).name}
-                onClick={() => onWikiLink((node.properties as any).name)}
-              >
-                {children}
-              </Typography>
-            ),
+            wikilink: ({ node, children }) => {
+              const name = (node.properties as any).name;
+
+              const imageExtensions = [".png", ".jpg", ".jpeg", ".svg", ".gif"];
+              const isImage =
+                imageExtensions.some((ext) => name.toLowerCase().endsWith(ext)) ||
+                /\d+$/.test(name);
+
+              if (isImage) {
+                return (
+                  <Box
+                    display="flex"
+                    alignItems="center"
+                    gap={0.5}
+                    sx={{ cursor: "pointer" }}
+                    onClick={() => onWikiLink(name)}
+                    title={name}
+                  >
+                    <FaRegImage />
+                    <Typography variant="body2">Open this in Obsidian to view</Typography>
+                  </Box>
+                );
+              }
+
+              return (
+                <Typography
+                  component="span"
+                  sx={{ color: "#7b5cff", cursor: "pointer", textDecoration: "underline" }}
+                  title={name}
+                  onClick={() => onWikiLink(name)}
+                >
+                  {children}
+                </Typography>
+              );
+            },
+
             table: ({ node, children }) => (
               <table style={{ borderCollapse: "collapse", width: "100%" }}>{children}</table>
             ),
