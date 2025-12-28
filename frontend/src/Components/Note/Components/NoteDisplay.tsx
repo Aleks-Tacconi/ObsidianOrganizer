@@ -38,8 +38,12 @@ export default function NoteDisplay({ note }: NoteDisplayProps) {
                   {children}
                 </Typography>
               ),
-              ul: ({ children }) => <ul style={{ paddingLeft: "1.2em" }}>{children}</ul>,
-              ol: ({ children }) => <ol style={{ paddingLeft: "1.2em" }}>{children}</ol>,
+              ul: ({ children }) => (
+                <ul style={{ paddingLeft: "1.2em", margin: "8px" }}>{children}</ul>
+              ),
+              ol: ({ children }) => (
+                <ol style={{ paddingLeft: "1.2em", margin: "8px" }}>{children}</ol>
+              ),
             }}
           >
             {note.description}
