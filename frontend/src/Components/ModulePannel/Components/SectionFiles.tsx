@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { Stack, Typography } from "@mui/material";
+import { List, ListItemIcon, ListItemText, Stack, Typography, ListItemButton } from "@mui/material";
 import api from "../../../Utils/api";
 import ObsidianFileDialog, { type ObsidianFileDialogHandle } from "./ObsidianFileDialog";
+import { FaRegStickyNote } from "react-icons/fa";
 
 export default function SectionFiles({
   primaryTagName,
@@ -54,26 +55,32 @@ export default function SectionFiles({
   }, [primaryTagName, subtagName]);
 
   if (files.length === 0) {
-    return (
-      <Typography variant="body2" color="text.secondary">
-        No files
-      </Typography>
-    );
+    return
   }
 
   return (
     <>
-      <Stack spacing={0.5}>
-        {files.map((file) => (
-          <Typography
-            key={file}
-            variant="body2"
-            sx={{ cursor: "pointer", textDecoration: "underline" }}
-            onClick={() => openFile(file)}
-          >
-            {file.split("/").pop()}
-          </Typography>
-        ))}
+      <Stack spacing={1} sx={{marginLeft: "30px"}}>
+        <List>
+          {files.map((file) => {
+            const fileName = file.split("/").pop();
+            return (
+              <ListItemButton
+                key={file}
+                onClick={() => openFile(file)}
+                sx={{ py: 1 }} // vertical padding
+              >
+                <ListItemIcon sx={{ minWidth: 32 }}>
+                  <FaRegStickyNote size={20} />
+                </ListItemIcon>
+                <ListItemText
+                  primary={fileName}
+                  primaryTypographyProps={{ fontSize: "1rem", fontWeight: 500 }}
+                />
+              </ListItemButton>
+            );
+          })}
+        </List>
       </Stack>
 
       {activeFile && (
