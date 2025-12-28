@@ -68,7 +68,7 @@ export default forwardRef(function ObsidianFileDialog(
     fileHeading +
     currentFile.content.replace(
       /!?(\[\[([^\]|]+)(\|([^\]]+))?\]\])/g,
-      (_, fullMatch, name, __, alias) => `<wikilink name="${name}">${alias || name}</wikilink>`,
+      (_, ___, name, __, alias) => `<wikilink name="${name}">${alias || name}</wikilink>`,
     );
 
   return (
@@ -139,13 +139,13 @@ export default forwardRef(function ObsidianFileDialog(
               );
             },
 
-            table: ({ node, children }) => (
+            table: ({ children }) => (
               <table style={{ borderCollapse: "collapse", width: "100%" }}>{children}</table>
             ),
-            th: ({ node, children }) => (
+            th: ({ children }) => (
               <th style={{ border: "1px solid gray", padding: "4px" }}>{children}</th>
             ),
-            td: ({ node, children }) => (
+            td: ({ children }) => (
               <td style={{ border: "1px solid gray", padding: "4px" }}>{children}</td>
             ),
           }}
