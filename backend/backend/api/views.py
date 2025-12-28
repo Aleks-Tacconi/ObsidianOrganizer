@@ -144,6 +144,8 @@ def obsidian_file_by_name(request):
     body = json.loads(request.body)
     name = body.get("name")
     print("name: ", name)
+    if name.endswith(".md"):
+        name = name[: len(name) - 3]
 
     for file in os.listdir(VAULT):
         if file == f"{name}.md":

@@ -35,6 +35,16 @@ export default function SectionFiles({
     });
   };
 
+  const refreshFile = () => {
+    if (!activeFile) return;
+    api.post("obsidian-file-by-name/", { name: activeFile.name }).then((res) => {
+      if (res?.data) {
+        setActiveFile(res.data);
+        dialogRef.current?.refreshCurrent(res.data); // refresh in-place
+      }
+    });
+  };
+
   useEffect(() => {
     api
       .post<{ files: string[] }>("match-tags/", { tags: [primaryTagName, subtagName] })
@@ -66,13 +76,16 @@ export default function SectionFiles({
         ))}
       </Stack>
 
-      <ObsidianFileDialog
-        ref={dialogRef}
-        open={open}
-        onClose={() => setOpen(false)}
-        file={activeFile}
-        onWikiLink={openWikiLink}
-      />
+      {activeFile && (
+        <ObsidianFileDialog
+          ref={dialogRef}
+          open={open}
+          onClose={() => setOpen(false)}
+          file={activeFile}
+          onWikiLink={openWikiLink}
+          onRefresh={refreshFile}
+        />
+      )}
     </>
   );
 }
