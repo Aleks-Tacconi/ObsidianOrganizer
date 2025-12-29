@@ -72,7 +72,13 @@ export default forwardRef(function ObsidianFileDialog(
     );
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth={false}
+      sx={{ width: "80vw", marginLeft: "10vw" }}
+      fullWidth
+    >
       <DialogTitle>
         <Box display="flex" alignItems="center" justifyContent="space-between">
           <Box display="flex" alignItems="center" gap={1}>
@@ -99,7 +105,10 @@ export default forwardRef(function ObsidianFileDialog(
         </Box>
       </DialogTitle>
 
-      <DialogContent dividers sx={{ height: "70vh", overflowY: "auto" }}>
+      <DialogContent
+        dividers
+        sx={{ height: "80vh", overflowY: "auto", fontSize: "20px", padding: "2vh 5vw" }}
+      >
         <ReactMarkdown
           remarkPlugins={[remarkBreaks, remarkGfm, remarkMath]}
           rehypePlugins={[rehypeRaw, rehypeKatex]}
@@ -122,12 +131,20 @@ export default forwardRef(function ObsidianFileDialog(
                       textAlign: "center",
                       display: "flex",
                       justifyContent: "center",
+                      alignItems: "center",
+                      padding: "20px",
+                      color: "#888",
+                      border: "solid",
+                      borderColor: "#888",
+                      borderWidth: "1px",
                     }}
                     onClick={() => onWikiLink(name)}
                     title={name}
                   >
                     <FaRegImage />
-                    <Typography variant="body2">Open this in Obsidian to view</Typography>
+                    <Typography variant="body2" sx={{ fontSize: "16px", padding: "8px" }}>
+                      Open this in Obsidian to view
+                    </Typography>
                   </Box>
                 );
               }
@@ -135,7 +152,12 @@ export default forwardRef(function ObsidianFileDialog(
               return (
                 <Typography
                   component="span"
-                  sx={{ color: "#7b5cff", cursor: "pointer", textDecoration: "underline" }}
+                  sx={{
+                    color: "#7b5cff",
+                    cursor: "pointer",
+                    textDecoration: "underline",
+                    fontSize: "20px",
+                  }}
                   title={name}
                   onClick={() => onWikiLink(name)}
                 >

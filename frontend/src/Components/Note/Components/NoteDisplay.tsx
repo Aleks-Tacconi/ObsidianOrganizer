@@ -29,7 +29,7 @@ export default function NoteDisplay({ note }: NoteDisplayProps) {
           </Stack>
         }
       />
-      <CardContent sx={{ padding: "5px", marginBottom: 0, paddingBottom: 0 }}>
+      <CardContent sx={{ padding: "5px", marginBottom: 0, paddingBottom: 0, fontSize: "14px" }}>
         {note.description && (
           <ReactMarkdown
             components={{
