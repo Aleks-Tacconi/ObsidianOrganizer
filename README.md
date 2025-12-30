@@ -1,5 +1,18 @@
 # Obsidian Organiser
 
+A note-taking app designed to organize my Obsidian vault using a simple, consistent structure.
+I organize my notes with two tags: module name and topic name. This app allows me to create.
+
+- One web page per module
+- One section per topic
+- Each section automatically fetches and displays all notes related to that topic as a list of files. Within a section, I can also create notes which can contain the following information:
+  - Lecture title
+  - Lecture summary
+  - Slide URL
+  - Lecture recording URL
+
+- All notes remain fully compatible with Obsidian: they are clickable and support normal wikilink navigation.
+
 ![./assets/1.png](./assets/1.png)
 ![./assets/2.png](./assets/2.png)
 ![./assets/3.png](./assets/3.png)
@@ -11,6 +24,20 @@
 - `poetry`
 - `make`
 - `mprocs`
+
+## Tech Stack
+
+### Frontend
+
+- `vite` + `react`
+- `MUI` as a component library
+- `axios` for API calls
+- `orval` for type generation
+
+### Backend
+
+- `python` + `django`
+- `drf-spectacular` for Swagger-UI
 
 ## Setup and Usage Instructions
 
