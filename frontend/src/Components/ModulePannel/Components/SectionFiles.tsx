@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { List, ListItemIcon, ListItemText, Stack, Typography, ListItemButton } from "@mui/material";
+import { List, ListItemIcon, ListItemText, Stack, ListItemButton } from "@mui/material";
 import api from "../../../Utils/api";
 import ObsidianFileDialog, { type ObsidianFileDialogHandle } from "./ObsidianFileDialog";
 import { FaRegStickyNote } from "react-icons/fa";
@@ -13,7 +13,7 @@ export default function SectionFiles({
 }) {
   const [files, setFiles] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
-  const [activeFile, setActiveFile] = useState<any>(null);
+  const [activeFile, setActiveFile] = useState(null);
   const dialogRef = useRef<ObsidianFileDialogHandle>(null);
 
   const openFile = (path: string) => {
@@ -55,12 +55,12 @@ export default function SectionFiles({
   }, [primaryTagName, subtagName]);
 
   if (files.length === 0) {
-    return
+    return;
   }
 
   return (
     <>
-      <Stack spacing={1} sx={{marginLeft: "30px"}}>
+      <Stack spacing={1} sx={{ marginLeft: "30px" }}>
         <List>
           {files.map((file) => {
             const fileName = file.split("/").pop();

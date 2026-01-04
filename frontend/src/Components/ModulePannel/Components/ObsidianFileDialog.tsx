@@ -114,7 +114,7 @@ export default forwardRef(function ObsidianFileDialog(
           rehypePlugins={[rehypeRaw, rehypeKatex]}
           components={{
             wikilink: ({ node, children }) => {
-              const name = (node.properties as any).name;
+              const name = node.properties.name;
               const imageExtensions = [".png", ".jpg", ".jpeg", ".svg", ".gif"];
               const isImage =
                 imageExtensions.some((ext) => name.toLowerCase().endsWith(ext)) ||
