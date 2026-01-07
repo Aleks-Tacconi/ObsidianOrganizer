@@ -45,6 +45,38 @@ export default function NoteDialog({ open, onClose, primaryTagId, note, onSaved 
   const [urlAlias, setUrlAlias] = useState("");
   const [urlValue, setUrlValue] = useState("");
 
+  const resetForm = () => {
+    setName("");
+    setDescription("");
+    setCompleted(false);
+    setDate(new Date().toISOString().slice(0, 16));
+    setSelectedSubtags([]);
+    setUrls([]);
+    setUrlAlias("");
+    setUrlValue("");
+  };
+
+  useEffect(() => {
+    if (!open) return;
+
+    if (!note) {
+      resetForm();
+    }
+  }, [open, note]);
+
+  useEffect(() => {
+    if (!open || !note) return;
+
+    setName(note.name);
+    setDescription(note.description ?? "");
+    setCompleted(note.completed);
+    setDate(new Date(note.date).toISOString().slice(0, 16));
+    setSelectedSubtags(note.subtags ?? []);
+    setUrls(note.urls.map((u) => ({ alias: u.alias, url: u.url })));
+    setUrlAlias("");
+    setUrlValue("");
+  }, [open, note]);
+
   useEffect(() => {
     api.get<SubTag[]>("subtags/").then((r) => r && setSubtags(r.data));
   }, []);
@@ -75,13 +107,16 @@ export default function NoteDialog({ open, onClose, primaryTagId, note, onSaved 
     };
 
     if (note) {
-      const res = await api.put<NoteType>(`notes/${note.id}/`, payload);
-      onSaved(res.data);
+      await api.put<NoteType>(`notes/${note.id}/`, payload).then((res) => {
+        if (res != undefined) onSaved(res.data);
+      });
     } else {
-      const res = await api.post<NoteType>("notes/", payload);
-      onSaved(res.data);
+      await api.post<NoteType>("notes/", payload).then((res) => {
+        if (res != undefined) onSaved(res.data);
+      });
     }
 
+    resetForm();
     onClose();
   };
 
