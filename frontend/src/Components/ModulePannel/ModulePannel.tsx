@@ -1,15 +1,14 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { IconButton, Paper, Typography, Stack, Collapse, Container } from "@mui/material";
 import { FaPlus, FaAngleRight, FaAngleDown } from "react-icons/fa6";
 
-import api from "../../Utils/api";
 import Note from "../Note/Note";
 import NoteDialog from "../NoteDialogue/NoteDialogue";
-
-import type { Note as NoteType } from "../../Utils/types/api.schemas";
-
-import type { PrimaryTag, ModuleInfo } from "../../Utils/types/api.schemas";
+import ProgressBar from "./Components/ProgressBar";
 import SectionFiles from "./Components/SectionFiles";
+
+import type { PrimaryTag } from "../../Utils/types/api.schemas";
+import { useModuleNotes } from "../../Utils/useModuleNotes";
 
 export default function ModulePannel({
   moduleId,
@@ -18,35 +17,22 @@ export default function ModulePannel({
   moduleId: PrimaryTag;
   refresh: number;
 }) {
-  const [moduleInfo, setModuleInfo] = useState<ModuleInfo | null>(null);
+  const { moduleInfo, updateNote, deleteNote, addOrReplaceNote } = useModuleNotes(
+    moduleId,
+    refresh,
+  );
+
   const [expandedSections, setExpandedSections] = useState<number[]>([]);
   const [open, setOpen] = useState(false);
-  const [update, setUpdate] = useState(0);
 
-  useEffect(() => {
-    api.get<ModuleInfo>(`module-info/${moduleId.id}/`).then((res) => {
-      if (res?.data) setModuleInfo(res.data);
-      console.log(res);
-    });
-  }, [moduleId, update, refresh]);
+  const allNotes = moduleInfo?.sections.flatMap((s) => s.notes) ?? [];
 
   const toggleSection = (id: number) => {
-    setExpandedSections((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
+    setExpandedSections((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
   };
 
   return (
     <div style={{ width: "100vw" }}>
-      <NoteDialog
-        open={open}
-        onClose={() => setOpen(false)}
-        primaryTagId={moduleInfo?.primary_tag.id ?? 0}
-        onSaved={() => {
-          setUpdate(update + 1);
-        }}
-      />
-
       <IconButton
         onClick={() => setOpen(true)}
         sx={{ position: "fixed", top: 12, right: 12, zIndex: 2000 }}
@@ -58,15 +44,22 @@ export default function ModulePannel({
         <Typography variant="h4" align="center" gutterBottom>
           {moduleInfo?.primary_tag.name}
         </Typography>
+
         <Typography variant="body1" align="center" gutterBottom>
           {moduleInfo?.description}
         </Typography>
 
-        <Stack spacing={2} mt={2} sx={{ marginBottom: "15px" }}>
+        <ProgressBar Notes={allNotes} />
+
+        <Stack spacing={2} mt={2}>
           {moduleInfo?.sections.map((section) => (
             <Paper
               key={section.id}
-              sx={{ borderRadius: 2, p: 1, backgroundColor: "white" }}
+              sx={{
+                borderRadius: 2,
+                p: 1,
+                backgroundColor: "white",
+              }}
               elevation={1}
             >
               <Stack
@@ -80,21 +73,13 @@ export default function ModulePannel({
                 <Typography variant="h6">{section.subtag.name}</Typography>
               </Stack>
 
-              <Collapse
-                in={expandedSections.includes(section.id)}
-                sx={{ paddingRight: "25px", paddingBottom: "20px" }}
-              >
+              <Collapse in={expandedSections.includes(section.id)}>
                 <Stack spacing={1} mt={1} ml={4}>
-                  {section.notes.map((note: NoteType) => (
-                    <Note
-                      key={note.id}
-                      id={note.id}
-                      Updated={() => {
-                        setUpdate(update + 1);
-                      }}
-                    />
+                  {section.notes.map((note) => (
+                    <Note key={note.id} note={note} onUpdate={updateNote} onDelete={deleteNote} />
                   ))}
                 </Stack>
+
                 <SectionFiles
                   primaryTagName={moduleInfo.primary_tag.name}
                   subtagName={section.subtag.name}
@@ -104,6 +89,13 @@ export default function ModulePannel({
           ))}
         </Stack>
       </Container>
+
+      <NoteDialog
+        open={open}
+        onClose={() => setOpen(false)}
+        primaryTagId={moduleInfo?.primary_tag.id ?? 0}
+        onSaved={addOrReplaceNote}
+      />
     </div>
   );
 }

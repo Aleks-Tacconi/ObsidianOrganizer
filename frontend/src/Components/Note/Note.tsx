@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { Card, CardContent, CardActions, IconButton, Stack, Tooltip } from "@mui/material";
 import { FaPenToSquare, FaTrashCan, FaRegSquare, FaRegSquareCheck } from "react-icons/fa6";
 
@@ -6,89 +5,71 @@ import api from "../../Utils/api";
 import type { Note as NoteType } from "../../Utils/types/api.schemas";
 import NoteDisplay from "./Components/NoteDisplay";
 import NoteDialog from "../NoteDialogue/NoteDialogue";
+import { useState } from "react";
 
 type Props = {
-    id: number;
-    Updated: () => void;
+  note: NoteType;
+  onUpdate: (note: NoteType) => void;
+  onDelete: (id: number) => void;
 };
 
-export default function Note({ id, Updated }: Props) {
-    const [note, setNote] = useState<NoteType | null>(null);
-    const [editing, setEditing] = useState(false);
+export default function Note({ note, onUpdate, onDelete }: Props) {
+  const [editing, setEditing] = useState(false);
 
-    useEffect(() => {
-        api.get<NoteType>(`notes/${id}/`).then((r) => r && setNote(r.data));
-    }, [id]);
+  const toggleComplete = async () => {
+    const updated = { ...note, completed: !note.completed };
+    onUpdate(updated);
 
-    const toggleComplete = async () => {
-        if (!note) return;
+    await api.put(`notes/${note.id}/`, {
+      ...updated,
+      primary_tag_id: updated.primary_tag?.id ?? null,
+      subtags_ids: updated.subtags.map((s) => s.id),
+      urls_ids: updated.urls.map((u) => u.id),
+    });
+  };
 
-        const updated = { ...note, completed: !note.completed };
-        setNote(updated);
+  const handleDelete = async () => {
+    await api.del(`notes/${note.id}/`);
+    onDelete(note.id);
+  };
 
-        await api.put(`notes/${id}/`, {
-            completed: updated.completed,
-            name: updated.name,
-            description: updated.description,
-            date: updated.date,
-            primary_tag_id: updated.primary_tag?.id ?? null,
-            subtags_ids: updated.subtags.map((s) => s.id),
-            urls_ids: updated.urls.map((u) => u.id),
-        });
-    };
+  return (
+    <>
+      <Card sx={{ mb: 2 }}>
+        <CardContent>
+          <NoteDisplay note={note} />
+        </CardContent>
 
-    const handleDelete = async () => {
-        await api.del(`notes/${id}/`);
-        Updated();
-    };
+        <CardActions sx={{ justifyContent: "flex-end" }}>
+          <Stack direction="row" spacing={1}>
+            <Tooltip title="Edit">
+              <IconButton onClick={() => setEditing(true)}>
+                <FaPenToSquare />
+              </IconButton>
+            </Tooltip>
 
-    if (!note) return null;
+            <Tooltip title="Delete">
+              <IconButton onClick={handleDelete}>
+                <FaTrashCan />
+              </IconButton>
+            </Tooltip>
 
-    return (
-        <>
-            <Card
-                sx={{
-                    mb: 2,
-                    borderLeft: "2px solid #444",
-                    boxShadow: "0 2px 6px rgba(0, 0, 0, 0.15)",
-                    borderTopLeftRadius: "1px",
-                    borderBottomLeftRadius: "1px",
-                }}
-            >
-                <CardContent>
-                    <NoteDisplay note={note} />
-                </CardContent>
+            <Tooltip title={note.completed ? "Mark as not done" : "Mark as done"}>
+              <IconButton onClick={toggleComplete}>
+                {note.completed ? <FaRegSquareCheck /> : <FaRegSquare />}
+              </IconButton>
+            </Tooltip>
+          </Stack>
+        </CardActions>
+      </Card>
 
-                <CardActions sx={{ justifyContent: "flex-end" }}>
-                    <Stack direction="row" spacing={1}>
-                        <Tooltip title="Edit">
-                            <IconButton onClick={() => setEditing(true)}>
-                                <FaPenToSquare />
-                            </IconButton>
-                        </Tooltip>
-
-                        <Tooltip title="Delete">
-                            <IconButton onClick={handleDelete}>
-                                <FaTrashCan />
-                            </IconButton>
-                        </Tooltip>
-
-                        <Tooltip title={note.completed ? "Mark as not done" : "Mark as done"}>
-                            <IconButton onClick={toggleComplete}>
-                                {note.completed ? <FaRegSquareCheck /> : <FaRegSquare />}
-                            </IconButton>
-                        </Tooltip>
-                    </Stack>
-                </CardActions>
-            </Card>
-
-            <NoteDialog
-                open={editing}
-                onClose={() => setEditing(false)}
-                onSaved={Updated}
-                primaryTagId={note.primary_tag?.id ?? 0}
-                note={note}
-            />
-        </>
-    );
+      <NoteDialog
+        open={editing}
+        onClose={() => setEditing(false)}
+        primaryTagId={note.primary_tag?.id ?? 0}
+        note={note}
+        onSaved={onUpdate}
+      />
+    </>
+  );
 }
