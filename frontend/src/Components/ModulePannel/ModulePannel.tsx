@@ -73,7 +73,10 @@ export default function ModulePannel({
                 <Typography variant="h6">{section.subtag.name}</Typography>
               </Stack>
 
-              <Collapse in={expandedSections.includes(section.id)}>
+              <Collapse
+                in={expandedSections.includes(section.id)}
+                sx={{ paddingRight: "30px", paddingBottom: "10px" }}
+              >
                 <Stack spacing={1} mt={1} ml={4}>
                   {section.notes.map((note) => (
                     <Note key={note.id} note={note} onUpdate={updateNote} onDelete={deleteNote} />
