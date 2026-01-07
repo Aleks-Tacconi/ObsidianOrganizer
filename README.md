@@ -67,6 +67,6 @@ I organize my notes with two tags: module name and topic name. This app allows m
 
 ## TODO / Upcoming Features
 
-- Address [Issue 9](https://github.com/Aleks-Tacconi/ObsidianOrganizer/issues/9).
 - Open file in obsidian button.
-- Address some frontend issues causing you to have to refresh to see some changes.
+- Logging grades
+- Rearranging modules
