@@ -31,7 +31,7 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <div style={{ display: "flex" }}>
+    <div style={{ display: "flex", marginBottom: "20px" }}>
       <IconButton
         onClick={() => setOpen(!open)}
         sx={{ position: "fixed", top: 12, left: 12, zIndex: 2000 }}
