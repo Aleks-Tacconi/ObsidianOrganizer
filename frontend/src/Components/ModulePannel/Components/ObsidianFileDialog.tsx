@@ -76,7 +76,13 @@ export default forwardRef(function ObsidianFileDialog(
       open={open}
       onClose={onClose}
       maxWidth={false}
-      sx={{ width: "80vw", marginLeft: "10vw" }}
+      PaperProps={{
+        sx: {
+          height: "85vh",
+          width: "80vw",
+          overflow: "hidden",
+        },
+      }}
       fullWidth
     >
       <DialogTitle>
