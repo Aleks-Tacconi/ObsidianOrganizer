@@ -9,106 +9,120 @@ import TagPopup from "./Components/TagPopup/TagPopup";
 
 import "./TagList.css";
 import { Divider, IconButton, List } from "@mui/material";
+import ConfirmDialogue from "../ConfirmDialogue/ConfirmDialogue";
 
 export default function TagList({
-    onSelect,
-    onChanged,
+  onSelect,
+  onChanged,
 }: {
-    onSelect: (tag: PrimaryTag) => void;
-    onChanged: () => void;
+  onSelect: (tag: PrimaryTag) => void;
+  onChanged: () => void;
 }) {
-    const [tags, setTags] = useState<PrimaryTag[]>([]);
-    const [editingTag, setEditingTag] = useState<PrimaryTag | null>(null);
-    const [popupOpen, setPopupOpen] = useState(false);
+  const [tags, setTags] = useState<PrimaryTag[]>([]);
+  const [editingTag, setEditingTag] = useState<PrimaryTag | null>(null);
+  const [popupOpen, setPopupOpen] = useState(false);
+  const [open, setOpen] = useState(false);
 
-    const loadTags = async () => {
-        await api
-            .get<PrimaryTag[]>("primary-tags/")
-            .then((res) => {
-                if (res) setTags(res.data);
-            })
-            .catch((err) => {
-                console.log(err);
-            });
-    };
+  const loadTags = async () => {
+    await api
+      .get<PrimaryTag[]>("primary-tags/")
+      .then((res) => {
+        if (res) setTags(res.data);
+      })
+      .catch((err) => {
+        console.log(err);
+      });
+  };
 
-    useEffect(() => {
-        loadTags();
-    }, []);
+  useEffect(() => {
+    loadTags();
+  }, []);
 
-    const openPopup = (tag?: PrimaryTag) => {
-        setEditingTag(tag || null);
-        setPopupOpen(true);
-    };
+  const openPopup = (tag?: PrimaryTag) => {
+    setEditingTag(tag || null);
+    setPopupOpen(true);
+  };
 
-    const closePopup = () => {
-        setPopupOpen(false);
-    };
+  const closePopup = () => {
+    setPopupOpen(false);
+  };
 
-    const saveTag = async (tag: PrimaryTag) => {
-        if (tag.id) {
-            await api
-                .put<PrimaryTag>(`primary-tags/${tag.id}/`, tag)
-                .then((res) => {
-                    if (res?.data != null) {
-                        const savedTag = res.data;
-                        setTags(tags.map((t) => (t.id === savedTag.id ? savedTag : t)));
-                    }
-                })
-                .catch((err) => {
-                    console.log(err.message);
-                });
-        } else {
-            await api
-                .post<PrimaryTag>("primary-tags/", tag)
-                .then((res) => {
-                    if (res?.data != null) {
-                        const savedTag = res.data;
-                        setTags([...tags, savedTag]);
-                    }
-                })
-                .catch((err) => {
-                    console.log(err.message);
-                });
-        }
+  const saveTag = async (tag: PrimaryTag) => {
+    if (tag.id) {
+      await api
+        .put<PrimaryTag>(`primary-tags/${tag.id}/`, tag)
+        .then((res) => {
+          if (res?.data != null) {
+            const savedTag = res.data;
+            setTags(tags.map((t) => (t.id === savedTag.id ? savedTag : t)));
+          }
+        })
+        .catch((err) => {
+          console.log(err.message);
+        });
+    } else {
+      await api
+        .post<PrimaryTag>("primary-tags/", tag)
+        .then((res) => {
+          if (res?.data != null) {
+            const savedTag = res.data;
+            setTags([...tags, savedTag]);
+          }
+        })
+        .catch((err) => {
+          console.log(err.message);
+        });
+    }
 
-        onChanged();
-        closePopup();
-    };
+    onChanged();
+    closePopup();
+  };
 
-    const deleteTag = async (id?: number) => {
-        if (!id) return;
+  const deleteTag = async (id?: number) => {
+    if (!id) return;
 
-        await api
-            .del(`primary-tags/${id}/`)
-            .then(() => {
-                setTags(tags.filter((t) => t.id !== id));
-            })
-            .catch((err) => {
-                console.log(err.message);
-            });
+    await api
+      .del(`primary-tags/${id}/`)
+      .then(() => {
+        setTags(tags.filter((t) => t.id !== id));
+      })
+      .catch((err) => {
+        console.log(err.message);
+      });
 
-        onChanged();
-    };
+    onChanged();
+  };
 
-    return (
-        <div className="taglist-container">
-            <IconButton onClick={() => openPopup()} sx={{ padding: "5px", marginLeft: "365px" }}>
-                <FaPlus />
-            </IconButton>
-            <Divider sx={{ marginTop: "15px" }} />
-            <List>
-                {tags.map((tag) => (
-                    <TagItem
-                        key={tag.id}
-                        tag={tag}
-                        onEdit={() => openPopup(tag)}
-                        onDelete={() => deleteTag(tag.id)}
-                        onClick={() => onSelect(tag)}
-                    />
-                ))}
-            </List>
-            {popupOpen && <TagPopup tag={editingTag} onClose={closePopup} onSave={saveTag} />}{" "}
-        </div>
-    );
+  return (
+    <div className="taglist-container">
+      <IconButton onClick={() => openPopup()} sx={{ padding: "5px", marginLeft: "365px" }}>
+        <FaPlus />
+      </IconButton>
+      <Divider sx={{ marginTop: "15px" }} />
+      <List>
+        {tags.map((tag) => (
+          <div key={tag.id}>
+            <TagItem
+              tag={tag}
+              onEdit={() => openPopup(tag)}
+              onDelete={() => setOpen(true)}
+              onClick={() => onSelect(tag)}
+            />
+            <ConfirmDialogue
+              open={open}
+              onConfirm={() => {
+                deleteTag(tag.id);
+              }}
+              onDecline={() => {
+                setOpen(false);
+              }}
+              title={`Delete: ${tag.name}`}
+              message="Do you confirm deletion?"
+            />
+          </div>
+        ))}
+      </List>
+      {popupOpen && <TagPopup tag={editingTag} onClose={closePopup} onSave={saveTag} />}{" "}
+    </div>
+  );
 }
