@@ -144,14 +144,14 @@ export default function NoteDialog({ open, onClose, primaryTagId, note, onSaved 
         <DialogTitle>{note ? "Edit Note" : "Create Note"}</DialogTitle>
 
         <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
-          <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} required />
+          <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} required sx={{marginTop: 1}}/>
 
           <TextField
             label="Description"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             multiline
-            rows={3}
+            rows={8}
           />
 
           <Autocomplete
