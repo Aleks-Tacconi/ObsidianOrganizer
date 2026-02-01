@@ -1,5 +1,5 @@
 import type { Note } from "../../../Utils/types/api.schemas";
-import { Card, CardHeader, CardContent, Typography, Stack, Chip } from "@mui/material";
+import { Card, CardHeader, CardContent, Typography, Stack, Chip, Box, Link } from "@mui/material";
 import { FaLink } from "react-icons/fa6";
 import ReactMarkdown from "react-markdown";
 
@@ -40,27 +40,36 @@ export default function NoteDisplay({ note }: NoteDisplayProps) {
             {note.description}
           </ReactMarkdown>
         )}
+
+        <Typography variant="h5" sx={{ fontWeight: 600, marginTop: "30px" }}>
+          Related Resources
+        </Typography>
         {note.urls.length > 0 && (
-          <Stack direction="column" spacing={1} sx={{ marginTop: "15px" }}>
+          <Stack spacing={1.5} sx={{ mt: 2 }}>
             {note.urls.map((u, i) => (
-              <Chip
+              <Box
                 key={i}
-                icon={<FaLink color="#0080FF" size={16} />}
-                label={`${u.alias} (${u.url})`}
-                component="a"
-                href={u.url}
-                target="_blank"
-                clickable
                 sx={{
-                  paddingLeft: "5px",
-                  color: "#0080FF",
-                  width: "auto",
-                  justifyContent: "flex-start",
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 1,
                 }}
-              />
+              >
+                <FaLink size={14} style={{ marginTop: 4 }} />
+
+                <Box>
+                  <Link href={u.url} target="_blank" underline="hover" sx={{ fontWeight: 500 }}>
+                    {u.alias}
+                  </Link>
+
+                  <Typography variant="caption" sx={{ display: "block", color: "text.secondary" }}>
+                    {u.url}
+                  </Typography>
+                </Box>
+              </Box>
             ))}
           </Stack>
-        )}{" "}
+        )}
       </CardContent>
     </Card>
   );

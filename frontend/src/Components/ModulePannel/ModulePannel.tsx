@@ -40,7 +40,7 @@ export default function ModulePannel({
         <FaPlus />
       </IconButton>
 
-      <Container maxWidth="md" sx={{ mt: 4 }}>
+      <Container sx={{ mt: 4 }}>
         <Typography variant="h4" align="center" gutterBottom>
           {moduleInfo?.primary_tag.name}
         </Typography>
@@ -77,16 +77,29 @@ export default function ModulePannel({
                 in={expandedSections.includes(section.id)}
                 sx={{ paddingRight: "30px", paddingBottom: "10px" }}
               >
-                <Stack spacing={1} mt={1} ml={4}>
-                  {section.notes.map((note) => (
-                    <Note key={note.id} note={note} onUpdate={updateNote} onDelete={deleteNote} />
-                  ))}
-                </Stack>
+                <Stack direction="row" spacing={3} mt={1} ml={4} alignItems="flex-start">
+                  {/* Left: Lectures */}
+                  <Stack sx={{ width: "75%" }}>
+                    <Typography variant="subtitle2" gutterBottom>
+                      Lectures
+                    </Typography>
+                    {section.notes.map((note) => (
+                      <Note key={note.id} note={note} onUpdate={updateNote} onDelete={deleteNote} />
+                    ))}
+                  </Stack>
 
-                <SectionFiles
-                  primaryTagName={moduleInfo.primary_tag.name}
-                  subtagName={section.subtag.name}
-                />
+                  {/* Right: Notes */}
+                  <Stack sx={{ width: "25%" }} spacing={1}>
+                    <Typography variant="subtitle2" gutterBottom>
+                      Notes
+                    </Typography>
+
+                    <SectionFiles
+                      primaryTagName={moduleInfo.primary_tag.name}
+                      subtagName={section.subtag.name}
+                    />
+                  </Stack>
+                </Stack>
               </Collapse>
             </Paper>
           ))}
