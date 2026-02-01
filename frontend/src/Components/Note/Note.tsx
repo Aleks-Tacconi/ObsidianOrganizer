@@ -5,6 +5,7 @@ import api from "../../Utils/api";
 import type { Note as NoteType } from "../../Utils/types/api.schemas";
 import NoteDisplay from "./Components/NoteDisplay";
 import NoteDialog from "../NoteDialogue/NoteDialogue";
+import ConfirmDialogue from "../ConfirmDialogue/ConfirmDialogue";
 import { useState } from "react";
 
 type Props = {
@@ -15,6 +16,7 @@ type Props = {
 
 export default function Note({ note, onUpdate, onDelete }: Props) {
   const [editing, setEditing] = useState(false);
+  const [open, setOpen] = useState(false);
 
   const toggleComplete = async () => {
     const updated = { ...note, completed: !note.completed };
@@ -49,7 +51,11 @@ export default function Note({ note, onUpdate, onDelete }: Props) {
             </Tooltip>
 
             <Tooltip title="Delete">
-              <IconButton onClick={handleDelete}>
+              <IconButton
+                onClick={() => {
+                  setOpen(true);
+                }}
+              >
                 <FaTrashCan />
               </IconButton>
             </Tooltip>
@@ -69,6 +75,19 @@ export default function Note({ note, onUpdate, onDelete }: Props) {
         primaryTagId={note.primary_tag?.id ?? 0}
         note={note}
         onSaved={onUpdate}
+      />
+
+      <ConfirmDialogue
+        open={open}
+        onConfirm={() => {
+          handleDelete();
+          setOpen(false);
+        }}
+        onDecline={() => {
+          setOpen(false);
+        }}
+        title={`Delete ${note.name}`}
+        message="Do you confirm deletion?"
       />
     </>
   );
