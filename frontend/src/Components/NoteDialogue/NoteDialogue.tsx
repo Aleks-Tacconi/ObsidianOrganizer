@@ -31,10 +31,6 @@ export default function NoteDialog({ open, onClose, primaryTagId, note, onSaved 
   const [description, setDescription] = useState(note?.description ?? "");
   const [completed, setCompleted] = useState(note?.completed ?? false);
 
-  const [date, setDate] = useState(
-    note ? new Date(note.date).toISOString().slice(0, 16) : new Date().toISOString().slice(0, 16),
-  );
-
   const [subtags, setSubtags] = useState<SubTag[]>([]);
   const [selectedSubtags, setSelectedSubtags] = useState<SubTag[]>(note?.subtags ?? []);
 
@@ -49,7 +45,6 @@ export default function NoteDialog({ open, onClose, primaryTagId, note, onSaved 
     setName("");
     setDescription("");
     setCompleted(false);
-    setDate(new Date().toISOString().slice(0, 16));
     setSelectedSubtags([]);
     setUrls([]);
     setUrlAlias("");
@@ -70,7 +65,6 @@ export default function NoteDialog({ open, onClose, primaryTagId, note, onSaved 
     setName(note.name);
     setDescription(note.description ?? "");
     setCompleted(note.completed);
-    setDate(new Date(note.date).toISOString().slice(0, 16));
     setSelectedSubtags(note.subtags ?? []);
     setUrls(note.urls.map((u) => ({ alias: u.alias, url: u.url })));
     setUrlAlias("");
@@ -99,7 +93,6 @@ export default function NoteDialog({ open, onClose, primaryTagId, note, onSaved 
     const payload = {
       name,
       description,
-      date: new Date(date).toISOString(),
       completed,
       primary_tag_id: primaryTagId,
       subtags_ids: selectedSubtags.map((s) => s.id),
@@ -140,14 +133,6 @@ export default function NoteDialog({ open, onClose, primaryTagId, note, onSaved 
           onChange={(e) => setDescription(e.target.value)}
           multiline
           rows={3}
-        />
-
-        <TextField
-          label="Date & Time"
-          type="datetime-local"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          InputLabelProps={{ shrink: true }}
         />
 
         <Autocomplete
