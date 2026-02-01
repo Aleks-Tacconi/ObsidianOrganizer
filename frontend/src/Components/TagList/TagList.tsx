@@ -118,6 +118,7 @@ export default function TagList({
               }}
               title={`Delete: ${tag.name}`}
               message="Do you confirm deletion?"
+              backdropStyle={{ backgroundColor: "rgba(0,0,0,0.08)" }}
             />
           </div>
         ))}

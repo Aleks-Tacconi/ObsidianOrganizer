@@ -2,6 +2,7 @@ import { useState, useRef } from "react";
 import { FaPlus } from "react-icons/fa6";
 
 import SubtagItem from "../SubtagItem/SubtagItem";
+import ConfirmDialogue from "../../../ConfirmDialogue/ConfirmDialogue.tsx";
 
 import api from "../../../../Utils/api";
 import type { PrimaryTag, SubTag } from "../../../../Utils/types/api.schemas.ts";
@@ -20,6 +21,7 @@ export default function TagPopup({ tag, onClose, onSave }: Props) {
   const [color, setColor] = useState(tag?.color || "#16A085");
   const [subtags, setSubtags] = useState<readonly SubTag[]>(tag?.subtags || []);
   const [deleteQue, setDeleteQue] = useState<number[]>([]);
+  const [open, setOpen] = useState(false);
 
   const colorInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -80,7 +82,13 @@ export default function TagPopup({ tag, onClose, onSave }: Props) {
             variant="outlined"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            sx={{ width: "100%" }}
+            sx={{
+              width: "100%",
+              borderBottom: "solid",
+              paddingBottom: "13px",
+              borderColor: "#1976D2",
+              marginBottom: "5px",
+            }}
           />
           <div
             onClick={() => colorInputRef.current?.click()}
@@ -110,12 +118,26 @@ export default function TagPopup({ tag, onClose, onSave }: Props) {
 
         <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
           {subtags.map((subtag, i) => (
-            <SubtagItem
-              key={i}
-              subtag={subtag}
-              onChange={(name) => updateSubtag(i, name)}
-              onRemove={() => removeSubtag(i)}
-            />
+            <div key={i}>
+              <ConfirmDialogue
+                open={open}
+                onConfirm={() => {
+                  removeSubtag(i);
+                  setOpen(false);
+                }}
+                onDecline={() => {
+                  setOpen(false);
+                }}
+                title={`Delete ${subtag.name}`}
+                message="Configm deletion?"
+                backdropStyle={{ backgroundColor: "rgba(0,0,0,0.08)" }}
+              />
+              <SubtagItem
+                subtag={subtag}
+                onChange={(name) => updateSubtag(i, name)}
+                onRemove={() => setOpen(true)}
+              />
+            </div>
           ))}
 
           <Button variant="outlined" startIcon={<FaPlus />} onClick={addSubtag}>

@@ -1,5 +1,4 @@
-import { Paper, Dialog, DialogTitle, DialogContent, Button, Typography } from "@mui/material";
-import { createPortal } from "react-dom";
+import { Dialog, DialogTitle, DialogContent, Button, Typography } from "@mui/material";
 import { FaCheck, FaTimes } from "react-icons/fa";
 
 type ConfirmDialogueProps = {
@@ -8,6 +7,7 @@ type ConfirmDialogueProps = {
   onDecline: () => void;
   title: string;
   message: string;
+  backdropStyle?: React.CSSProperties;
 };
 
 export default function ConfirmDialogue({
@@ -16,9 +16,16 @@ export default function ConfirmDialogue({
   onDecline,
   title,
   message,
+  backdropStyle,
 }: ConfirmDialogueProps) {
   return (
-    <Dialog open={open} fullWidth maxWidth="sm">
+    <Dialog
+      open={open}
+      fullWidth
+      maxWidth="sm"
+      BackdropProps={{ style: backdropStyle }}
+      PaperProps={{ sx: { boxShadow: "none" } }}
+    >
       <DialogTitle>{title}</DialogTitle>
       <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
         <Typography>{message}</Typography>
