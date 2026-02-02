@@ -1,5 +1,5 @@
 import type { Note } from "../../../Utils/types/api.schemas";
-import { Card, CardHeader, CardContent, Typography, Stack, Chip, Box, Link } from "@mui/material";
+import { Card, CardHeader, CardContent, Typography, Stack, Box, Link } from "@mui/material";
 import { FaLink } from "react-icons/fa6";
 import ReactMarkdown from "react-markdown";
 
