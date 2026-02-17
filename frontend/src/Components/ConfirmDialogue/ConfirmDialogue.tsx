@@ -1,0 +1,40 @@
+import { Dialog, DialogTitle, DialogContent, Button, Typography } from "@mui/material";
+
+type ConfirmDialogueProps = {
+  open: boolean;
+  onConfirm: () => void;
+  onDecline: () => void;
+  title: string;
+  message: string;
+  backdropStyle?: React.CSSProperties;
+};
+
+export default function ConfirmDialogue({
+  open,
+  onConfirm,
+  onDecline,
+  title,
+  message,
+  backdropStyle,
+}: ConfirmDialogueProps) {
+  return (
+    <Dialog
+      open={open}
+      fullWidth
+      maxWidth="sm"
+      BackdropProps={{ style: backdropStyle }}
+      PaperProps={{ sx: { boxShadow: "none" } }}
+    >
+      <DialogTitle>{title}</DialogTitle>
+      <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
+        <Typography>{message}</Typography>
+        <div style={{ display: "flex", flexDirection: "row", justifyContent: "flex-end", gap: 5 }}>
+          <Button onClick={onDecline}>Decline</Button>
+          <Button variant="contained" onClick={onConfirm}>
+            Confirm
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}

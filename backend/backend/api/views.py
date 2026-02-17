@@ -91,7 +91,7 @@ def match_obsidian_tags(tags: List[str]) -> List[str]:
 
         file_tags = extract_tags(path)
 
-        if set(file_tags) == set(tags):
+        if set(file_tags).issuperset(set(tags)):
             matched_files.append(path)
 
     return matched_files

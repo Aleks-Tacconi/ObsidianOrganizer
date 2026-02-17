@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import {
-  Chip,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -11,10 +10,13 @@ import {
   FormControlLabel,
   Autocomplete,
   Stack,
+  IconButton,
 } from "@mui/material";
 
 import api from "../../Utils/api";
 import type { SubTag, NoteURL, Note as NoteType } from "../../Utils/types/api.schemas";
+import ConfirmDialogue from "../ConfirmDialogue/ConfirmDialogue";
+import { FaTrash } from "react-icons/fa6";
 
 interface Props {
   open: boolean;
@@ -45,6 +47,9 @@ export default function NoteDialog({ open, onClose, primaryTagId, note, onSaved 
   const [urlAlias, setUrlAlias] = useState("");
   const [urlValue, setUrlValue] = useState("");
 
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [urlToDelete, setUrlToDelete] = useState<number | null>(null);
+
   const resetForm = () => {
     setName("");
     setDescription("");
@@ -58,10 +63,7 @@ export default function NoteDialog({ open, onClose, primaryTagId, note, onSaved 
 
   useEffect(() => {
     if (!open) return;
-
-    if (!note) {
-      resetForm();
-    }
+    if (!note) resetForm();
   }, [open, note]);
 
   useEffect(() => {
@@ -88,6 +90,22 @@ export default function NoteDialog({ open, onClose, primaryTagId, note, onSaved 
     setUrlValue("");
   };
 
+  const updateUrl = (index: number, key: "alias" | "url", value: string) => {
+    setUrls((prev) => prev.map((u, i) => (i === index ? { ...u, [key]: value } : u)));
+  };
+
+  const requestDeleteUrl = (index: number) => {
+    setUrlToDelete(index);
+    setConfirmOpen(true);
+  };
+
+  const confirmDeleteUrl = () => {
+    if (urlToDelete === null) return;
+    setUrls((p) => p.filter((_, i) => i !== urlToDelete));
+    setUrlToDelete(null);
+    setConfirmOpen(false);
+  };
+
   const handleSubmit = async () => {
     const urls_ids: number[] = [];
 
@@ -108,11 +126,11 @@ export default function NoteDialog({ open, onClose, primaryTagId, note, onSaved 
 
     if (note) {
       await api.put<NoteType>(`notes/${note.id}/`, payload).then((res) => {
-        if (res != undefined) onSaved(res.data);
+        if (res) onSaved(res.data);
       });
     } else {
       await api.post<NoteType>("notes/", payload).then((res) => {
-        if (res != undefined) onSaved(res.data);
+        if (res) onSaved(res.data);
       });
     }
 
@@ -121,87 +139,100 @@ export default function NoteDialog({ open, onClose, primaryTagId, note, onSaved 
   };
 
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>{note ? "Edit Note" : "Create Note"}</DialogTitle>
+    <>
+      <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+        <DialogTitle>{note ? "Edit Note" : "Create Note"}</DialogTitle>
 
-      <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
-        <TextField
-          label="Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-          sx={{
-            marginTop: "5px",
-          }}
-        />
-        <TextField
-          label="Description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          multiline
-          rows={3}
-        />
+        <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
+          <TextField label="Name" value={name} onChange={(e) => setName(e.target.value)} required sx={{marginTop: 1}}/>
 
-        <TextField
-          label="Date & Time"
-          type="datetime-local"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          InputLabelProps={{ shrink: true }}
-        />
-
-        <Autocomplete
-          multiple
-          options={subtags.filter((s) => s.parent === primaryTagId)} // filter by parent
-          getOptionLabel={(o) => o.name}
-          value={selectedSubtags}
-          onChange={(_, v) => setSelectedSubtags(v)}
-          renderInput={(params) => <TextField {...params} label="Subtags" />}
-        />
-
-        <Stack direction="row" spacing={1}>
           <TextField
-            label="URL Alias"
-            value={urlAlias}
-            onChange={(e) => setUrlAlias(e.target.value)}
-            fullWidth
+            label="Description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            multiline
+            rows={8}
           />
-          <TextField
-            label="URL"
-            value={urlValue}
-            onChange={(e) => setUrlValue(e.target.value)}
-            fullWidth
-          />
-          <Button onClick={handleAddUrl}>Add</Button>
-        </Stack>
 
-        {urls.length > 0 && (
-          <Stack direction="column" spacing={1} flexWrap="wrap">
-            {urls.map((u, i) => (
-              <Chip
-                key={i}
-                label={`${u.alias} — ${u.url}`}
-                onDelete={() => setUrls((p) => p.filter((_, idx) => idx !== i))}
-              />
-            ))}
+          <Autocomplete
+            multiple
+            options={subtags.filter((s) => s.parent === primaryTagId)}
+            getOptionLabel={(o) => o.name}
+            value={selectedSubtags}
+            onChange={(_, v) => setSelectedSubtags(v)}
+            renderInput={(params) => <TextField {...params} label="Subtags" />}
+          />
+
+          <Stack direction="row" spacing={1}>
+            <TextField
+              label="URL Alias"
+              value={urlAlias}
+              onChange={(e) => setUrlAlias(e.target.value)}
+              fullWidth
+            />
+            <TextField
+              label="URL"
+              value={urlValue}
+              onChange={(e) => setUrlValue(e.target.value)}
+              fullWidth
+            />
+            <Button onClick={handleAddUrl}>Add</Button>
           </Stack>
-        )}
 
-        <FormControlLabel
-          control={
-            <Checkbox checked={completed} onChange={(e) => setCompleted(e.target.checked)} />
-          }
-          label="Completed"
-        />
-      </DialogContent>
+          {urls.length > 0 && (
+            <Stack spacing={1}>
+              {urls.map((u, i) => (
+                <Stack key={i} direction="row" spacing={1} alignItems="center">
+                  <TextField
+                    label="Alias"
+                    value={u.alias}
+                    onChange={(e) => updateUrl(i, "alias", e.target.value)}
+                    fullWidth
+                  />
+                  <TextField
+                    label="URL"
+                    value={u.url}
+                    onChange={(e) => updateUrl(i, "url", e.target.value)}
+                    fullWidth
+                  />
+                  <IconButton onClick={() => requestDeleteUrl(i)} sx={{padding: "12px 24px"}}>
+                    <FaTrash size={16}/>
+                  </IconButton>
+                </Stack>
+              ))}
+            </Stack>
+          )}
 
-      <DialogActions>
-        <Button onClick={onClose}>Cancel</Button>
+          <FormControlLabel
+            control={
+              <Checkbox checked={completed} onChange={(e) => setCompleted(e.target.checked)} />
+            }
+            label="Completed"
+          />
+        </DialogContent>
 
-        <Button variant="contained" onClick={handleSubmit} disabled={selectedSubtags.length === 0}>
-          {note ? "Save" : "Create"}
-        </Button>
-      </DialogActions>
-    </Dialog>
+        <DialogActions>
+          <Button onClick={onClose}>Cancel</Button>
+          <Button
+            variant="contained"
+            onClick={handleSubmit}
+            disabled={selectedSubtags.length === 0}
+          >
+            {note ? "Save" : "Create"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <ConfirmDialogue
+        open={confirmOpen}
+        title="Remove URL"
+        message="Are you sure you want to remove this URL?"
+        onConfirm={confirmDeleteUrl}
+        onDecline={() => {
+          setConfirmOpen(false);
+          setUrlToDelete(null);
+        }}
+      />
+    </>
   );
 }
