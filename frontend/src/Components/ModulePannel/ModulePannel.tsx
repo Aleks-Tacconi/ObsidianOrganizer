@@ -5,7 +5,7 @@ import {
   Typography,
   Stack,
   Collapse,
-  Container,
+  Divider,
   Skeleton,
   Tooltip,
   Box,
@@ -60,123 +60,155 @@ export default function ModulePanel({
           <IconButton
             onClick={() => setOpen(true)}
             disabled={loading}
-            sx={{ position: "fixed", top: 12, right: 12, zIndex: 2000 }}
+            sx={{ position: "fixed", top: 16, right: 16, zIndex: 2000 }}
             aria-label="Add note"
           >
-            <FaPlus />
+            <FaPlus size={16} />
           </IconButton>
         </span>
       </Tooltip>
 
-      <Container sx={{ mt: 4 }}>
+      <Box sx={{ mt: 6, px: { xs: 0, sm: 2 } }}>
         {loading ? (
-          <Stack spacing={2}>
-            <Skeleton variant="text" width="40%" height={40} sx={{ mx: "auto" }} />
-            <Skeleton variant="text" width="60%" height={24} sx={{ mx: "auto" }} />
+          <Stack spacing={3} sx={{ maxWidth: 720, mx: "auto" }}>
+            <Skeleton variant="text" width="45%" height={48} sx={{ mx: "auto" }} />
+            <Skeleton variant="text" width="55%" height={22} sx={{ mx: "auto" }} />
             <Skeleton variant="rectangular" height={8} sx={{ borderRadius: "6px" }} />
-            <Skeleton variant="rectangular" height={64} sx={{ borderRadius: "6px" }} />
-            <Skeleton variant="rectangular" height={64} sx={{ borderRadius: "6px" }} />
+            <Skeleton variant="rectangular" height={96} sx={{ borderRadius: "6px" }} />
+            <Skeleton variant="rectangular" height={96} sx={{ borderRadius: "6px" }} />
           </Stack>
         ) : (
           <>
-            <Stack direction="row" alignItems="center" justifyContent="center" spacing={1} sx={{ mb: 1 }}>
-              <FaGraduationCap size={20} style={{ color: "#6b6b6b" }} />
-              <Typography variant="h4">
-                {moduleInfo?.primary_tag.name}
-              </Typography>
-            </Stack>
+            {/* Module header */}
+            <Box sx={{ textAlign: "center", mb: 4 }}>
+              <Stack direction="row" alignItems="center" justifyContent="center" spacing={1.5} sx={{ mb: 1 }}>
+                <FaGraduationCap size={22} style={{ color: "#6b6b6b" }} />
+                <Typography variant="h4">
+                  {moduleInfo?.primary_tag.name}
+                </Typography>
+              </Stack>
+              {moduleInfo?.description && (
+                <Typography variant="body1" color="text.secondary">
+                  {moduleInfo.description}
+                </Typography>
+              )}
+            </Box>
 
-            {moduleInfo?.description && (
-              <Typography variant="body1" align="center" color="text.secondary" gutterBottom>
-                {moduleInfo.description}
-              </Typography>
-            )}
+            {/* Progress */}
+            <Box sx={{ mb: 4 }}>
+              <ProgressBar Notes={allNotes} />
+            </Box>
 
-            <ProgressBar Notes={allNotes} />
-
+            {/* Grades */}
             {moduleInfo?.grades && moduleInfo.grades.length > 0 && (
-              <Box sx={{ mt: 2 }}>
+              <Box sx={{ mb: 4 }}>
                 <Grades moduleInfo={moduleInfo} />
               </Box>
             )}
 
-            <Stack spacing={2} mt={2}>
+            {/* Sections */}
+            <Stack spacing={2}>
               {moduleInfo?.sections.length === 0 ? (
-                <Stack alignItems="center" spacing={1} sx={{ py: 4 }}>
-                  <FaFolderOpen size={24} style={{ color: "#6b6b6b" }} />
-                  <Typography variant="body2" color="text.secondary">
+                <Stack alignItems="center" spacing={2} sx={{ py: 8 }}>
+                  <FaFolderOpen size={32} style={{ color: "#6b6b6b" }} />
+                  <Typography variant="body1" color="text.secondary">
                     No sections yet. Add a note to get started.
                   </Typography>
                 </Stack>
               ) : (
-                moduleInfo?.sections.map((section) => (
-                  <Paper
-                    key={section.id}
-                    sx={{ borderRadius: "6px", p: 1 }}
-                    elevation={0}
-                  >
-                    <Stack
-                      direction="row"
-                      alignItems="center"
-                      spacing={1}
-                      sx={{ cursor: "pointer", p: 1, userSelect: "none" }}
-                      onClick={() => toggleSection(section.id)}
+                moduleInfo?.sections.map((section) => {
+                  const isExpanded = expandedSections.includes(section.id);
+                  return (
+                    <Paper
+                      key={section.id}
+                      sx={{ borderRadius: "6px" }}
+                      elevation={0}
                     >
-                      {expandedSections.includes(section.id) ? (
-                        <FaAngleDown size={12} />
-                      ) : (
-                        <FaAngleRight size={12} />
-                      )}
-                      <FaFolder size={12} style={{ color: "#6b6b6b" }} />
-                      <Typography variant="h6">{section.subtag.name}</Typography>
-                    </Stack>
-
-                    <Collapse
-                      in={expandedSections.includes(section.id)}
-                      sx={{ paddingRight: "32px", paddingBottom: "8px" }}
-                    >
-                      <Stack direction="row" spacing={3} mt={1} ml={4} alignItems="flex-start">
-                        <Stack sx={{ width: "75%" }}>
-                          <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                            Lectures
-                          </Typography>
-                          {section.notes.length === 0 ? (
-                            <Stack alignItems="flex-start" direction="row" spacing={1} sx={{ py: 2 }}>
-                              <FaNoteSticky size={14} style={{ color: "#6b6b6b", marginTop: 2 }} />
-                              <Typography variant="body2" color="text.secondary">
-                                No lectures in this section.
-                              </Typography>
-                            </Stack>
-                          ) : (
-                            section.notes.map((note) => (
-                              <Note
-                                key={note.id}
-                                note={note}
-                                onUpdate={updateNote}
-                                onDelete={deleteNote}
-                              />
-                            ))
-                          )}
-                        </Stack>
-
-                        <Stack sx={{ width: "25%" }} spacing={1}>
-                          <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                            Notes
-                          </Typography>
-                          <SectionFiles
-                            primaryTagName={moduleInfo.primary_tag.name}
-                            subtagName={section.subtag.name}
-                          />
-                        </Stack>
+                      {/* Section header — clickable */}
+                      <Stack
+                        direction="row"
+                        alignItems="center"
+                        spacing={1.5}
+                        sx={{
+                          cursor: "pointer",
+                          px: 3,
+                          py: 2,
+                          userSelect: "none",
+                          "&:hover": { backgroundColor: "rgba(255,255,255,0.02)" },
+                          borderRadius: isExpanded ? "6px 6px 0 0" : "6px",
+                          transition: "background-color 150ms ease-out",
+                        }}
+                        onClick={() => toggleSection(section.id)}
+                      >
+                        <Box sx={{ color: "text.secondary", display: "flex", alignItems: "center" }}>
+                          {isExpanded ? <FaAngleDown size={14} /> : <FaAngleRight size={14} />}
+                        </Box>
+                        <FaFolder size={14} style={{ color: "#6b6b6b" }} />
+                        <Typography variant="h6" sx={{ flex: 1 }}>
+                          {section.subtag.name}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {section.notes.length} {section.notes.length === 1 ? "lecture" : "lectures"}
+                        </Typography>
                       </Stack>
-                    </Collapse>
-                  </Paper>
-                ))
+
+                      <Collapse in={isExpanded}>
+                        <Divider />
+                        <Box sx={{ px: 3, pt: 3, pb: 3 }}>
+                          <Stack direction="row" spacing={4} alignItems="flex-start">
+                            {/* Lectures column */}
+                            <Box sx={{ flex: "1 1 0", minWidth: 0 }}>
+                              <Typography
+                                variant="subtitle2"
+                                color="text.secondary"
+                                sx={{ mb: 2 }}
+                              >
+                                Lectures
+                              </Typography>
+                              {section.notes.length === 0 ? (
+                                <Stack direction="row" spacing={1.5} alignItems="center" sx={{ py: 3 }}>
+                                  <FaNoteSticky size={16} style={{ color: "#6b6b6b", flexShrink: 0 }} />
+                                  <Typography variant="body2" color="text.secondary">
+                                    No lectures in this section.
+                                  </Typography>
+                                </Stack>
+                              ) : (
+                                section.notes.map((note) => (
+                                  <Note
+                                    key={note.id}
+                                    note={note}
+                                    onUpdate={updateNote}
+                                    onDelete={deleteNote}
+                                  />
+                                ))
+                              )}
+                            </Box>
+
+                            {/* Notes / files column */}
+                            <Box sx={{ width: 200, flexShrink: 0 }}>
+                              <Typography
+                                variant="subtitle2"
+                                color="text.secondary"
+                                sx={{ mb: 2 }}
+                              >
+                                Notes
+                              </Typography>
+                              <SectionFiles
+                                primaryTagName={moduleInfo.primary_tag.name}
+                                subtagName={section.subtag.name}
+                              />
+                            </Box>
+                          </Stack>
+                        </Box>
+                      </Collapse>
+                    </Paper>
+                  );
+                })
               )}
             </Stack>
           </>
         )}
-      </Container>
+      </Box>
 
       <NoteDialog
         open={open}

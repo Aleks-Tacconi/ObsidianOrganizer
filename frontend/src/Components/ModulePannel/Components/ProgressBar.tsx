@@ -13,7 +13,7 @@ export default function ProgressBar({ Notes }: ProgressBarProps) {
 
   if (total === 0) {
     return (
-      <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+      <Typography variant="body2" color="text.secondary">
         No lectures added yet.
       </Typography>
     );
@@ -21,6 +21,15 @@ export default function ProgressBar({ Notes }: ProgressBarProps) {
 
   return (
     <Box sx={{ width: "100%" }}>
+      <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 1.5 }}>
+        <FaCircleCheck size={14} style={{ color: "#e0e0e0", flexShrink: 0 }} />
+        <Typography variant="body1" color="text.primary" sx={{ fontWeight: 500 }}>
+          {completed} / {total} lectures completed
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ ml: "auto !important" }}>
+          {Math.round(progress)}%
+        </Typography>
+      </Stack>
       <LinearProgress
         variant="determinate"
         value={progress}
@@ -29,12 +38,6 @@ export default function ProgressBar({ Notes }: ProgressBarProps) {
         aria-valuemin={0}
         aria-valuemax={100}
       />
-      <Stack direction="row" alignItems="center" spacing={1} sx={{ mt: 1 }}>
-        <FaCircleCheck size={12} style={{ color: "#e0e0e0", flexShrink: 0 }} />
-        <Typography variant="body2" color="text.primary">
-          {completed} / {total} lectures completed
-        </Typography>
-      </Stack>
     </Box>
   );
 }

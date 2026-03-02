@@ -112,16 +112,16 @@ export default function TagList({
 
   return (
     <div className="taglist-container" style={{ display: "flex", flexDirection: "column" }}>
-      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-          <FaBookOpen size={14} style={{ color: "#6b6b6b" }} />
-          <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase", fontSize: "0.7rem" }}>
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+          <FaBookOpen size={15} style={{ color: "#6b6b6b" }} />
+          <Typography variant="subtitle2" color="text.secondary">
             Modules
           </Typography>
         </Box>
         <Tooltip title="Add module">
           <IconButton onClick={() => openPopup()} sx={{ padding: "8px" }} aria-label="Add module">
-            <FaPlus />
+            <FaPlus size={14} />
           </IconButton>
         </Tooltip>
       </Box>
@@ -135,12 +135,12 @@ export default function TagList({
         <Typography
           variant="body2"
           color="text.secondary"
-          sx={{ padding: "24px 8px", textAlign: "center" }}
+          sx={{ padding: "32px 8px", textAlign: "center" }}
         >
           No modules yet. Click + to add one.
         </Typography>
       ) : (
-        <List>
+        <List sx={{ pt: 1.5 }}>
           {tags.map((tag) => (
             <TagItem
               key={tag.id}

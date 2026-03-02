@@ -1,4 +1,5 @@
-import { Box, Typography, LinearProgress, Stack } from "@mui/material";
+import { Box, Typography, LinearProgress, Stack, Paper } from "@mui/material";
+import { FaTrophy } from "react-icons/fa6";
 import type { ModuleInfo } from "../../../Utils/types/api.schemas";
 
 type Props = {
@@ -16,26 +17,45 @@ export default function Grades({ moduleInfo }: Props) {
   const { achieved } = calcGradeProgress();
 
   return (
-    <Box>
-      <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-        Grades
-      </Typography>
-      <Stack spacing={0.5} sx={{ mb: 2 }}>
+    <Paper elevation={0} sx={{ p: 3 }}>
+      {/* Header */}
+      <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 2.5 }}>
+        <FaTrophy size={15} style={{ color: "#6b6b6b" }} />
+        <Typography variant="subtitle2" color="text.secondary">
+          Grades
+        </Typography>
+      </Stack>
+
+      {/* Grade rows */}
+      <Stack spacing={1} sx={{ mb: 2.5 }}>
         {moduleInfo.grades.map((g) => (
-          <Typography key={g.id} variant="body2" color="text.secondary">
-            {g.name}: {g.scored} / {g.percentage} marks
-          </Typography>
+          <Box
+            key={g.id}
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <Typography variant="body2" color="text.primary">
+              {g.name}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ fontVariantNumeric: "tabular-nums" }}>
+              {g.scored} / {g.percentage}
+            </Typography>
+          </Box>
         ))}
       </Stack>
+
+      {/* Overall progress */}
       <LinearProgress
         variant="determinate"
         value={achieved}
-        sx={{ height: 6 }}
         aria-label="Grade progress"
       />
-      <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: "block" }}>
+      <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: "block" }}>
         {achieved.toFixed(1)}% overall
       </Typography>
-    </Box>
+    </Paper>
   );
 }

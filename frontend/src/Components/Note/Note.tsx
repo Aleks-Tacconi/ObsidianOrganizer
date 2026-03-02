@@ -54,7 +54,13 @@ export default function Note({ note, onUpdate, onDelete }: Props) {
 
   return (
     <>
-      <Card sx={{ mb: 2, opacity: note.completed ? 0.6 : 1, transition: "opacity 150ms ease-out" }}>
+      <Card
+        sx={{
+          mb: 2,
+          opacity: note.completed ? 0.55 : 1,
+          transition: "opacity 150ms ease-out",
+        }}
+      >
         <CardContent>
           <NoteDisplay note={note} />
         </CardContent>
@@ -67,24 +73,27 @@ export default function Note({ note, onUpdate, onDelete }: Props) {
                 onClick={toggleComplete}
                 disabled={toggling}
                 aria-label={note.completed ? "Mark as incomplete" : "Mark as complete"}
-                sx={{ color: note.completed ? "primary.main" : "text.secondary" }}
+                sx={{
+                  color: note.completed ? "#e0e0e0" : "text.secondary",
+                  "&:hover": { color: note.completed ? "#c8c8c8" : "#ededed" },
+                }}
               >
                 {toggling ? (
-                  <CircularProgress size={16} color="inherit" />
+                  <CircularProgress size={18} color="inherit" />
                 ) : note.completed ? (
-                  <FaCircleCheck size={16} />
+                  <FaCircleCheck size={18} />
                 ) : (
-                  <FaRegCircle size={16} />
+                  <FaRegCircle size={18} />
                 )}
               </IconButton>
             </span>
           </Tooltip>
 
           {/* Edit + Delete — right side */}
-          <Stack direction="row" spacing={1}>
+          <Stack direction="row" spacing={0.5}>
             <Tooltip title="Edit">
-              <IconButton onClick={() => setEditing(true)} aria-label="Edit note">
-                <FaPenToSquare size={14} />
+              <IconButton onClick={() => setEditing(true)} aria-label="Edit note" size="small">
+                <FaPenToSquare size={15} />
               </IconButton>
             </Tooltip>
 
@@ -94,8 +103,9 @@ export default function Note({ note, onUpdate, onDelete }: Props) {
                   onClick={() => setConfirmOpen(true)}
                   aria-label="Delete note"
                   disabled={deleting}
+                  size="small"
                 >
-                  {deleting ? <CircularProgress size={14} color="inherit" /> : <FaTrashCan size={14} />}
+                  {deleting ? <CircularProgress size={15} color="inherit" /> : <FaTrashCan size={15} />}
                 </IconButton>
               </span>
             </Tooltip>

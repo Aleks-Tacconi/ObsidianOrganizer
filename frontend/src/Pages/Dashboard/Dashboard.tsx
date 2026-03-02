@@ -76,7 +76,7 @@ export default function Dashboard() {
           justifyContent: "center",
         }}
       >
-        <Box sx={{ width: "100%", maxWidth: "1100px", padding: "24px" }}>
+        <Box sx={{ width: "100%", maxWidth: "1100px", padding: "32px 32px 64px" }}>
         {selectedTag ? (
           <ModulePanel moduleId={selectedTag} refresh={refresh} />
         ) : (
@@ -90,7 +90,7 @@ export default function Dashboard() {
               gap: 2,
             }}
           >
-            <FaTableColumns size={32} style={{ color: "#6b6b6b" }} />
+            <FaTableColumns size={40} style={{ color: "#6b6b6b" }} />
             <Typography variant="body1" color="text.secondary">
               Open the sidebar and select a module to get started.
             </Typography>
