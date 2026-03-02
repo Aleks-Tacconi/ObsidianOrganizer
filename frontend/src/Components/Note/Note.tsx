@@ -1,5 +1,5 @@
-import { Card, CardContent, CardActions, IconButton, Stack, Tooltip } from "@mui/material";
-import { FaPenToSquare, FaTrashCan, FaRegSquare, FaRegSquareCheck } from "react-icons/fa6";
+import { Card, CardContent, CardActions, IconButton, Stack, Tooltip, CircularProgress } from "@mui/material";
+import { FaPenToSquare, FaTrashCan, FaCircleCheck, FaRegCircle } from "react-icons/fa6";
 
 import api from "../../Utils/api";
 import type { Note as NoteType } from "../../Utils/types/api.schemas";
@@ -16,23 +16,40 @@ type Props = {
 
 export default function Note({ note, onUpdate, onDelete }: Props) {
   const [editing, setEditing] = useState(false);
-  const [open, setOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [toggling, setToggling] = useState(false);
 
   const toggleComplete = async () => {
+    if (toggling) return;
+    setToggling(true);
     const updated = { ...note, completed: !note.completed };
     onUpdate(updated);
 
-    await api.put(`notes/${note.id}/`, {
-      ...updated,
-      primary_tag_id: updated.primary_tag?.id ?? null,
-      subtags_ids: updated.subtags.map((s) => s.id),
-      urls_ids: updated.urls.map((u) => u.id),
-    });
+    await api
+      .put(`notes/${note.id}/`, {
+        ...updated,
+        primary_tag_id: updated.primary_tag?.id ?? null,
+        subtags_ids: updated.subtags.map((s) => s.id),
+        urls_ids: updated.urls.map((u) => u.id),
+      })
+      .catch(() => {
+        // revert optimistic update on failure
+        onUpdate(note);
+      })
+      .finally(() => setToggling(false));
   };
 
   const handleDelete = async () => {
-    await api.del(`notes/${note.id}/`);
-    onDelete(note.id);
+    setDeleting(true);
+    await api
+      .del(`notes/${note.id}/`)
+      .then(() => {
+        onDelete(note.id);
+      })
+      .catch(() => {
+        setDeleting(false);
+      });
   };
 
   return (
@@ -42,28 +59,45 @@ export default function Note({ note, onUpdate, onDelete }: Props) {
           <NoteDisplay note={note} />
         </CardContent>
 
-        <CardActions sx={{ justifyContent: "flex-end" }}>
+        <CardActions sx={{ justifyContent: "space-between" }}>
+          {/* Completion toggle — left side */}
+          <Tooltip title={note.completed ? "Mark as incomplete" : "Mark as complete"}>
+            <span>
+              <IconButton
+                onClick={toggleComplete}
+                disabled={toggling}
+                aria-label={note.completed ? "Mark as incomplete" : "Mark as complete"}
+                sx={{ color: note.completed ? "primary.main" : "text.secondary" }}
+              >
+                {toggling ? (
+                  <CircularProgress size={16} color="inherit" />
+                ) : note.completed ? (
+                  <FaCircleCheck size={16} />
+                ) : (
+                  <FaRegCircle size={16} />
+                )}
+              </IconButton>
+            </span>
+          </Tooltip>
+
+          {/* Edit + Delete — right side */}
           <Stack direction="row" spacing={1}>
             <Tooltip title="Edit">
-              <IconButton onClick={() => setEditing(true)}>
-                <FaPenToSquare />
+              <IconButton onClick={() => setEditing(true)} aria-label="Edit note">
+                <FaPenToSquare size={14} />
               </IconButton>
             </Tooltip>
 
             <Tooltip title="Delete">
-              <IconButton
-                onClick={() => {
-                  setOpen(true);
-                }}
-              >
-                <FaTrashCan />
-              </IconButton>
-            </Tooltip>
-
-            <Tooltip title={note.completed ? "Mark as not done" : "Mark as done"}>
-              <IconButton onClick={toggleComplete}>
-                {note.completed ? <FaRegSquareCheck /> : <FaRegSquare />}
-              </IconButton>
+              <span>
+                <IconButton
+                  onClick={() => setConfirmOpen(true)}
+                  aria-label="Delete note"
+                  disabled={deleting}
+                >
+                  {deleting ? <CircularProgress size={14} color="inherit" /> : <FaTrashCan size={14} />}
+                </IconButton>
+              </span>
             </Tooltip>
           </Stack>
         </CardActions>
@@ -78,16 +112,15 @@ export default function Note({ note, onUpdate, onDelete }: Props) {
       />
 
       <ConfirmDialogue
-        open={open}
+        open={confirmOpen}
         onConfirm={() => {
+          setConfirmOpen(false);
           handleDelete();
-          setOpen(false);
         }}
-        onDecline={() => {
-          setOpen(false);
-        }}
-        title={`Delete ${note.name}`}
-        message="Do you confirm deletion?"
+        onDecline={() => setConfirmOpen(false)}
+        title={`Delete "${note.name}"`}
+        message="This note will be permanently deleted."
+        confirmLabel="Delete"
       />
     </>
   );

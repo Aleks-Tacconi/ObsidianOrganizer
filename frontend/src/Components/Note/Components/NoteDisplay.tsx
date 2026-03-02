@@ -1,5 +1,5 @@
 import type { Note } from "../../../Utils/types/api.schemas";
-import { Card, CardHeader, CardContent, Typography, Stack, Box, Link } from "@mui/material";
+import { Box, CardHeader, CardContent, Typography, Stack, Link } from "@mui/material";
 import { FaLink } from "react-icons/fa6";
 import ReactMarkdown from "react-markdown";
 
@@ -9,11 +9,11 @@ type NoteDisplayProps = {
 
 export default function NoteDisplay({ note }: NoteDisplayProps) {
   return (
-    <Card sx={{ border: 0, margin: 0, padding: 0, boxShadow: "none", backgroundColor: "transparent" }}>
+    <Box>
       <CardHeader
         sx={{ padding: "8px", marginBottom: "12px" }}
         title={
-          <Typography variant="h5" sx={{ fontWeight: 600 }}>
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>
             {note.name}
           </Typography>
         }
@@ -41,36 +41,45 @@ export default function NoteDisplay({ note }: NoteDisplayProps) {
           </ReactMarkdown>
         )}
 
-        <Typography variant="h5" sx={{ fontWeight: 600, marginTop: "32px" }}>
-          Related Resources
-        </Typography>
         {note.urls.length > 0 && (
-          <Stack spacing={1.5} sx={{ mt: 2 }}>
-            {note.urls.map((u, i) => (
-              <Box
-                key={i}
-                sx={{
-                  display: "flex",
-                  alignItems: "flex-start",
-                  gap: 1,
-                }}
-              >
-                <FaLink size={14} style={{ marginTop: 4 }} />
-
-                <Box>
-                  <Link href={u.url} target="_blank" underline="hover" sx={{ fontWeight: 500 }}>
-                    {u.alias}
-                  </Link>
-
-                  <Typography variant="caption" sx={{ display: "block", color: "text.secondary" }}>
-                    {u.url}
-                  </Typography>
+          <>
+            <Typography variant="subtitle2" sx={{ fontWeight: 600, marginTop: "32px", mb: 1 }}>
+              Related Resources
+            </Typography>
+            <Stack spacing={1.5}>
+              {note.urls.map((u, i) => (
+                <Box
+                  key={i}
+                  sx={{
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 1,
+                  }}
+                >
+                  <FaLink size={12} style={{ marginTop: 4, flexShrink: 0 }} />
+                  <Box sx={{ minWidth: 0 }}>
+                    <Link href={u.url} target="_blank" underline="hover" sx={{ fontWeight: 500 }}>
+                      {u.alias}
+                    </Link>
+                    <Typography
+                      variant="caption"
+                      sx={{
+                        display: "block",
+                        color: "text.secondary",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {u.url}
+                    </Typography>
+                  </Box>
                 </Box>
-              </Box>
-            ))}
-          </Stack>
+              ))}
+            </Stack>
+          </>
         )}
       </CardContent>
-    </Card>
+    </Box>
   );
 }

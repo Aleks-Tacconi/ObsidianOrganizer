@@ -8,7 +8,16 @@ import TagItem from "./Components/TagItem/TagItem";
 import TagPopup from "./Components/TagPopup/TagPopup";
 
 import "./TagList.css";
-import { Divider, IconButton, List } from "@mui/material";
+import {
+  Alert,
+  CircularProgress,
+  Divider,
+  IconButton,
+  List,
+  Snackbar,
+  Tooltip,
+  Typography,
+} from "@mui/material";
 import ConfirmDialogue from "../ConfirmDialogue/ConfirmDialogue";
 
 export default function TagList({
@@ -21,17 +30,21 @@ export default function TagList({
   const [tags, setTags] = useState<PrimaryTag[]>([]);
   const [editingTag, setEditingTag] = useState<PrimaryTag | null>(null);
   const [popupOpen, setPopupOpen] = useState(false);
-  const [open, setOpen] = useState(false);
+  const [tagToDelete, setTagToDelete] = useState<PrimaryTag | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const loadTags = async () => {
+    setLoading(true);
     await api
       .get<PrimaryTag[]>("primary-tags/")
       .then((res) => {
         if (res) setTags(res.data);
       })
-      .catch((err) => {
-        console.log(err);
-      });
+      .catch(() => {
+        setError("Failed to load modules. Please try again.");
+      })
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => {
@@ -57,8 +70,8 @@ export default function TagList({
             setTags(tags.map((t) => (t.id === savedTag.id ? savedTag : t)));
           }
         })
-        .catch((err) => {
-          console.log(err.message);
+        .catch(() => {
+          setError("Failed to save module. Please try again.");
         });
     } else {
       await api
@@ -69,8 +82,8 @@ export default function TagList({
             setTags([...tags, savedTag]);
           }
         })
-        .catch((err) => {
-          console.log(err.message);
+        .catch(() => {
+          setError("Failed to create module. Please try again.");
         });
     }
 
@@ -86,46 +99,73 @@ export default function TagList({
       .then(() => {
         setTags(tags.filter((t) => t.id !== id));
       })
-      .catch((err) => {
-        console.log(err.message);
+      .catch(() => {
+        setError("Failed to delete module. Please try again.");
       });
 
+    setTagToDelete(null);
     onChanged();
   };
 
   return (
     <div className="taglist-container" style={{ display: "flex", flexDirection: "column" }}>
       <div style={{ display: "flex", justifyContent: "flex-end" }}>
-        <IconButton onClick={() => openPopup()} sx={{ padding: "8px" }}>
-          <FaPlus />
-        </IconButton>
+        <Tooltip title="Add module">
+          <IconButton onClick={() => openPopup()} sx={{ padding: "8px" }} aria-label="Add module">
+            <FaPlus />
+          </IconButton>
+        </Tooltip>
       </div>
-      <Divider sx={{ marginTop: "16px", borderColor: "rgba(255,255,255,0.06)" }} />
-      <List>
-        {tags.map((tag) => (
-          <div key={tag.id}>
+      <Divider sx={{ marginTop: "16px" }} />
+
+      {loading ? (
+        <div style={{ display: "flex", justifyContent: "center", padding: "32px" }}>
+          <CircularProgress size={20} />
+        </div>
+      ) : tags.length === 0 ? (
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          sx={{ padding: "24px 8px", textAlign: "center" }}
+        >
+          No modules yet. Click + to add one.
+        </Typography>
+      ) : (
+        <List>
+          {tags.map((tag) => (
             <TagItem
+              key={tag.id}
               tag={tag}
               onEdit={() => openPopup(tag)}
-              onDelete={() => setOpen(true)}
+              onDelete={() => setTagToDelete(tag)}
               onClick={() => onSelect(tag)}
             />
-            <ConfirmDialogue
-              open={open}
-              onConfirm={() => {
-                deleteTag(tag.id);
-              }}
-              onDecline={() => {
-                setOpen(false);
-              }}
-              title={`Delete: ${tag.name}`}
-              message="Do you confirm deletion?"
-              backdropStyle={{ backgroundColor: "rgba(0,0,0,0.08)" }}
-            />
-          </div>
-        ))}
-      </List>
-      {popupOpen && <TagPopup tag={editingTag} onClose={closePopup} onSave={saveTag} />}{" "}
+          ))}
+        </List>
+      )}
+
+      {popupOpen && <TagPopup tag={editingTag} onClose={closePopup} onSave={saveTag} />}
+
+      <ConfirmDialogue
+        open={tagToDelete !== null}
+        onConfirm={() => deleteTag(tagToDelete?.id)}
+        onDecline={() => setTagToDelete(null)}
+        title={`Delete "${tagToDelete?.name}"`}
+        message="This will permanently delete the module and all its data. This cannot be undone."
+        confirmLabel="Delete"
+        backdropStyle={{ backgroundColor: "rgba(0,0,0,0.08)" }}
+      />
+
+      <Snackbar
+        open={error !== null}
+        autoHideDuration={4000}
+        onClose={() => setError(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert severity="error" onClose={() => setError(null)}>
+          {error}
+        </Alert>
+      </Snackbar>
     </div>
   );
 }

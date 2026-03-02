@@ -6,6 +6,8 @@ type ConfirmDialogueProps = {
   onDecline: () => void;
   title: string;
   message: string;
+  confirmLabel?: string;
+  declineLabel?: string;
   backdropStyle?: React.CSSProperties;
 };
 
@@ -15,13 +17,15 @@ export default function ConfirmDialogue({
   onDecline,
   title,
   message,
+  confirmLabel = "Confirm",
+  declineLabel = "Cancel",
   backdropStyle,
 }: ConfirmDialogueProps) {
   return (
     <Dialog
       open={open}
-      fullWidth
-      maxWidth="sm"
+      onClose={onDecline}
+      maxWidth="xs"
       BackdropProps={{ style: backdropStyle ?? { backgroundColor: "rgba(0,0,0,0.6)" } }}
       PaperProps={{
         sx: {
@@ -35,9 +39,9 @@ export default function ConfirmDialogue({
       <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
         <Typography>{message}</Typography>
         <div style={{ display: "flex", flexDirection: "row", justifyContent: "flex-end", gap: 8 }}>
-          <Button onClick={onDecline}>Decline</Button>
-          <Button variant="contained" onClick={onConfirm}>
-            Confirm
+          <Button onClick={onDecline}>{declineLabel}</Button>
+          <Button variant="outlined" color="error" onClick={onConfirm} autoFocus>
+            {confirmLabel}
           </Button>
         </div>
       </DialogContent>

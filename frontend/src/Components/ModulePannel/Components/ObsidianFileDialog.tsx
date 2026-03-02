@@ -1,10 +1,18 @@
-import { Dialog, DialogTitle, DialogContent, Typography, Box, IconButton } from "@mui/material";
-import React, { forwardRef, useImperativeHandle, useState } from "react";
+import {
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  Typography,
+  Box,
+  IconButton,
+  Tooltip,
+} from "@mui/material";
+import React, { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
-import { FaAngleLeft, FaAngleRight, FaRegImage, FaRotate } from "react-icons/fa6";
+import { FaAngleLeft, FaAngleRight, FaRegImage, FaRotate, FaXmark } from "react-icons/fa6";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
@@ -32,6 +40,14 @@ export default forwardRef(function ObsidianFileDialog(
 ) {
   const [history, setHistory] = useState<{ name: string; content: string }[]>([]);
   const [historyIndex, setHistoryIndex] = useState<number | null>(null);
+
+  // Reset history when dialog closes
+  useEffect(() => {
+    if (!open) {
+      setHistory([]);
+      setHistoryIndex(null);
+    }
+  }, [open]);
 
   const navigate = (newFile: { name: string; content: string }) => {
     const newHistory = history.slice(0, historyIndex === null ? undefined : historyIndex + 1);
@@ -63,6 +79,10 @@ export default forwardRef(function ObsidianFileDialog(
   const currentFile = historyIndex !== null ? history[historyIndex] : file;
   if (!currentFile) return null;
 
+  const hasBack = historyIndex !== null && historyIndex > 0;
+  const hasForward = historyIndex !== null && historyIndex < history.length - 1;
+  const hasHistory = history.length > 1;
+
   const fileHeading = `## ${currentFile.name.replace(/\.md$/, "")}\n\n`;
   const contentWithWikiLinks =
     fileHeading +
@@ -86,35 +106,50 @@ export default forwardRef(function ObsidianFileDialog(
       }}
       fullWidth
     >
-      <DialogTitle>
+      <DialogTitle sx={{ pb: 1 }}>
         <Box display="flex" alignItems="center" justifyContent="space-between">
           <Box display="flex" alignItems="center" gap={1}>
-            <IconButton
-              size="small"
-              onClick={goBack}
-              disabled={historyIndex === 0 || historyIndex === null}
-            >
-              <FaAngleLeft />
-            </IconButton>
-            <IconButton
-              size="small"
-              onClick={goForward}
-              disabled={historyIndex === null || historyIndex >= history.length - 1}
-            >
-              <FaAngleRight />
-            </IconButton>
-            {currentFile.name}
+            {hasHistory && (
+              <>
+                <Tooltip title="Back">
+                  <span>
+                    <IconButton size="small" onClick={goBack} disabled={!hasBack} aria-label="Back">
+                      <FaAngleLeft />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+                <Tooltip title="Forward">
+                  <span>
+                    <IconButton size="small" onClick={goForward} disabled={!hasForward} aria-label="Forward">
+                      <FaAngleRight />
+                    </IconButton>
+                  </span>
+                </Tooltip>
+              </>
+            )}
+            <Typography variant="body2" color="text.secondary">
+              {currentFile.name.replace(/\.md$/, "")}
+            </Typography>
           </Box>
 
-          <IconButton size="small" onClick={onRefresh}>
-            <FaRotate />
-          </IconButton>
+          <Box display="flex" alignItems="center" gap={0.5}>
+            <Tooltip title="Refresh">
+              <IconButton size="small" onClick={onRefresh} aria-label="Refresh file">
+                <FaRotate size={14} />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Close">
+              <IconButton size="small" onClick={onClose} aria-label="Close">
+                <FaXmark size={14} />
+              </IconButton>
+            </Tooltip>
+          </Box>
         </Box>
       </DialogTitle>
 
       <DialogContent
         dividers
-        sx={{ height: "80vh", overflowY: "auto", fontSize: "20px", padding: "2vh 5vw" }}
+        sx={{ height: "80vh", overflowY: "auto", fontSize: "1rem", padding: "2vh 5vw" }}
       >
         <ReactMarkdown
           remarkPlugins={[remarkBreaks, remarkGfm, remarkMath]}
@@ -130,26 +165,22 @@ export default forwardRef(function ObsidianFileDialog(
               if (isImage) {
                 return (
                   <Box
-                    display="flex"
-                    alignItems="center"
-                    gap={0.5}
                     sx={{
-                      cursor: "pointer",
-                      textAlign: "center",
                       display: "flex",
                       justifyContent: "center",
                       alignItems: "center",
+                      gap: 1,
                       padding: "16px",
                       color: "#6b6b6b",
                       border: "1px solid rgba(255,255,255,0.07)",
                       borderRadius: "6px",
+                      my: 1,
                     }}
-                    onClick={() => onWikiLink(name)}
                     title={name}
                   >
                     <FaRegImage />
-                    <Typography variant="body2" sx={{ fontSize: "16px", padding: "8px" }}>
-                      Open this in Obsidian to view
+                    <Typography variant="body2" sx={{ fontSize: "0.875rem" }}>
+                      Image preview not available
                     </Typography>
                   </Box>
                 );
@@ -162,7 +193,7 @@ export default forwardRef(function ObsidianFileDialog(
                     color: "#e0e0e0",
                     cursor: "pointer",
                     textDecoration: "underline",
-                    fontSize: "20px",
+                    fontSize: "inherit",
                   }}
                   title={name}
                   onClick={() => onWikiLink(name)}
