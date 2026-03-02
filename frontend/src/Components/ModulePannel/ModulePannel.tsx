@@ -10,7 +10,7 @@ import {
   Tooltip,
   Box,
 } from "@mui/material";
-import { FaPlus, FaAngleRight, FaAngleDown } from "react-icons/fa6";
+import { FaPlus, FaAngleRight, FaAngleDown, FaGraduationCap, FaFolder, FaFolderOpen, FaNoteSticky } from "react-icons/fa6";
 
 import Note from "../Note/Note";
 import NoteDialog from "../NoteDialogue/NoteDialogue";
@@ -79,9 +79,12 @@ export default function ModulePanel({
           </Stack>
         ) : (
           <>
-            <Typography variant="h4" align="center" gutterBottom>
-              {moduleInfo?.primary_tag.name}
-            </Typography>
+            <Stack direction="row" alignItems="center" justifyContent="center" spacing={1} sx={{ mb: 1 }}>
+              <FaGraduationCap size={20} style={{ color: "#6b6b6b" }} />
+              <Typography variant="h4">
+                {moduleInfo?.primary_tag.name}
+              </Typography>
+            </Stack>
 
             {moduleInfo?.description && (
               <Typography variant="body1" align="center" color="text.secondary" gutterBottom>
@@ -99,9 +102,12 @@ export default function ModulePanel({
 
             <Stack spacing={2} mt={2}>
               {moduleInfo?.sections.length === 0 ? (
-                <Typography variant="body2" color="text.secondary" sx={{ textAlign: "center", py: 4 }}>
-                  No sections yet. Add a note to get started.
-                </Typography>
+                <Stack alignItems="center" spacing={1} sx={{ py: 4 }}>
+                  <FaFolderOpen size={24} style={{ color: "#6b6b6b" }} />
+                  <Typography variant="body2" color="text.secondary">
+                    No sections yet. Add a note to get started.
+                  </Typography>
+                </Stack>
               ) : (
                 moduleInfo?.sections.map((section) => (
                   <Paper
@@ -121,6 +127,7 @@ export default function ModulePanel({
                       ) : (
                         <FaAngleRight size={12} />
                       )}
+                      <FaFolder size={12} style={{ color: "#6b6b6b" }} />
                       <Typography variant="h6">{section.subtag.name}</Typography>
                     </Stack>
 
@@ -134,9 +141,12 @@ export default function ModulePanel({
                             Lectures
                           </Typography>
                           {section.notes.length === 0 ? (
-                            <Typography variant="body2" color="text.secondary" sx={{ py: 2 }}>
-                              No lectures in this section.
-                            </Typography>
+                            <Stack alignItems="flex-start" direction="row" spacing={1} sx={{ py: 2 }}>
+                              <FaNoteSticky size={14} style={{ color: "#6b6b6b", marginTop: 2 }} />
+                              <Typography variant="body2" color="text.secondary">
+                                No lectures in this section.
+                              </Typography>
+                            </Stack>
                           ) : (
                             section.notes.map((note) => (
                               <Note

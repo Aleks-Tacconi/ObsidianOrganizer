@@ -1,4 +1,5 @@
-import { LinearProgress, Box, Typography } from "@mui/material";
+import { LinearProgress, Box, Typography, Stack } from "@mui/material";
+import { FaCircleCheck } from "react-icons/fa6";
 import type { Note as NoteType } from "../../../Utils/types/api.schemas";
 
 type ProgressBarProps = {
@@ -28,9 +29,12 @@ export default function ProgressBar({ Notes }: ProgressBarProps) {
         aria-valuemin={0}
         aria-valuemax={100}
       />
-      <Typography variant="body2" color="text.primary" sx={{ mt: 1 }}>
-        {completed} / {total} lectures completed
-      </Typography>
+      <Stack direction="row" alignItems="center" spacing={1} sx={{ mt: 1 }}>
+        <FaCircleCheck size={12} style={{ color: "#e0e0e0", flexShrink: 0 }} />
+        <Typography variant="body2" color="text.primary">
+          {completed} / {total} lectures completed
+        </Typography>
+      </Stack>
     </Box>
   );
 }

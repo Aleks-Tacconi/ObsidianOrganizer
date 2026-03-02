@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { List, ListItemIcon, ListItemText, ListItemButton, Skeleton, Stack, Typography } from "@mui/material";
 import api from "../../../Utils/api";
 import ObsidianFileDialog, { type ObsidianFileDialogHandle } from "./ObsidianFileDialog";
-import { FaRegStickyNote } from "react-icons/fa";
+import { FaRegFileLines } from "react-icons/fa6";
 
 export default function SectionFiles({
   primaryTagName,
@@ -102,7 +102,7 @@ export default function SectionFiles({
               sx={{ py: 1, borderRadius: "6px" }}
             >
               <ListItemIcon sx={{ minWidth: 28 }}>
-                <FaRegStickyNote size={16} />
+                <FaRegFileLines size={16} />
               </ListItemIcon>
               <ListItemText
                 primary={fileName}

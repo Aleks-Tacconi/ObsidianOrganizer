@@ -183,14 +183,6 @@ export default function NoteDialog({ open, onClose, primaryTagId, note, onSaved 
           rows={6}
         />
 
-        <TextField
-          label="Date"
-          type="datetime-local"
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          InputLabelProps={{ shrink: true }}
-        />
-
         <Autocomplete
           multiple
           options={subtags.filter((s) => s.parent === primaryTagId)}

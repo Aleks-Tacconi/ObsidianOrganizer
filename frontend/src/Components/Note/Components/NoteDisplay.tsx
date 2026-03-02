@@ -1,5 +1,5 @@
 import type { Note } from "../../../Utils/types/api.schemas";
-import { Box, CardHeader, CardContent, Typography, Stack, Link } from "@mui/material";
+import { Box, CardHeader, CardContent, Chip, Typography, Stack, Link } from "@mui/material";
 import { FaLink } from "react-icons/fa6";
 import ReactMarkdown from "react-markdown";
 
@@ -11,13 +11,35 @@ export default function NoteDisplay({ note }: NoteDisplayProps) {
   return (
     <Box>
       <CardHeader
-        sx={{ padding: "8px", marginBottom: "12px" }}
+        sx={{ padding: "8px", marginBottom: note.subtags.length > 0 ? "8px" : "12px" }}
         title={
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+          <Typography
+            variant="h6"
+            sx={{ fontWeight: 600, textDecoration: note.completed ? "line-through" : "none" }}
+          >
             {note.name}
           </Typography>
         }
       />
+      {note.subtags.length > 0 && (
+        <Stack direction="row" spacing={0.5} flexWrap="wrap" sx={{ px: "8px", mb: "12px" }}>
+          {note.subtags.map((subtag) => (
+            <Chip
+              key={subtag.id}
+              label={subtag.name}
+              size="small"
+              sx={{
+                height: "20px",
+                fontSize: "0.7rem",
+                backgroundColor: "rgba(255,255,255,0.06)",
+                color: "text.secondary",
+                border: "1px solid rgba(255,255,255,0.07)",
+                borderRadius: "6px",
+              }}
+            />
+          ))}
+        </Stack>
+      )}
       <CardContent
         sx={{ padding: "8px", paddingTop: 0, marginBottom: 0, paddingBottom: 0, fontSize: "14px" }}
       >

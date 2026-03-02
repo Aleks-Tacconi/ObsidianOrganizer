@@ -54,7 +54,7 @@ export default function Note({ note, onUpdate, onDelete }: Props) {
 
   return (
     <>
-      <Card sx={{ mb: 2 }}>
+      <Card sx={{ mb: 2, opacity: note.completed ? 0.6 : 1, transition: "opacity 150ms ease-out" }}>
         <CardContent>
           <NoteDisplay note={note} />
         </CardContent>

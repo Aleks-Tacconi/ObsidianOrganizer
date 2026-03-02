@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "../../Utils/api";
 
-import { FaPlus } from "react-icons/fa6";
+import { FaPlus, FaBookOpen } from "react-icons/fa6";
 import type { PrimaryTag } from "../../Utils/types/api.schemas";
 
 import TagItem from "./Components/TagItem/TagItem";
@@ -10,6 +10,7 @@ import TagPopup from "./Components/TagPopup/TagPopup";
 import "./TagList.css";
 import {
   Alert,
+  Box,
   CircularProgress,
   Divider,
   IconButton,
@@ -23,9 +24,11 @@ import ConfirmDialogue from "../ConfirmDialogue/ConfirmDialogue";
 export default function TagList({
   onSelect,
   onChanged,
+  selectedTagId,
 }: {
   onSelect: (tag: PrimaryTag) => void;
   onChanged: () => void;
+  selectedTagId: number | null;
 }) {
   const [tags, setTags] = useState<PrimaryTag[]>([]);
   const [editingTag, setEditingTag] = useState<PrimaryTag | null>(null);
@@ -109,14 +112,20 @@ export default function TagList({
 
   return (
     <div className="taglist-container" style={{ display: "flex", flexDirection: "column" }}>
-      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <FaBookOpen size={14} style={{ color: "#6b6b6b" }} />
+          <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 600, letterSpacing: "0.04em", textTransform: "uppercase", fontSize: "0.7rem" }}>
+            Modules
+          </Typography>
+        </Box>
         <Tooltip title="Add module">
           <IconButton onClick={() => openPopup()} sx={{ padding: "8px" }} aria-label="Add module">
             <FaPlus />
           </IconButton>
         </Tooltip>
-      </div>
-      <Divider sx={{ marginTop: "16px" }} />
+      </Box>
+      <Divider />
 
       {loading ? (
         <div style={{ display: "flex", justifyContent: "center", padding: "32px" }}>
@@ -136,6 +145,7 @@ export default function TagList({
             <TagItem
               key={tag.id}
               tag={tag}
+              selected={tag.id === selectedTagId}
               onEdit={() => openPopup(tag)}
               onDelete={() => setTagToDelete(tag)}
               onClick={() => onSelect(tag)}

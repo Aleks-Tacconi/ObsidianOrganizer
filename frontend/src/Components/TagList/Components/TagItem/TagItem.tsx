@@ -5,11 +5,13 @@ import type { PrimaryTag } from "../../../../Utils/types/api.schemas";
 
 export default function TagItem({
   tag,
+  selected,
   onEdit,
   onDelete,
   onClick,
 }: {
   tag: PrimaryTag;
+  selected: boolean;
   onEdit: () => void;
   onDelete: () => void;
   onClick: () => void;
@@ -22,8 +24,27 @@ export default function TagItem({
         "&:hover .tag-actions": { opacity: 1 },
       }}
     >
-      <ListItemButton onClick={onClick} sx={{ borderRadius: "6px" }}>
-        <ListItemText primary={tag.name} />
+      <ListItemButton
+        onClick={onClick}
+        selected={selected}
+        sx={{
+          borderRadius: "6px",
+          ...(selected && {
+            borderLeft: "2px solid #e0e0e0",
+            paddingLeft: "14px",
+            backgroundColor: "rgba(255,255,255,0.06)",
+            "&:hover": {
+              backgroundColor: "rgba(255,255,255,0.08)",
+            },
+          }),
+        }}
+      >
+        <ListItemText
+          primary={tag.name}
+          primaryTypographyProps={{
+            fontWeight: selected ? 500 : 400,
+          }}
+        />
       </ListItemButton>
       <div className="tag-actions" style={{ display: "flex" }}>
         <Tooltip title="Edit">

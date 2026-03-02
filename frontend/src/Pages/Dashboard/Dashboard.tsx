@@ -4,7 +4,7 @@ import IconButton from "@mui/material/IconButton";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
-import { FaBars } from "react-icons/fa6";
+import { FaBars, FaTableColumns } from "react-icons/fa6";
 
 import TagList from "../../Components/TagList/TagList";
 import ModulePanel from "../../Components/ModulePannel/ModulePannel";
@@ -52,29 +52,31 @@ export default function Dashboard() {
       </Tooltip>
 
       <Drawer
-        variant="persistent"
+        variant="temporary"
         anchor="left"
         open={open}
+        onClose={() => setOpen(false)}
         sx={{
-          width: open ? DRAWER_WIDTH : 0,
-          flexShrink: 0,
           "& .MuiDrawer-paper": { width: DRAWER_WIDTH },
         }}
       >
-        <TagList onSelect={handleSelectTag} onChanged={triggerRefresh} />
+        <TagList
+          onSelect={handleSelectTag}
+          onChanged={triggerRefresh}
+          selectedTagId={selectedTag?.id ?? null}
+        />
       </Drawer>
 
       <Box
         component="main"
         sx={{
-          flexGrow: 1,
-          marginLeft: open ? `${DRAWER_WIDTH}px` : 0,
-          transition: "margin-left 225ms cubic-bezier(0.4, 0, 0.6, 1)",
-          padding: "24px",
-          maxWidth: open ? `calc(1100px + ${DRAWER_WIDTH}px)` : "1100px",
+          width: "100%",
           minHeight: "100vh",
+          display: "flex",
+          justifyContent: "center",
         }}
       >
+        <Box sx={{ width: "100%", maxWidth: "1100px", padding: "24px" }}>
         {selectedTag ? (
           <ModulePanel moduleId={selectedTag} refresh={refresh} />
         ) : (
@@ -85,14 +87,16 @@ export default function Dashboard() {
               alignItems: "center",
               justifyContent: "center",
               height: "60vh",
-              gap: 1,
+              gap: 2,
             }}
           >
+            <FaTableColumns size={32} style={{ color: "#6b6b6b" }} />
             <Typography variant="body1" color="text.secondary">
               Open the sidebar and select a module to get started.
             </Typography>
           </Box>
         )}
+        </Box>
       </Box>
     </Box>
   );
