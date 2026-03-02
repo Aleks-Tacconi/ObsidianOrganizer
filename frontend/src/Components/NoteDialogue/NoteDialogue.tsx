@@ -4,6 +4,7 @@ import {
   Autocomplete,
   Button,
   Checkbox,
+  Chip,
   CircularProgress,
   Dialog,
   DialogActions,
@@ -25,13 +26,14 @@ interface Props {
   open: boolean;
   onClose: () => void;
   primaryTagId: number;
+  tagColor?: string;
   note?: NoteType;
   onSaved: (note: NoteType) => void;
 }
 
 type LocalURL = { alias: string; url: string; id?: number };
 
-export default function NoteDialog({ open, onClose, primaryTagId, note, onSaved }: Props) {
+export default function NoteDialog({ open, onClose, primaryTagId, tagColor, note, onSaved }: Props) {
   const [name, setName] = useState(note?.name ?? "");
   const [description, setDescription] = useState(note?.description ?? "");
   const [completed, setCompleted] = useState(note?.completed ?? false);
@@ -197,6 +199,22 @@ export default function NoteDialog({ open, onClose, primaryTagId, note, onSaved 
           getOptionLabel={(o) => o.name}
           value={selectedSubtags}
           onChange={(_, v) => setSelectedSubtags(v)}
+          renderTags={(value, getTagProps) =>
+            value.map((option, index) => (
+              <Chip
+                {...getTagProps({ index })}
+                key={option.id}
+                label={option.name}
+                size="small"
+                sx={{
+                  backgroundColor: "rgba(255,255,255,0.06)",
+                  color: "text.secondary",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  borderLeft: `2px solid ${tagColor ?? "#e0e0e0"}`,
+                }}
+              />
+            ))
+          }
           renderInput={(params) => (
             <TextField
               {...params}

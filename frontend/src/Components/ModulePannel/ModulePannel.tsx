@@ -82,7 +82,7 @@ export default function ModulePanel({
             {/* Module header */}
             <Box sx={{ textAlign: "center", mb: 4 }}>
               <Stack direction="row" alignItems="center" justifyContent="center" spacing={1.5} sx={{ mb: 1 }}>
-                <FaGraduationCap size={22} style={{ color: "#6b6b6b" }} />
+                <FaGraduationCap size={22} style={{ color: moduleInfo?.primary_tag.color }} />
                 <Typography variant="h4">
                   {moduleInfo?.primary_tag.name}
                 </Typography>
@@ -96,7 +96,7 @@ export default function ModulePanel({
 
             {/* Progress */}
             <Box sx={{ mb: 4 }}>
-              <ProgressBar Notes={allNotes} />
+              <ProgressBar Notes={allNotes} color={moduleInfo?.primary_tag.color} />
             </Box>
 
             {/* Grades */}
@@ -143,7 +143,7 @@ export default function ModulePanel({
                         <Box sx={{ color: "text.secondary", display: "flex", alignItems: "center" }}>
                           {isExpanded ? <FaAngleDown size={14} /> : <FaAngleRight size={14} />}
                         </Box>
-                        <FaFolder size={14} style={{ color: "#6b6b6b" }} />
+                        <FaFolder size={14} style={{ color: moduleInfo?.primary_tag.color }} />
                         <Typography variant="h6" sx={{ flex: 1 }}>
                           {section.subtag.name}
                         </Typography>
@@ -214,6 +214,7 @@ export default function ModulePanel({
         open={open}
         onClose={() => setOpen(false)}
         primaryTagId={moduleInfo?.primary_tag.id ?? 0}
+        tagColor={moduleInfo?.primary_tag.color}
         onSaved={addOrReplaceNote}
       />
     </div>

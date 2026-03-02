@@ -33,7 +33,7 @@ export default function TagItem({
           py: 1,
           pr: 1,
           ...(selected && {
-            borderLeft: "2px solid #e0e0e0",
+            borderLeft: `2px solid ${tag.color}`,
             pl: "14px",
             backgroundColor: "rgba(255,255,255,0.06)",
             "&:hover": {

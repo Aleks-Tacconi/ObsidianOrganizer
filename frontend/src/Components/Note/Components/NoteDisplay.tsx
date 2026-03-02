@@ -35,6 +35,7 @@ export default function NoteDisplay({ note }: NoteDisplayProps) {
                 backgroundColor: "rgba(255,255,255,0.06)",
                 color: "text.secondary",
                 border: "1px solid rgba(255,255,255,0.08)",
+                borderLeft: `2px solid ${note.primary_tag.color}`,
               }}
             />
           ))}

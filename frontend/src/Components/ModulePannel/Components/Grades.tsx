@@ -20,7 +20,7 @@ export default function Grades({ moduleInfo }: Props) {
     <Paper elevation={0} sx={{ p: 3 }}>
       {/* Header */}
       <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 2.5 }}>
-        <FaTrophy size={15} style={{ color: "#6b6b6b" }} />
+        <FaTrophy size={15} style={{ color: moduleInfo.primary_tag.color }} />
         <Typography variant="subtitle2" color="text.secondary">
           Grades
         </Typography>
@@ -52,6 +52,7 @@ export default function Grades({ moduleInfo }: Props) {
         variant="determinate"
         value={achieved}
         aria-label="Grade progress"
+        sx={{ "& .MuiLinearProgress-bar": { backgroundColor: moduleInfo.primary_tag.color } }}
       />
       <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: "block" }}>
         {achieved.toFixed(1)}% overall

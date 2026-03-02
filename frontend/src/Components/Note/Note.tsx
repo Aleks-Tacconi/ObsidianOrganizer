@@ -117,6 +117,7 @@ export default function Note({ note, onUpdate, onDelete }: Props) {
         open={editing}
         onClose={() => setEditing(false)}
         primaryTagId={note.primary_tag?.id ?? 0}
+        tagColor={note.primary_tag?.color}
         note={note}
         onSaved={onUpdate}
       />
