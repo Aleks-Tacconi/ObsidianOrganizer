@@ -1,38 +1,62 @@
+import { Box, Typography, LinearProgress, Stack, Paper } from "@mui/material";
+import { FaTrophy } from "react-icons/fa6";
 import type { ModuleInfo } from "../../../Utils/types/api.schemas";
 
 type Props = {
-    moduleInfo: ModuleInfo;
+  moduleInfo: ModuleInfo;
 };
 
 export default function Grades({ moduleInfo }: Props) {
-    const calcGradeProgress = () => {
-        if (!moduleInfo || moduleInfo.grades.length === 0) return { achieved: 0, remaining: 100 };
-        const total = moduleInfo.grades.reduce((sum, g) => sum + g.percentage, 0);
-        const achieved = moduleInfo.grades.reduce((sum, g) => sum + g.scored, 0);
-        return {
-            achieved: (achieved / total) * 100,
-            remaining: 100 - (achieved / total) * 100,
-        };
-    };
+  const calcGradeProgress = () => {
+    if (!moduleInfo || moduleInfo.grades.length === 0) return { achieved: 0 };
+    const total = moduleInfo.grades.reduce((sum, g) => sum + g.percentage, 0);
+    const scored = moduleInfo.grades.reduce((sum, g) => sum + g.scored, 0);
+    return { achieved: total > 0 ? (scored / total) * 100 : 0 };
+  };
 
-    if (!moduleInfo) return <div>Loading...</div>;
+  const { achieved } = calcGradeProgress();
 
-    const { achieved, remaining } = calcGradeProgress();
+  return (
+    <Paper elevation={0} sx={{ p: 3 }}>
+      {/* Header */}
+      <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 2.5 }}>
+        <FaTrophy size={15} style={{ color: moduleInfo.primary_tag.color }} />
+        <Typography variant="subtitle2" color="text.secondary">
+          Grades
+        </Typography>
+      </Stack>
 
-    return (
-        <div className="grades">
-            <h3>Grades</h3>
-            {moduleInfo.grades.map((g) => (
-                <div key={g.id} className="grade">
-                    <span>
-                        {g.name}: {g.scored}/{g.percentage}
-                    </span>
-                </div>
-            ))}
-            <div className="grade-bar">
-                <div className="achieved" style={{ width: `${achieved}%` }} />
-                <div className="remaining" style={{ width: `${remaining}%` }} />
-            </div>
-        </div>
-    );
+      {/* Grade rows */}
+      <Stack spacing={1} sx={{ mb: 2.5 }}>
+        {moduleInfo.grades.map((g) => (
+          <Box
+            key={g.id}
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <Typography variant="body2" color="text.primary">
+              {g.name}
+            </Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ fontVariantNumeric: "tabular-nums" }}>
+              {g.scored} / {g.percentage}
+            </Typography>
+          </Box>
+        ))}
+      </Stack>
+
+      {/* Overall progress */}
+      <LinearProgress
+        variant="determinate"
+        value={achieved}
+        aria-label="Grade progress"
+        sx={{ "& .MuiLinearProgress-bar": { backgroundColor: moduleInfo.primary_tag.color } }}
+      />
+      <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: "block" }}>
+        {achieved.toFixed(1)}% overall
+      </Typography>
+    </Paper>
+  );
 }
