@@ -21,6 +21,7 @@ import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
 
 const STORAGE_KEY = "obsidian-pinned-notes";
+const LAST_NOTE_KEY = "obsidian-last-note";
 
 function loadPins(): string[] {
   try {
@@ -33,6 +34,10 @@ function loadPins(): string[] {
 
 function savePins(pins: string[]): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(pins));
+}
+
+function saveLastNote(name: string): void {
+  localStorage.setItem(LAST_NOTE_KEY, name);
 }
 
 function normalizeName(name: string): string {
@@ -64,6 +69,16 @@ export default forwardRef(function ObsidianFileDialog(
   const [historyIndex, setHistoryIndex] = useState<number | null>(null);
   const [pinnedNotes, setPinnedNotes] = useState<string[]>(() => loadPins());
 
+  // Seed history with the initial file when the dialog opens for the first time
+  useEffect(() => {
+    if (open && file && history.length === 0) {
+      setHistory([file]);
+      setHistoryIndex(0);
+      saveLastNote(normalizeName(file.name));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, file]);
+
   // Reset history when dialog closes
   useEffect(() => {
     if (!open) {
@@ -76,6 +91,7 @@ export default forwardRef(function ObsidianFileDialog(
     const newHistory = history.slice(0, historyIndex === null ? undefined : historyIndex + 1);
     setHistory([...newHistory, newFile]);
     setHistoryIndex(newHistory.length);
+    saveLastNote(normalizeName(newFile.name));
   };
 
   const refreshCurrent = (newFile: { name: string; content: string }) => {
@@ -121,7 +137,6 @@ export default forwardRef(function ObsidianFileDialog(
 
   const hasBack = historyIndex !== null && historyIndex > 0;
   const hasForward = historyIndex !== null && historyIndex < history.length - 1;
-  const hasHistory = history.length > 1;
 
   const fileHeading = `## ${currentName}\n\n`;
   const contentWithWikiLinks =
@@ -152,24 +167,20 @@ export default forwardRef(function ObsidianFileDialog(
       <DialogTitle sx={{ pb: 1, flexShrink: 0 }}>
         <Box display="flex" alignItems="center" justifyContent="space-between">
           <Box display="flex" alignItems="center" gap={1}>
-            {hasHistory && (
-              <>
-                <Tooltip title="Back">
-                  <span>
-                    <IconButton size="small" onClick={goBack} disabled={!hasBack} aria-label="Back">
-                      <FaAngleLeft />
-                    </IconButton>
-                  </span>
-                </Tooltip>
-                <Tooltip title="Forward">
-                  <span>
-                    <IconButton size="small" onClick={goForward} disabled={!hasForward} aria-label="Forward">
-                      <FaAngleRight />
-                    </IconButton>
-                  </span>
-                </Tooltip>
-              </>
-            )}
+            <Tooltip title="Back">
+              <span>
+                <IconButton size="small" onClick={goBack} disabled={!hasBack} aria-label="Back">
+                  <FaAngleLeft />
+                </IconButton>
+              </span>
+            </Tooltip>
+            <Tooltip title="Forward">
+              <span>
+                <IconButton size="small" onClick={goForward} disabled={!hasForward} aria-label="Forward">
+                  <FaAngleRight />
+                </IconButton>
+              </span>
+            </Tooltip>
             <Typography variant="body2" color="text.secondary">
               {currentName}
             </Typography>
