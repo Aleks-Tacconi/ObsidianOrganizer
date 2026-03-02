@@ -48,6 +48,7 @@ export default function NoteDialog({ open, onClose, primaryTagId, note, onSaved 
   const [urlError, setUrlError] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [subtouched, setSubtouched] = useState(false);
 
   const resetForm = () => {
     setName("");
@@ -59,6 +60,7 @@ export default function NoteDialog({ open, onClose, primaryTagId, note, onSaved 
     setUrlAlias("");
     setUrlValue("");
     setError(null);
+    setSubtouched(false);
   };
 
   useEffect(() => {
@@ -75,6 +77,7 @@ export default function NoteDialog({ open, onClose, primaryTagId, note, onSaved 
       setUrlAlias("");
       setUrlValue("");
       setError(null);
+      setSubtouched(false);
     }
   }, [open, note]);
 
@@ -104,6 +107,11 @@ export default function NoteDialog({ open, onClose, primaryTagId, note, onSaved 
   const handleSubmit = async () => {
     if (primaryTagId === 0) {
       setError("Cannot save: no module selected.");
+      return;
+    }
+
+    if (selectedSubtags.length === 0) {
+      setSubtouched(true);
       return;
     }
 
@@ -194,8 +202,8 @@ export default function NoteDialog({ open, onClose, primaryTagId, note, onSaved 
               {...params}
               label="Categories"
               required
-              error={selectedSubtags.length === 0}
-              helperText={selectedSubtags.length === 0 ? "At least one category is required" : ""}
+              error={subtouched && selectedSubtags.length === 0}
+              helperText={subtouched && selectedSubtags.length === 0 ? "At least one category is required" : ""}
             />
           )}
         />
@@ -262,7 +270,7 @@ export default function NoteDialog({ open, onClose, primaryTagId, note, onSaved 
           label="Completed"
         />
 
-        {selectedSubtags.length === 0 && (
+        {selectedSubtags.length === 0 && subtouched && (
           <Typography variant="caption" color="error">
             Select at least one category to enable saving.
           </Typography>
