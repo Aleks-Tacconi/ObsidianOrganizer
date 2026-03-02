@@ -12,6 +12,7 @@ from .views import (
     match_tags_view,
     obsidian_file_by_name,
     obsidian_file_view,
+    search_in_files,
 )
 
 router = DefaultRouter()
@@ -28,4 +29,5 @@ urlpatterns = [
     path("match-tags/", match_tags_view),
     path("obsidian-file/", obsidian_file_view),
     path("obsidian-file-by-name/", obsidian_file_by_name),
+    path("search-in-files/", search_in_files),
 ]

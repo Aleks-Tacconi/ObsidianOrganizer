@@ -1,5 +1,6 @@
 import json
 import os
+from difflib import SequenceMatcher
 from typing import List
 
 from django.http import JsonResponse
@@ -137,6 +138,71 @@ def obsidian_file_view(request):
     except FileNotFoundError:
         pass
     return JsonResponse({"error": "Not found"}, status=404)
+
+
+def _line_fuzzy_score(query_lower: str, line_lower: str) -> float:
+    """Return the best SequenceMatcher ratio for a sliding window over the line."""
+    window_size = max(len(query_lower), 1)
+    best_ratio = 0.0
+    for i in range(max(1, len(line_lower) - window_size + 1)):
+        window = line_lower[i : i + window_size]
+        best_ratio = max(best_ratio, SequenceMatcher(None, query_lower, window).ratio())
+    return best_ratio
+
+
+def _extract_snippets(
+    all_lines: List[str], query_lower: str, context: int = 2
+) -> List[str]:
+    """Return up to 3 context blocks around fuzzy-matched lines."""
+    match_indices = [
+        i
+        for i, line in enumerate(all_lines)
+        if line.strip() and _line_fuzzy_score(query_lower, line.strip().lower()) >= 0.6
+    ]
+    snippets: List[str] = []
+    covered_up_to = -1
+    for idx in match_indices[:3]:
+        start = max(0, idx - context)
+        end = min(len(all_lines) - 1, idx + context)
+        if start <= covered_up_to:
+            start = covered_up_to + 1
+        if start > end:
+            continue
+        snippets.append("\n".join(line.rstrip() for line in all_lines[start : end + 1]))
+        covered_up_to = end
+    return snippets
+
+
+@csrf_exempt
+def search_in_files(request):
+    body = json.loads(request.body)
+    query: str = body.get("query", "")
+    file_names: List[str] = body.get("files", [])
+
+    if not query or not file_names:
+        return JsonResponse({"results": []})
+
+    query_lower = query.lower()
+    results = []
+
+    for name in file_names:
+        bare = name[: len(name) - 3] if name.endswith(".md") else name
+        path = os.path.join(VAULT, f"{bare}.md")
+
+        if not os.path.isfile(path):
+            continue
+
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                content = get_file_content(f)
+        except OSError:
+            continue
+
+        snippets = _extract_snippets(content.splitlines(), query_lower)
+        if snippets:
+            results.append({"name": bare, "snippets": snippets})
+
+    return JsonResponse({"results": results})
 
 
 @csrf_exempt
