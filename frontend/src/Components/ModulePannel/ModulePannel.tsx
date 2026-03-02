@@ -17,7 +17,7 @@ import {
   Tooltip,
   Box,
 } from "@mui/material";
-import { FaPlus, FaAngleRight, FaAngleDown, FaGraduationCap, FaFolder, FaFolderOpen, FaNoteSticky, FaMagnifyingGlass, FaXmark, FaRegFileLines, FaBars } from "react-icons/fa6";
+import { FaPlus, FaAngleRight, FaAngleDown, FaGraduationCap, FaFolder, FaFolderOpen, FaNoteSticky, FaMagnifyingGlass, FaXmark, FaRegFileLines, FaBars, FaBookOpen } from "react-icons/fa6";
 
 import Note from "../Note/Note";
 import NoteDialog from "../NoteDialogue/NoteDialogue";
@@ -52,6 +52,9 @@ export default function ModulePanel({
   const [searchActiveFile, setSearchActiveFile] = useState<{ name: string; content: string } | null>(null);
   const [showSnippets, setShowSnippets] = useState(false);
   const [snippetCache, setSnippetCache] = useState<Record<string, string[]>>({});
+  const [lastNote, setLastNote] = useState<string | null>(
+    () => localStorage.getItem("obsidian-last-note"),
+  );
   const searchDialogRef = useRef<ObsidianFileDialogHandle>(null);
 
   // Fetch file names for every section so search can match against them
@@ -143,6 +146,7 @@ export default function ModulePanel({
           setSearchActiveFile(res.data);
           setSearchFileOpen(true);
           searchDialogRef.current?.navigate(res.data);
+          setLastNote(name);
         }
       })
       .catch(() => {/* silently ignore */});
@@ -174,18 +178,30 @@ export default function ModulePanel({
 
   return (
     <div style={{ width: "100%" }}>
-      <Tooltip title="Add note">
-        <span>
-          <IconButton
-            onClick={() => setOpen(true)}
-            disabled={loading}
-            sx={{ position: "fixed", top: 16, right: 16, zIndex: 2000 }}
-            aria-label="Add note"
-          >
-            <FaPlus size={16} />
-          </IconButton>
-        </span>
-      </Tooltip>
+      <Box sx={{ position: "fixed", top: 16, right: 16, zIndex: 2000, display: "flex", alignItems: "center", gap: 0.5 }}>
+        <Tooltip title={lastNote ? `Open: ${lastNote}` : "No recently opened note"}>
+          <span>
+            <IconButton
+              onClick={() => { if (lastNote) openSearchFile(lastNote); }}
+              disabled={!lastNote || loading}
+              aria-label="Open last note"
+            >
+              <FaBookOpen size={16} />
+            </IconButton>
+          </span>
+        </Tooltip>
+        <Tooltip title="Add note">
+          <span>
+            <IconButton
+              onClick={() => setOpen(true)}
+              disabled={loading}
+              aria-label="Add note"
+            >
+              <FaPlus size={16} />
+            </IconButton>
+          </span>
+        </Tooltip>
+      </Box>
 
       <Box sx={{ mt: 6, px: { xs: 0, sm: 2 } }}>
         {loading ? (
