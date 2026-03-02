@@ -6,7 +6,7 @@ export default function SubtagItem({ subtag, onChange, onRemove }: { subtag: Sub
     return (
         <div style={{ display: "flex", alignItems: "center" }}>
             <TextField label="Category Name" variant="outlined" value={subtag.name} onChange={(e) => onChange(e.target.value)} sx={{ width: "100%" }} />
-            <IconButton onClick={onRemove} sx={{ padding: "15px" }}>
+            <IconButton onClick={onRemove} sx={{ padding: "12px" }}>
                 <FaTrashCan />
             </IconButton>
         </div>

@@ -1,10 +1,8 @@
 body,
 html,
 #root {
-  background-color: #eee;
-  font-family: sans-serif;
+  font-family: Inter, sans-serif;
   overflow-x: hidden;
-  color: #000;
   height: 100vh;
   margin: 0;
 }

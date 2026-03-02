@@ -9,9 +9,9 @@ type NoteDisplayProps = {
 
 export default function NoteDisplay({ note }: NoteDisplayProps) {
   return (
-    <Card variant="outlined" sx={{ border: 0, margin: 0, padding: 0 }}>
+    <Card sx={{ border: 0, margin: 0, padding: 0, boxShadow: "none", backgroundColor: "transparent" }}>
       <CardHeader
-        sx={{ padding: "5px", marginBottom: "12px" }}
+        sx={{ padding: "8px", marginBottom: "12px" }}
         title={
           <Typography variant="h5" sx={{ fontWeight: 600 }}>
             {note.name}
@@ -19,7 +19,7 @@ export default function NoteDisplay({ note }: NoteDisplayProps) {
         }
       />
       <CardContent
-        sx={{ padding: "5px", paddingTop: 0, marginBottom: 0, paddingBottom: 0, fontSize: "14px" }}
+        sx={{ padding: "8px", paddingTop: 0, marginBottom: 0, paddingBottom: 0, fontSize: "14px" }}
       >
         {note.description && (
           <ReactMarkdown
@@ -30,10 +30,10 @@ export default function NoteDisplay({ note }: NoteDisplayProps) {
                 </Typography>
               ),
               ul: ({ children }) => (
-                <ul style={{ paddingLeft: "1.2em", margin: "8px" }}>{children}</ul>
+                <ul style={{ paddingLeft: "1.2em", margin: "8px 0" }}>{children}</ul>
               ),
               ol: ({ children }) => (
-                <ol style={{ paddingLeft: "1.2em", margin: "8px" }}>{children}</ol>
+                <ol style={{ paddingLeft: "1.2em", margin: "8px 0" }}>{children}</ol>
               ),
             }}
           >
@@ -41,7 +41,7 @@ export default function NoteDisplay({ note }: NoteDisplayProps) {
           </ReactMarkdown>
         )}
 
-        <Typography variant="h5" sx={{ fontWeight: 600, marginTop: "30px" }}>
+        <Typography variant="h5" sx={{ fontWeight: 600, marginTop: "32px" }}>
           Related Resources
         </Typography>
         {note.urls.length > 0 && (

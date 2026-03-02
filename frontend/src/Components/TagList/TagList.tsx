@@ -94,11 +94,13 @@ export default function TagList({
   };
 
   return (
-    <div className="taglist-container">
-      <IconButton onClick={() => openPopup()} sx={{ padding: "5px", marginLeft: "365px" }}>
-        <FaPlus />
-      </IconButton>
-      <Divider sx={{ marginTop: "15px" }} />
+    <div className="taglist-container" style={{ display: "flex", flexDirection: "column" }}>
+      <div style={{ display: "flex", justifyContent: "flex-end" }}>
+        <IconButton onClick={() => openPopup()} sx={{ padding: "8px" }}>
+          <FaPlus />
+        </IconButton>
+      </div>
+      <Divider sx={{ marginTop: "16px", borderColor: "rgba(255,255,255,0.06)" }} />
       <List>
         {tags.map((tag) => (
           <div key={tag.id}>

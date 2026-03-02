@@ -32,7 +32,7 @@ export default function ModulePannel({
   };
 
   return (
-    <div style={{ width: "100vw" }}>
+    <div style={{ width: "100%" }}>
       <IconButton
         onClick={() => setOpen(true)}
         sx={{ position: "fixed", top: 12, right: 12, zIndex: 2000 }}
@@ -56,11 +56,10 @@ export default function ModulePannel({
             <Paper
               key={section.id}
               sx={{
-                borderRadius: 2,
+                borderRadius: "6px",
                 p: 1,
-                backgroundColor: "white",
               }}
-              elevation={1}
+              elevation={0}
             >
               <Stack
                 direction="row"
@@ -75,7 +74,7 @@ export default function ModulePannel({
 
               <Collapse
                 in={expandedSections.includes(section.id)}
-                sx={{ paddingRight: "30px", paddingBottom: "10px" }}
+                sx={{ paddingRight: "32px", paddingBottom: "8px" }}
               >
                 <Stack direction="row" spacing={3} mt={1} ml={4} alignItems="flex-start">
                   {/* Left: Lectures */}

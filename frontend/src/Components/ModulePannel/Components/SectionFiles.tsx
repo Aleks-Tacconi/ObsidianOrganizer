@@ -60,7 +60,7 @@ export default function SectionFiles({
 
   return (
     <>
-      <Stack spacing={1} sx={{ marginLeft: "30px" }}>
+      <Stack spacing={1} sx={{ marginLeft: "32px" }}>
         <List>
           {files.map((file) => {
             const fileName = file.split("/").pop();

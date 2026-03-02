@@ -1,3 +1,4 @@
+import { Box, Typography, LinearProgress, Stack } from "@mui/material";
 import type { ModuleInfo } from "../../../Utils/types/api.schemas";
 
 type Props = {
@@ -15,24 +16,27 @@ export default function Grades({ moduleInfo }: Props) {
         };
     };
 
-    if (!moduleInfo) return <div>Loading...</div>;
+    if (!moduleInfo) return <Typography color="text.secondary">Loading...</Typography>;
 
-    const { achieved, remaining } = calcGradeProgress();
+    const { achieved } = calcGradeProgress();
 
     return (
-        <div className="grades">
-            <h3>Grades</h3>
-            {moduleInfo.grades.map((g) => (
-                <div key={g.id} className="grade">
-                    <span>
+        <Box>
+            <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
+                Grades
+            </Typography>
+            <Stack spacing={1} sx={{ mb: 2 }}>
+                {moduleInfo.grades.map((g) => (
+                    <Typography key={g.id} variant="body2" color="text.secondary">
                         {g.name}: {g.scored}/{g.percentage}
-                    </span>
-                </div>
-            ))}
-            <div className="grade-bar">
-                <div className="achieved" style={{ width: `${achieved}%` }} />
-                <div className="remaining" style={{ width: `${remaining}%` }} />
-            </div>
-        </div>
+                    </Typography>
+                ))}
+            </Stack>
+            <LinearProgress
+                variant="determinate"
+                value={achieved}
+                sx={{ height: 6 }}
+            />
+        </Box>
     );
 }

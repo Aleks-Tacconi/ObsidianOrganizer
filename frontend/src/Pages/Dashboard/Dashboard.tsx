@@ -31,7 +31,7 @@ export default function Dashboard() {
   }, []);
 
   return (
-    <div style={{ display: "flex", marginBottom: "20px" }}>
+    <div style={{ display: "flex", marginBottom: "20px", width: "100%", justifyContent: "center" }}>
       <IconButton
         onClick={() => setOpen(!open)}
         sx={{ position: "fixed", top: 12, left: 12, zIndex: 2000 }}
@@ -43,7 +43,9 @@ export default function Dashboard() {
         <TagList onSelect={setSelectedTag} onChanged={triggerRefresh} />
       </Drawer>
 
-      <main>{selectedTag && <ModulePannel moduleId={selectedTag} refresh={refresh} />}</main>
+      <main style={{ width: "100%", maxWidth: "1100px", padding: "24px" }}>
+        {selectedTag && <ModulePannel moduleId={selectedTag} refresh={refresh} />}
+      </main>
     </div>
   );
 }

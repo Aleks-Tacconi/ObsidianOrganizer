@@ -81,6 +81,7 @@ export default forwardRef(function ObsidianFileDialog(
           height: "85vh",
           width: "80vw",
           overflow: "hidden",
+          backgroundColor: "#1c1c1c",
         },
       }}
       fullWidth
@@ -138,11 +139,10 @@ export default forwardRef(function ObsidianFileDialog(
                       display: "flex",
                       justifyContent: "center",
                       alignItems: "center",
-                      padding: "20px",
-                      color: "#888",
-                      border: "solid",
-                      borderColor: "#888",
-                      borderWidth: "1px",
+                      padding: "16px",
+                      color: "#6b6b6b",
+                      border: "1px solid rgba(255,255,255,0.07)",
+                      borderRadius: "6px",
                     }}
                     onClick={() => onWikiLink(name)}
                     title={name}
@@ -159,7 +159,7 @@ export default forwardRef(function ObsidianFileDialog(
                 <Typography
                   component="span"
                   sx={{
-                    color: "#7b5cff",
+                    color: "#e0e0e0",
                     cursor: "pointer",
                     textDecoration: "underline",
                     fontSize: "20px",
@@ -176,10 +176,10 @@ export default forwardRef(function ObsidianFileDialog(
               <table style={{ borderCollapse: "collapse", width: "100%" }}>{children}</table>
             ),
             th: ({ children }) => (
-              <th style={{ border: "1px solid gray", padding: "4px" }}>{children}</th>
+              <th style={{ border: "1px solid rgba(255,255,255,0.07)", padding: "8px" }}>{children}</th>
             ),
             td: ({ children }) => (
-              <td style={{ border: "1px solid gray", padding: "4px" }}>{children}</td>
+              <td style={{ border: "1px solid rgba(255,255,255,0.07)", padding: "8px" }}>{children}</td>
             ),
           }}
         >

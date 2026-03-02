@@ -18,7 +18,7 @@ type Props = {
 
 export default function TagPopup({ tag, onClose, onSave }: Props) {
   const [name, setName] = useState(tag?.name || "");
-  const [color, setColor] = useState(tag?.color || "#16A085");
+  const [color, setColor] = useState(tag?.color || "#e0e0e0");
   const [subtags, setSubtags] = useState<readonly SubTag[]>(tag?.subtags || []);
   const [deleteQue, setDeleteQue] = useState<number[]>([]);
   const [open, setOpen] = useState(false);
@@ -82,23 +82,19 @@ export default function TagPopup({ tag, onClose, onSave }: Props) {
             variant="outlined"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            sx={{
-              width: "100%",
-              borderBottom: "solid",
-              paddingBottom: "13px",
-              borderColor: "#1976D2",
-              marginBottom: "5px",
-            }}
+            sx={{ width: "100%" }}
           />
           <div
             onClick={() => colorInputRef.current?.click()}
             style={{
-              width: 25,
-              height: 22,
-              borderRadius: "50%",
+              width: 24,
+              height: 24,
+              borderRadius: "6px",
               backgroundColor: color,
-              margin: "0px 16px 0px 16px",
+              margin: "0 16px",
               cursor: "pointer",
+              border: "1px solid rgba(255,255,255,0.07)",
+              flexShrink: 0,
             }}
           ></div>
           <input
