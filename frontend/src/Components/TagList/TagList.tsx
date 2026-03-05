@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import api from "../../Utils/api";
 
 import { FaPlus, FaBookOpen, FaTableColumns } from "react-icons/fa6";
@@ -25,15 +26,13 @@ export default function TagList({
   onSelect,
   onChanged,
   selectedTagId,
-  onOpenOrganisationTool,
-  organisationMode,
 }: {
   onSelect: (tag: PrimaryTag) => void;
   onChanged: () => void;
   selectedTagId: number | null;
-  onOpenOrganisationTool: () => void;
-  organisationMode: boolean;
 }) {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [tags, setTags] = useState<PrimaryTag[]>([]);
   const [editingTag, setEditingTag] = useState<PrimaryTag | null>(null);
   const [popupOpen, setPopupOpen] = useState(false);
@@ -130,6 +129,8 @@ export default function TagList({
     onChanged();
   };
 
+  const inOrganisationTool = location.pathname === "/organization-tool";
+
   return (
     <div className="taglist-container" style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
@@ -179,19 +180,19 @@ export default function TagList({
       <Divider sx={{ mt: 1.5, mb: 1.5 }} />
       <Tooltip title="Open organisation tool">
         <IconButton
-          onClick={onOpenOrganisationTool}
+          onClick={() => navigate("/organization-tool")}
           sx={{
             width: "100%",
             justifyContent: "flex-start",
             borderRadius: "6px",
             padding: "8px 10px",
-            backgroundColor: organisationMode ? "rgba(255,255,255,0.08)" : "transparent",
+            backgroundColor: inOrganisationTool ? "rgba(255,255,255,0.08)" : "transparent",
           }}
           aria-label="Open organisation tool"
         >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-            <FaTableColumns size={14} style={{ color: organisationMode ? "#ededed" : "#6b6b6b" }} />
-            <Typography variant="body2" color={organisationMode ? "text.primary" : "text.secondary"}>
+            <FaTableColumns size={14} style={{ color: inOrganisationTool ? "#ededed" : "#6b6b6b" }} />
+            <Typography variant="body2" color={inOrganisationTool ? "text.primary" : "text.secondary"}>
               Organisation tool
             </Typography>
           </Box>

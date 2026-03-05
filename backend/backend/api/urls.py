@@ -4,11 +4,13 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     apply_tags_view,
     apply_tags_bulk_view,
+    category_membership_view,
     GradeView,
     ModuleInfoView,
     NoteURLView,
     NoteView,
     PrimaryTagView,
+    remove_tags_bulk_view,
     SectionView,
     SubTagView,
     match_tags_view,
@@ -38,4 +40,6 @@ urlpatterns = [
     path("untagged-files/", untagged_files_view),
     path("apply-tags/", apply_tags_view),
     path("apply-tags-bulk/", apply_tags_bulk_view),
+    path("category-membership/", category_membership_view),
+    path("remove-tags-bulk/", remove_tags_bulk_view),
 ]

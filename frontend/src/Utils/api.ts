@@ -45,6 +45,34 @@ export type MatchTagsResponse = {
     files: string[];
 };
 
+export type CategoryMembershipRequest = {
+    module: string;
+    topic: string;
+};
+
+export type CategoryMembershipFile = {
+    name: string;
+    path: string;
+};
+
+export type CategoryMembershipResponse = {
+    in_category: CategoryMembershipFile[];
+    not_in_category: CategoryMembershipFile[];
+};
+
+export type RemoveTagsBulkRequest = {
+    paths: string[];
+    module: string;
+    topic: string;
+};
+
+export type RemoveTagsBulkResponse = {
+    tag: string;
+    removed_count: number;
+    failed_count: number;
+    results: { path: string; updated: boolean; error?: string }[];
+};
+
 const _helper = async <T>(prefix: string, callable: ApiFunction<T>): Promise<AxiosResponse<T> | undefined> => {
     try {
         return await callable();
@@ -94,6 +122,12 @@ const organisation = {
     },
     applyTagsBulk: async (payload: ApplyTagsBulkRequest): Promise<AxiosResponse<ApplyTagsBulkResponse> | undefined> => {
         return post<ApplyTagsBulkResponse>("apply-tags-bulk/", payload);
+    },
+    getCategoryMembership: async (payload: CategoryMembershipRequest): Promise<AxiosResponse<CategoryMembershipResponse> | undefined> => {
+        return post<CategoryMembershipResponse>("category-membership/", payload);
+    },
+    removeTagsBulk: async (payload: RemoveTagsBulkRequest): Promise<AxiosResponse<RemoveTagsBulkResponse> | undefined> => {
+        return post<RemoveTagsBulkResponse>("remove-tags-bulk/", payload);
     },
     matchTags: async (payload: MatchTagsRequest): Promise<AxiosResponse<MatchTagsResponse> | undefined> => {
         return post<MatchTagsResponse>("match-tags/", payload);

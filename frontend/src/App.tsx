@@ -2,6 +2,7 @@ import { createTheme, ThemeProvider, CssBaseline } from "@mui/material";
 import { Routes, Route } from "react-router-dom";
 import "./App.css";
 import Dashboard from "./Pages/Dashboard/Dashboard";
+import OrganizationToolPage from "./Pages/OrganizationTool/OrganizationToolPage";
 
 const theme = createTheme({
   palette: {
@@ -241,6 +242,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Dashboard />} />
         <Route path="/modules/:moduleId" element={<Dashboard />} />
+        <Route path="/organization-tool" element={<OrganizationToolPage />} />
       </Routes>
     </ThemeProvider>
   );
