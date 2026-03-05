@@ -9,6 +9,7 @@ import { FaBars, FaTableColumns } from "react-icons/fa6";
 
 import TagList from "../../Components/TagList/TagList";
 import ModulePanel from "../../Components/ModulePannel/ModulePannel";
+import OrganisationPanel from "../../Components/OrganisationTool/OrganisationPanel";
 import api from "../../Utils/api";
 
 import type { PrimaryTag } from "../../Utils/types/api.schemas";
@@ -23,6 +24,7 @@ export default function Dashboard() {
   const [open, setOpen] = useState(false);
   const [refresh, setRefresh] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [organisationMode, setOrganisationMode] = useState(false);
 
   const triggerRefresh = () => setRefresh((r) => r + 1);
 
@@ -30,6 +32,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (!moduleIdParam) {
       setSelectedTag(null);
+      setLoading(false);
       return;
     }
 
@@ -62,10 +65,30 @@ export default function Dashboard() {
 
   const handleSelectTag = (tag: PrimaryTag) => {
     setSelectedTag(tag);
+    setOrganisationMode(false);
+    localStorage.setItem("selectedTag", JSON.stringify(tag));
     navigate(`/modules/${tag.id}`);
     setOpen(false);
   };
 
+  const handleOpenOrganisationTool = () => {
+    setOrganisationMode(true);
+    setOpen(false);
+  };
+
+  useEffect(() => {
+    if (moduleIdParam) return;
+    const saved = localStorage.getItem("selectedTag");
+    if (!saved) return;
+
+    try {
+      const parsed: PrimaryTag = JSON.parse(saved);
+      // Tag will be validated by ModulePanel on load — if it fails the panel shows an error
+      setSelectedTag(parsed);
+    } catch {
+      localStorage.removeItem("selectedTag");
+    }
+  }, [moduleIdParam]);
   return (
     <Box sx={{ display: "flex", minHeight: "100vh" }}>
       <Tooltip title={open ? "Close sidebar" : "Open sidebar"}>
@@ -91,6 +114,8 @@ export default function Dashboard() {
           onSelect={handleSelectTag}
           onChanged={triggerRefresh}
           selectedTagId={selectedTag?.id ?? null}
+          onOpenOrganisationTool={handleOpenOrganisationTool}
+          organisationMode={organisationMode}
         />
       </Drawer>
 
@@ -104,27 +129,29 @@ export default function Dashboard() {
         }}
       >
         <Box sx={{ width: "100%", maxWidth: "1100px", padding: "32px 32px 64px" }}>
-        {selectedTag && !loading ? (
-          <ModulePanel moduleId={selectedTag} refresh={refresh} />
-        ) : (
-          !loading && (
-            <Box
-              sx={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                height: "60vh",
-                gap: 2,
-              }}
-            >
-              <FaTableColumns size={40} style={{ color: "#6b6b6b" }} />
-              <Typography variant="body1" color="text.secondary">
-                Open the sidebar and select a module to get started.
-              </Typography>
-            </Box>
-          )
-        )}
+          {organisationMode ? (
+            <OrganisationPanel />
+          ) : selectedTag && !loading ? (
+            <ModulePanel moduleId={selectedTag} refresh={refresh} />
+          ) : (
+            !loading && (
+              <Box
+                sx={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  height: "60vh",
+                  gap: 2,
+                }}
+              >
+                <FaTableColumns size={40} style={{ color: "#6b6b6b" }} />
+                <Typography variant="body1" color="text.secondary">
+                  Open the sidebar and select a module to get started.
+                </Typography>
+              </Box>
+            )
+          )}
         </Box>
       </Box>
     </Box>

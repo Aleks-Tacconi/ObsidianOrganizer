@@ -1,7 +1,8 @@
 import json
 import os
+import tempfile
 from difflib import SequenceMatcher
-from typing import List
+from typing import Dict, List, Optional, Set, Tuple
 
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -98,6 +99,147 @@ def match_obsidian_tags(tags: List[str]) -> List[str]:
     return matched_files
 
 
+def _parse_module_topic_tag(tag: str) -> Optional[Tuple[str, str]]:
+    cleaned_tag = tag.strip().lstrip("#")
+    if "/" not in cleaned_tag:
+        return None
+
+    module, topic = cleaned_tag.split("/", 1)
+    module = module.strip()
+    topic = topic.strip()
+
+    if not module or not topic:
+        return None
+
+    return module, topic
+
+
+def _vault_markdown_files() -> List[Tuple[str, str]]:
+    files: List[Tuple[str, str]] = []
+    for filename in sorted(os.listdir(VAULT)):
+        path = os.path.join(VAULT, filename)
+        if not os.path.isfile(path) or not filename.endswith(".md"):
+            continue
+        files.append((filename, path))
+    return files
+
+
+def scan_vault_tags() -> List[Dict[str, object]]:
+    module_topics: Dict[str, Set[str]] = {}
+
+    for _, path in _vault_markdown_files():
+        for tag in extract_tags(path):
+            parsed = _parse_module_topic_tag(tag)
+            if parsed is None:
+                continue
+            module, topic = parsed
+            module_topics.setdefault(module, set()).add(topic)
+
+    return [
+        {"module": module, "topics": sorted(topics)}
+        for module, topics in sorted(module_topics.items())
+    ]
+
+
+def list_untagged_vault_files() -> List[Dict[str, str]]:
+    untagged_files: List[Dict[str, str]] = []
+
+    for filename, path in _vault_markdown_files():
+        has_module_topic_tag = False
+        for tag in extract_tags(path):
+            if _parse_module_topic_tag(tag) is not None:
+                has_module_topic_tag = True
+                break
+
+        if not has_module_topic_tag:
+            untagged_files.append({"name": filename, "path": path})
+
+    return untagged_files
+
+
+def _has_frontmatter(lines: List[str]) -> bool:
+    return bool(lines) and lines[0].strip() == "---"
+
+
+def _frontmatter_end_index(lines: List[str]) -> int:
+    for index in range(1, len(lines)):
+        if lines[index].strip() == "---":
+            return index
+    return -1
+
+
+def _extract_existing_tags(
+    frontmatter_lines: List[str], tags_index: int
+) -> Tuple[List[str], int]:
+    existing: List[str] = []
+    insert_index = tags_index + 1
+
+    while insert_index < len(frontmatter_lines):
+        current = frontmatter_lines[insert_index]
+        stripped = current.strip()
+
+        if not stripped:
+            insert_index += 1
+            continue
+        if stripped.startswith("-"):
+            existing.append(stripped.lstrip("-").strip())
+            insert_index += 1
+            continue
+        break
+
+    return existing, insert_index
+
+
+def apply_module_topic_tag(path: str, module: str, topic: str) -> bool:
+    tag = f"{module}/{topic}"
+
+    with open(path, "r", encoding="utf-8") as file:
+        lines = file.readlines()
+
+    if not _has_frontmatter(lines):
+        updated_lines = ["---\n", "tags:\n", f"  - {tag}\n", "---\n"] + lines
+    else:
+        frontmatter_end = _frontmatter_end_index(lines)
+        if frontmatter_end == -1:
+            updated_lines = ["---\n", "tags:\n", f"  - {tag}\n", "---\n"] + lines
+        else:
+            frontmatter_lines = lines[1:frontmatter_end]
+            tags_index = next(
+                (
+                    index
+                    for index, line in enumerate(frontmatter_lines)
+                    if line.strip().startswith("tags:")
+                ),
+                -1,
+            )
+
+            if tags_index == -1:
+                frontmatter_lines.extend(["tags:\n", f"  - {tag}\n"])
+            else:
+                existing_tags, insert_index = _extract_existing_tags(
+                    frontmatter_lines, tags_index
+                )
+                if tag in existing_tags:
+                    return False
+                frontmatter_lines.insert(insert_index, f"  - {tag}\n")
+
+            updated_lines = (
+                ["---\n"] + frontmatter_lines + ["---\n"] + lines[frontmatter_end + 1 :]
+            )
+
+    with tempfile.NamedTemporaryFile(
+        mode="w",
+        delete=False,
+        dir=os.path.dirname(path),
+        encoding="utf-8",
+    ) as temp_file:
+        temp_file.writelines(updated_lines)
+        temp_path = temp_file.name
+
+    os.replace(temp_path, path)
+    return True
+
+
 @csrf_exempt
 def match_tags_view(request):
     body = json.loads(request.body)
@@ -106,6 +248,91 @@ def match_tags_view(request):
     files = match_obsidian_tags(tags)
 
     return JsonResponse({"files": files})
+
+
+@csrf_exempt
+def scan_vault_tags_view(request):
+    if request.method != "GET":
+        return JsonResponse({"error": "Method not allowed"}, status=405)
+
+    return JsonResponse({"modules": scan_vault_tags()})
+
+
+@csrf_exempt
+def untagged_files_view(request):
+    if request.method != "GET":
+        return JsonResponse({"error": "Method not allowed"}, status=405)
+
+    return JsonResponse({"files": list_untagged_vault_files()})
+
+
+@csrf_exempt
+def apply_tags_view(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "Method not allowed"}, status=405)
+
+    body = json.loads(request.body)
+    path = body.get("path")
+    module = str(body.get("module", "")).strip()
+    topic = str(body.get("topic", "")).strip()
+
+    if not path or not path.startswith(VAULT):
+        return JsonResponse({"error": "Invalid path"}, status=400)
+
+    if not module or not topic:
+        return JsonResponse({"error": "module and topic are required"}, status=400)
+
+    if not os.path.isfile(path):
+        return JsonResponse({"error": "Not found"}, status=404)
+
+    updated = apply_module_topic_tag(path, module, topic)
+    return JsonResponse({"path": path, "tag": f"{module}/{topic}", "updated": updated})
+
+
+@csrf_exempt
+def apply_tags_bulk_view(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "Method not allowed"}, status=405)
+
+    body = json.loads(request.body)
+    paths = body.get("paths", [])
+    module = str(body.get("module", "")).strip()
+    topic = str(body.get("topic", "")).strip()
+
+    if not isinstance(paths, list) or len(paths) == 0:
+        return JsonResponse({"error": "paths is required"}, status=400)
+    if not module or not topic:
+        return JsonResponse({"error": "module and topic are required"}, status=400)
+
+    tag = f"{module}/{topic}"
+    results = []
+    applied_count = 0
+    failed_count = 0
+
+    for path in paths:
+        if not isinstance(path, str) or not path.startswith(VAULT):
+            failed_count += 1
+            results.append({"path": path, "updated": False, "error": "Invalid path"})
+            continue
+
+        if not os.path.isfile(path):
+            failed_count += 1
+            results.append({"path": path, "updated": False, "error": "Not found"})
+            continue
+
+        updated = apply_module_topic_tag(path, module, topic)
+        if updated:
+            applied_count += 1
+        results.append({"path": path, "updated": updated})
+
+    return JsonResponse(
+        {
+            "tag": tag,
+            "applied_count": applied_count,
+            "failed_count": failed_count,
+            "results": results,
+        }
+    )
 
 
 def get_file_content(file) -> str:
