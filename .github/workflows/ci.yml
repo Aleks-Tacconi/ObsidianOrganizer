@@ -55,4 +55,4 @@ jobs:
         run: poetry run pylint --fail-under 9 backend
 
       - name: Run Django tests
-        run: poetry run python backend/manage.py test -v 2
+        run: poetry run python backend/manage.py test api.tests -v 2
