@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
 import {
   Alert,
   Box,
@@ -14,6 +14,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import Fuse from "fuse.js";
 
 import api from "../../Utils/api";
 import type {
@@ -23,17 +24,49 @@ import type {
 } from "../../Utils/api";
 import type { PrimaryTag, SubTag } from "../../Utils/types/api.schemas";
 
-const filterFiles = (files: CategoryMembershipFile[], query: string): CategoryMembershipFile[] => {
-  const cleanedQuery = query.trim().toLowerCase();
+const SEARCH_DEBOUNCE_MS = 120;
+const MAX_RENDERED_RESULTS = 200;
+
+const buildFileFuse = (files: CategoryMembershipFile[]): Fuse<CategoryMembershipFile> => {
+  return new Fuse(files, {
+    keys: [
+      { name: "name", weight: 0.75 },
+      { name: "path", weight: 0.25 },
+    ],
+    threshold: 0.35,
+    ignoreLocation: true,
+    includeScore: true,
+    minMatchCharLength: 2,
+  });
+};
+
+const filterFiles = (
+  files: CategoryMembershipFile[],
+  fuse: Fuse<CategoryMembershipFile>,
+  query: string,
+): CategoryMembershipFile[] => {
+  const cleanedQuery = query.trim();
   if (!cleanedQuery) {
-    return files;
+    return files.slice(0, MAX_RENDERED_RESULTS);
   }
 
-  return files.filter((file) => {
-    return (
-      file.name.toLowerCase().includes(cleanedQuery) || file.path.toLowerCase().includes(cleanedQuery)
-    );
-  });
+  return fuse.search(cleanedQuery, { limit: MAX_RENDERED_RESULTS }).map((result) => result.item);
+};
+
+const useDebouncedValue = <T,>(value: T, delayMs: number): T => {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      setDebouncedValue(value);
+    }, delayMs);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [delayMs, value]);
+
+  return debouncedValue;
 };
 
 export default function OrganisationPanel() {
@@ -49,6 +82,10 @@ export default function OrganisationPanel() {
 
   const [inSearch, setInSearch] = useState("");
   const [notInSearch, setNotInSearch] = useState("");
+  const debouncedInSearch = useDebouncedValue(inSearch, SEARCH_DEBOUNCE_MS);
+  const debouncedNotInSearch = useDebouncedValue(notInSearch, SEARCH_DEBOUNCE_MS);
+  const deferredInSearch = useDeferredValue(debouncedInSearch);
+  const deferredNotInSearch = useDeferredValue(debouncedNotInSearch);
 
   const [loadingModules, setLoadingModules] = useState(true);
   const [loadingMembership, setLoadingMembership] = useState(false);
@@ -112,13 +149,15 @@ export default function OrganisationPanel() {
   }, [loadMembership]);
 
   const categories = useMemo(() => selectedModule?.subtags ?? [], [selectedModule]);
+  const inCategoryFuse = useMemo(() => buildFileFuse(inCategoryFiles), [inCategoryFiles]);
+  const notInCategoryFuse = useMemo(() => buildFileFuse(notInCategoryFiles), [notInCategoryFiles]);
   const filteredInCategory = useMemo(
-    () => filterFiles(inCategoryFiles, inSearch),
-    [inCategoryFiles, inSearch],
+    () => filterFiles(inCategoryFiles, inCategoryFuse, deferredInSearch),
+    [deferredInSearch, inCategoryFiles, inCategoryFuse],
   );
   const filteredNotInCategory = useMemo(
-    () => filterFiles(notInCategoryFiles, notInSearch),
-    [notInCategoryFiles, notInSearch],
+    () => filterFiles(notInCategoryFiles, notInCategoryFuse, deferredNotInSearch),
+    [deferredNotInSearch, notInCategoryFiles, notInCategoryFuse],
   );
 
   const togglePath = (
