@@ -29,11 +29,12 @@ interface Props {
   tagColor?: string;
   note?: NoteType;
   onSaved: (note: NoteType) => void;
+  refresh?: number;
 }
 
 type LocalURL = { alias: string; url: string; id?: number };
 
-export default function NoteDialog({ open, onClose, primaryTagId, tagColor, note, onSaved }: Props) {
+export default function NoteDialog({ open, onClose, primaryTagId, tagColor, note, onSaved, refresh }: Props) {
   const [name, setName] = useState(note?.name ?? "");
   const [description, setDescription] = useState(note?.description ?? "");
   const [completed, setCompleted] = useState(note?.completed ?? false);
@@ -72,7 +73,7 @@ export default function NoteDialog({ open, onClose, primaryTagId, tagColor, note
     } else {
       setName(note.name);
       setDescription(note.description ?? "");
-      setCompleted(note.completed);
+      setCompleted(note.completed ?? false);
       setDate(new Date(note.date).toISOString().slice(0, 16));
       setSelectedSubtags([...note.subtags]);
       setUrls(note.urls.map((u) => ({ alias: u.alias, url: u.url, id: u.id })));
@@ -84,8 +85,10 @@ export default function NoteDialog({ open, onClose, primaryTagId, tagColor, note
   }, [open, note]);
 
   useEffect(() => {
-    api.get<SubTag[]>("subtags/").then((r) => r && setSubtags(r.data));
-  }, []);
+    if (open) {
+      api.get<SubTag[]>("subtags/").then((r) => r && setSubtags(r.data));
+    }
+  }, [open, primaryTagId, refresh]);
 
   const handleAddUrl = () => {
     if (!urlAlias.trim() || !urlValue.trim()) {

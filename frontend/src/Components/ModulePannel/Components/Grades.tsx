@@ -1,9 +1,9 @@
 import { Box, Typography, LinearProgress, Stack, Paper } from "@mui/material";
 import { FaTrophy } from "react-icons/fa6";
-import type { ModuleInfo } from "../../../Utils/types/api.schemas";
+import type { RuntimeModuleInfo } from "../../../Utils/useModuleNotes";
 
 type Props = {
-  moduleInfo: ModuleInfo;
+  moduleInfo: RuntimeModuleInfo;
 };
 
 export default function Grades({ moduleInfo }: Props) {

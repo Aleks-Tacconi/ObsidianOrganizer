@@ -1,4 +1,5 @@
 import { createTheme, ThemeProvider, CssBaseline } from "@mui/material";
+import { Routes, Route } from "react-router-dom";
 import "./App.css";
 import Dashboard from "./Pages/Dashboard/Dashboard";
 
@@ -237,7 +238,10 @@ export default function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Dashboard />
+      <Routes>
+        <Route path="/" element={<Dashboard />} />
+        <Route path="/modules/:moduleId" element={<Dashboard />} />
+      </Routes>
     </ThemeProvider>
   );
 }

@@ -64,18 +64,23 @@ export default function TagPopup({ tag, onClose, onSave }: Props) {
     setSaving(true);
     setError(null);
     try {
-      for (const subtag of subtags) {
-        const st = { name: subtag.name, parent: tag?.id };
-        if (subtag.id !== -1) {
-          await api.put<SubTag>(`subtags/${subtag.id}/`, st);
-        } else {
-          await api.post<SubTag>("subtags/", st);
+      if (tag) {
+        // Existing module — subtags can be saved immediately (parent id is known)
+        for (const subtag of subtags) {
+          const st = { name: subtag.name, parent: tag.id };
+          if (subtag.id !== -1) {
+            await api.put<SubTag>(`subtags/${subtag.id}/`, st);
+          } else {
+            await api.post<SubTag>("subtags/", st);
+          }
+        }
+
+        for (const toDelete of deleteQue) {
+          await api.del(`subtags/${toDelete}/`);
         }
       }
-
-      for (const toDelete of deleteQue) {
-        await api.del(`subtags/${toDelete}/`);
-      }
+      // For new modules, subtag creation is deferred to TagList.saveTag
+      // which creates the primary tag first, then creates subtags with the real parent id.
 
       onSave({ ...tag, name, color, subtags });
     } catch {

@@ -27,7 +27,7 @@ import Grades from "./Components/Grades";
 import ObsidianFileDialog, { type ObsidianFileDialogHandle } from "./Components/ObsidianFileDialog";
 import api from "../../Utils/api";
 
-import type { PrimaryTag, Note as NoteType } from "../../Utils/types/api.schemas";
+import type { PrimaryTag } from "../../Utils/types/api.schemas";
 import { useModuleNotes } from "../../Utils/useModuleNotes";
 
 export default function ModulePanel({
@@ -42,7 +42,15 @@ export default function ModulePanel({
     refresh,
   );
 
-  const [expandedSections, setExpandedSections] = useState<number[]>([]);
+  const expandedKey = `module-panel:expanded-sections:${moduleId.id}`;
+  const [expandedSections, setExpandedSections] = useState<number[]>(() => {
+    try {
+      const raw = localStorage.getItem(expandedKey);
+      return raw ? (JSON.parse(raw) as number[]) : [];
+    } catch {
+      return [];
+    }
+  });
   const [open, setOpen] = useState(false);
   const [globalQuery, setGlobalQuery] = useState("");
   const [sectionQueries, setSectionQueries] = useState<Record<number, string>>({});
@@ -95,14 +103,28 @@ export default function ModulePanel({
       .catch(() => {/* silently ignore */});
   }, []);
 
-  // Expand first section by default when data first loads
+  // Restore persisted expanded sections or fall back to first section
   useEffect(() => {
-    if (moduleInfo?.sections.length && expandedSections.length === 0) {
-      setExpandedSections([moduleInfo.sections[0].id]);
+    if (!moduleInfo?.sections.length) return;
+
+    const sectionIds = new Set(moduleInfo.sections.map((s) => s.id));
+
+    try {
+      const raw = localStorage.getItem(expandedKey);
+      if (raw) {
+        const persisted = (JSON.parse(raw) as number[]).filter((id) => sectionIds.has(id));
+        if (persisted.length > 0) {
+          setExpandedSections(persisted);
+          return;
+        }
+      }
+    } catch {
+      // fall through to default
     }
-    // expandedSections intentionally excluded — only run when moduleInfo changes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [moduleInfo]);
+
+    // No valid persisted state — expand first section
+    setExpandedSections([moduleInfo.sections[0].id]);
+  }, [moduleInfo, expandedKey]);
 
   // Pre-fetch file names for all sections so global search can match against them
   useEffect(() => {
@@ -113,7 +135,8 @@ export default function ModulePanel({
     );
   }, [moduleInfo, fetchSectionFiles]);
 
-  // When showSnippets is on and a global query is active, fetch content snippets
+  // When showSnippets is on and a global query is active, search file content
+  // across ALL section files so content-only hits are also discovered.
   useEffect(() => {
     if (!showSnippets || !globalQuery.trim() || !moduleInfo) {
       setSnippetCache({});
@@ -122,8 +145,7 @@ export default function ModulePanel({
     const allFiles: string[] = [];
     moduleInfo.sections.forEach((section) => {
       const files = sectionFiles[section.id] ?? [];
-      const fuse = new Fuse(files, { threshold: 0.4, distance: 200 });
-      fuse.search(globalQuery).forEach((r) => allFiles.push(r.item));
+      files.forEach((f) => allFiles.push(f));
     });
     if (allFiles.length > 0) {
       fetchSnippets(globalQuery, allFiles);
@@ -132,10 +154,14 @@ export default function ModulePanel({
     }
   }, [showSnippets, globalQuery, sectionFiles, moduleInfo, fetchSnippets]);
 
-  const allNotes = (moduleInfo?.sections.flatMap((s) => s.notes) ?? []) as unknown as NoteType[];
+  const allNotes = moduleInfo?.sections.flatMap((s) => s.notes) ?? [];
 
   const toggleSection = (id: number) => {
-    setExpandedSections((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
+    setExpandedSections((p) => {
+      const next = p.includes(id) ? p.filter((x) => x !== id) : [...p, id];
+      localStorage.setItem(expandedKey, JSON.stringify(next));
+      return next;
+    });
   };
 
   const openSearchFile = (name: string) => {
@@ -311,13 +337,42 @@ export default function ModulePanel({
             ) : globalQuery.trim() ? (
               /* Flat file search results */
               (() => {
-                const allMatches: { file: string; sectionName: string }[] = [];
+                const seen = new Set<string>();
+                const allMatches: { file: string; sectionName: string; score: number; source: "filename" | "content" }[] = [];
+
+                // 1. Filename fuzzy matches (always active) — scored by Fuse
                 moduleInfo.sections.forEach((section) => {
                   const files = sectionFiles[section.id] ?? [];
-                  const fuse = new Fuse(files, { threshold: 0.4, distance: 200 });
-                  const results = fuse.search(globalQuery).map((r) => r.item);
-                  results.forEach((f) => allMatches.push({ file: f, sectionName: section.subtag.name }));
+                  const fuse = new Fuse(files, { threshold: 0.4, ignoreLocation: true });
+                  fuse.search(globalQuery).forEach((r) => {
+                    if (!seen.has(r.item)) {
+                      seen.add(r.item);
+                      allMatches.push({ file: r.item, sectionName: section.subtag.name, score: r.score ?? 0, source: "filename" });
+                    }
+                  });
                 });
+
+                // 2. Content matches (only when Preview is on) — add files that
+                //    matched by content but were not already found by filename.
+                if (showSnippets) {
+                  const contentHits = new Set(Object.keys(snippetCache));
+                  moduleInfo.sections.forEach((section) => {
+                    const files = sectionFiles[section.id] ?? [];
+                    files.forEach((f) => {
+                      if (contentHits.has(f) && !seen.has(f)) {
+                        seen.add(f);
+                        allMatches.push({ file: f, sectionName: section.subtag.name, score: 1, source: "content" });
+                      }
+                    });
+                  });
+                }
+
+                // Sort: filename matches first (by closeness), then content-only
+                allMatches.sort((a, b) => {
+                  if (a.source !== b.source) return a.source === "filename" ? -1 : 1;
+                  return a.score - b.score;
+                });
+
                 if (allMatches.length === 0) {
                   return (
                     <Stack alignItems="center" spacing={2} sx={{ py: 8 }}>
@@ -400,7 +455,7 @@ export default function ModulePanel({
               /* Normal section cards view */
               <Stack spacing={2}>
                 {moduleInfo.sections.map((section) => {
-                  const sectionNotes = section.notes as unknown as NoteType[];
+                   const sectionNotes = section.notes;
                   const sectionQuery = sectionQueries[section.id] ?? "";
                   const isExpanded = expandedSections.includes(section.id);
 
@@ -558,14 +613,15 @@ export default function ModulePanel({
                                    </Typography>
                                  </Stack>
                                ) : (
-                                 sectionNotes.map((note) => (
-                                   <Note
-                                     key={note.id}
-                                     note={note}
-                                     onUpdate={updateNote}
-                                     onDelete={deleteNote}
-                                   />
-                                 ))
+                                  sectionNotes.map((note) => (
+                                    <Note
+                                      key={note.id}
+                                      note={note}
+                                      onUpdate={updateNote}
+                                      onDelete={deleteNote}
+                                      refresh={refresh}
+                                    />
+                                  ))
                                )}
                              </Box>
 
@@ -604,6 +660,7 @@ export default function ModulePanel({
         primaryTagId={moduleInfo?.primary_tag.id ?? 0}
         tagColor={moduleInfo?.primary_tag.color}
         onSaved={addOrReplaceNote}
+        refresh={refresh}
       />
 
       {searchActiveFile && (

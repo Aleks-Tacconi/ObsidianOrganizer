@@ -63,7 +63,7 @@ export default function TagList({
     setPopupOpen(false);
   };
 
-  const saveTag = async (tag: PrimaryTag) => {
+  const saveTag = async (tag: Omit<PrimaryTag, "id"> & { id?: number }) => {
     if (tag.id) {
       await api
         .put<PrimaryTag>(`primary-tags/${tag.id}/`, tag)
@@ -77,17 +77,33 @@ export default function TagList({
           setError("Failed to save module. Please try again.");
         });
     } else {
-      await api
+      const res = await api
         .post<PrimaryTag>("primary-tags/", tag)
-        .then((res) => {
-          if (res?.data != null) {
-            const savedTag = res.data;
-            setTags([...tags, savedTag]);
-          }
-        })
         .catch(() => {
           setError("Failed to create module. Please try again.");
+          return undefined;
         });
+
+      if (res?.data != null) {
+        const savedTag = res.data;
+
+        // Create subtags now that the real parent id is available
+        for (const subtag of tag.subtags) {
+          await api
+            .post("subtags/", { name: subtag.name, parent: savedTag.id })
+            .catch(() => {
+              setError("Module created, but some categories failed to save.");
+            });
+        }
+
+        // Re-fetch the tag to include the newly created subtags
+        const refreshed = await api.get<PrimaryTag>(`primary-tags/${savedTag.id}/`);
+        if (refreshed?.data) {
+          setTags([...tags, refreshed.data]);
+        } else {
+          setTags([...tags, savedTag]);
+        }
+      }
     }
 
     onChanged();

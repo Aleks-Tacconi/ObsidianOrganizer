@@ -334,54 +334,6 @@ export default forwardRef(function ObsidianFileDialog(
             remarkPlugins={[remarkBreaks, remarkGfm, remarkMath]}
             rehypePlugins={[rehypeRaw, rehypeKatex]}
             components={{
-              wikilink: ({ node, children }) => {
-                const name = node.properties.name;
-                const imageExtensions = [".png", ".jpg", ".jpeg", ".svg", ".gif"];
-                const isImage =
-                  imageExtensions.some((ext) => name.toLowerCase().endsWith(ext)) ||
-                  /\d+$/.test(name);
-
-                if (isImage) {
-                  return (
-                    <Box
-                      sx={{
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        gap: 1,
-                        padding: "16px",
-                        color: "#6b6b6b",
-                        border: "1px solid rgba(255,255,255,0.07)",
-                        borderRadius: "6px",
-                        my: 1,
-                      }}
-                      title={name}
-                    >
-                      <FaRegImage />
-                      <Typography variant="body2" sx={{ fontSize: "0.875rem" }}>
-                        Image preview not available
-                      </Typography>
-                    </Box>
-                  );
-                }
-
-                return (
-                  <Typography
-                    component="span"
-                    sx={{
-                      color: "#e0e0e0",
-                      cursor: "pointer",
-                      textDecoration: "underline",
-                      fontSize: "inherit",
-                    }}
-                    title={name}
-                    onClick={() => onWikiLink(name)}
-                  >
-                    {children}
-                  </Typography>
-                );
-              },
-
               table: ({ children }) => (
                 <table style={{ borderCollapse: "collapse", width: "100%" }}>{children}</table>
               ),
@@ -391,6 +343,59 @@ export default forwardRef(function ObsidianFileDialog(
               td: ({ children }) => (
                 <td style={{ border: "1px solid rgba(255,255,255,0.07)", padding: "8px" }}>{children}</td>
               ),
+              // Custom rehype-raw element for Obsidian wiki-links — not part
+              // of the standard Components type, so we spread it via cast.
+              ...({
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                wikilink: ({ node, children }: { node: any; children: React.ReactNode }) => {
+                  const name = node.properties.name as string;
+                  const imageExtensions = [".png", ".jpg", ".jpeg", ".svg", ".gif"];
+                  const isImage =
+                    imageExtensions.some((ext) => name.toLowerCase().endsWith(ext)) ||
+                    /\d+$/.test(name);
+
+                  if (isImage) {
+                    return (
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "center",
+                          alignItems: "center",
+                          gap: 1,
+                          padding: "16px",
+                          color: "#6b6b6b",
+                          border: "1px solid rgba(255,255,255,0.07)",
+                          borderRadius: "6px",
+                          my: 1,
+                        }}
+                        title={name}
+                      >
+                        <FaRegImage />
+                        <Typography variant="body2" sx={{ fontSize: "0.875rem" }}>
+                          Image preview not available
+                        </Typography>
+                      </Box>
+                    );
+                  }
+
+                  return (
+                    <Typography
+                      component="span"
+                      sx={{
+                        color: "#e0e0e0",
+                        cursor: "pointer",
+                        textDecoration: "underline",
+                        fontSize: "inherit",
+                      }}
+                      title={name}
+                      onClick={() => onWikiLink(name)}
+                    >
+                      {children}
+                    </Typography>
+                  );
+                },
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              } as any),
             }}
           >
             {contentWithWikiLinks}

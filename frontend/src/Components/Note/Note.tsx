@@ -12,9 +12,10 @@ type Props = {
   note: NoteType;
   onUpdate: (note: NoteType) => void;
   onDelete: (id: number) => void;
+  refresh?: number;
 };
 
-export default function Note({ note, onUpdate, onDelete }: Props) {
+export default function Note({ note, onUpdate, onDelete, refresh }: Props) {
   const [editing, setEditing] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -120,6 +121,7 @@ export default function Note({ note, onUpdate, onDelete }: Props) {
         tagColor={note.primary_tag?.color}
         note={note}
         onSaved={onUpdate}
+        refresh={refresh}
       />
 
       <ConfirmDialogue

@@ -119,24 +119,51 @@ export default function SectionFiles({
       .catch(() => {/* silently ignore */});
   }, []);
 
-  const displayFiles = fileFilter?.trim()
+  const filenameMatches = fileFilter?.trim()
     ? files.filter((f) => {
         const name = f.split("/").pop()?.replace(/\.md$/, "") ?? f;
         return name.toLowerCase().includes(fileFilter.toLowerCase());
       })
     : files;
 
-  // Fetch snippets when preview is on and a query + files are available
+  // When preview is on, search ALL files by content so content-only hits are found
   useEffect(() => {
-    if (!showSnippets || !sectionQuery?.trim() || displayFiles.length === 0) {
+    if (!showSnippets || !sectionQuery?.trim() || files.length === 0) {
       setSnippetCache({});
       return;
     }
-    const names = displayFiles.map((f) => f.split("/").pop()?.replace(/\.md$/, "") ?? f);
-    fetchSnippets(sectionQuery, names);
-  // displayFiles changes on every render if not memoised — depend on the stable inputs instead
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showSnippets, sectionQuery, files, fileFilter, fetchSnippets]);
+    const allNames = files.map((f) => f.split("/").pop()?.replace(/\.md$/, "") ?? f);
+    fetchSnippets(sectionQuery, allNames);
+  }, [showSnippets, sectionQuery, files, fetchSnippets]);
+
+  // Merge filename matches with content-only hits when preview is on,
+  // then sort: filename matches first (by match position), content-only after.
+  const displayFiles = (() => {
+    if (!fileFilter?.trim()) return filenameMatches;
+
+    const filterLower = fileFilter.toLowerCase();
+    const filenameSet = new Set(filenameMatches.map((f) => f));
+
+    // Start with filename matches, sorted by how early the query appears
+    const sorted = [...filenameMatches].sort((a, b) => {
+      const nameA = (a.split("/").pop()?.replace(/\.md$/, "") ?? a).toLowerCase();
+      const nameB = (b.split("/").pop()?.replace(/\.md$/, "") ?? b).toLowerCase();
+      return nameA.indexOf(filterLower) - nameB.indexOf(filterLower);
+    });
+
+    // Append content-only hits when preview is on
+    if (showSnippets) {
+      const contentHits = new Set(Object.keys(snippetCache));
+      files.forEach((f) => {
+        const basename = f.split("/").pop()?.replace(/\.md$/, "") ?? f;
+        if (contentHits.has(basename) && !filenameSet.has(f)) {
+          sorted.push(f);
+        }
+      });
+    }
+
+    return sorted;
+  })();
 
   if (loading) {
     return (
