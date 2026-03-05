@@ -218,3 +218,23 @@ class VaultTagToolsApiTests(TestCase):
         response = self.client.get("/api/apply-tags-bulk/")
 
         self.assertEqual(response.status_code, 405)
+
+    def test_apply_tags_rejects_malformed_json(self):
+        response = self.client.post(
+            "/api/apply-tags/",
+            data="{bad-json",
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["error"], "Invalid JSON body")
+
+    def test_apply_tags_bulk_rejects_malformed_json(self):
+        response = self.client.post(
+            "/api/apply-tags-bulk/",
+            data="{bad-json",
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["error"], "Invalid JSON body")

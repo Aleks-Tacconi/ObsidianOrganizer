@@ -240,11 +240,29 @@ def apply_module_topic_tag(path: str, module: str, topic: str) -> bool:
     return True
 
 
+def _parse_json_body(request) -> Optional[Dict[str, object]]:
+    try:
+        parsed = json.loads(request.body)
+    except json.JSONDecodeError:
+        return None
+
+    if isinstance(parsed, dict):
+        return parsed
+
+    return None
+
+
 @csrf_exempt
 def match_tags_view(request):
-    body = json.loads(request.body)
-    tags = body.get("tags", [])
-    tags = [tag.replace(" ", "") for tag in tags]
+    body = _parse_json_body(request)
+    if body is None:
+        return JsonResponse({"error": "Invalid JSON body"}, status=400)
+
+    raw_tags = body.get("tags", [])
+    if not isinstance(raw_tags, list):
+        return JsonResponse({"error": "tags must be a list"}, status=400)
+
+    tags = [str(tag).replace(" ", "") for tag in raw_tags]
     files = match_obsidian_tags(tags)
 
     return JsonResponse({"files": files})
@@ -271,12 +289,15 @@ def apply_tags_view(request):
     if request.method != "POST":
         return JsonResponse({"error": "Method not allowed"}, status=405)
 
-    body = json.loads(request.body)
+    body = _parse_json_body(request)
+    if body is None:
+        return JsonResponse({"error": "Invalid JSON body"}, status=400)
+
     path = body.get("path")
     module = str(body.get("module", "")).strip()
     topic = str(body.get("topic", "")).strip()
 
-    if not path or not path.startswith(VAULT):
+    if not isinstance(path, str) or not path.startswith(VAULT):
         return JsonResponse({"error": "Invalid path"}, status=400)
 
     if not module or not topic:
@@ -294,12 +315,15 @@ def apply_tags_bulk_view(request):
     if request.method != "POST":
         return JsonResponse({"error": "Method not allowed"}, status=405)
 
-    body = json.loads(request.body)
-    paths = body.get("paths", [])
+    body = _parse_json_body(request)
+    if body is None:
+        return JsonResponse({"error": "Invalid JSON body"}, status=400)
+
+    raw_paths = body.get("paths", [])
     module = str(body.get("module", "")).strip()
     topic = str(body.get("topic", "")).strip()
 
-    if not isinstance(paths, list) or len(paths) == 0:
+    if not isinstance(raw_paths, list) or len(raw_paths) == 0:
         return JsonResponse({"error": "paths is required"}, status=400)
     if not module or not topic:
         return JsonResponse({"error": "module and topic are required"}, status=400)
@@ -309,7 +333,7 @@ def apply_tags_bulk_view(request):
     applied_count = 0
     failed_count = 0
 
-    for path in paths:
+    for path in raw_paths:
         if not isinstance(path, str) or not path.startswith(VAULT):
             failed_count += 1
             results.append({"path": path, "updated": False, "error": "Invalid path"})
