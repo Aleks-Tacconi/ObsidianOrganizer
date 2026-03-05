@@ -80,3 +80,33 @@ class Grade(models.Model):
 
     def __str__(self) -> str:
         return f"{self.name}: {self.scored}/{self.percentage}"
+
+
+class VectorIndex(models.Model):
+    file_path = models.TextField(unique=True)
+    content_hash = models.CharField(max_length=64)
+    updated_at = models.DateTimeField(auto_now=True)
+    chunk_count = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        ordering = ["file_path"]
+
+    def __str__(self) -> str:
+        return str(self.file_path)
+
+
+class RAGConfig(models.Model):
+    provider = models.CharField(max_length=32, default="ollama")
+    ollama_base_url = models.URLField(default="http://localhost:11434")
+    generation_model = models.CharField(max_length=128, default="llama3.2")
+    embedding_model = models.CharField(max_length=128, default="nomic-embed-text")
+    reranker_model = models.CharField(
+        max_length=255,
+        default="cross-encoder/ms-marco-MiniLM-L-6-v2",
+    )
+    openai_api_key = models.CharField(max_length=255, blank=True, default="")
+    gemini_api_key = models.CharField(max_length=255, blank=True, default="")
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self) -> str:
+        return f"RAGConfig({self.provider})"

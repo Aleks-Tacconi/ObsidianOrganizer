@@ -42,4 +42,5 @@ urlpatterns = [
     path("apply-tags-bulk/", apply_tags_bulk_view),
     path("category-membership/", category_membership_view),
     path("remove-tags-bulk/", remove_tags_bulk_view),
+    path("rag/", include("api.rag.urls")),
 ]

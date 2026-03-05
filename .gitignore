@@ -445,6 +445,9 @@ poetry.toml
 # LSP config files
 pyrightconfig.json
 
+### ChromaDB vector store ###
+chroma_db/
+
 ### react ###
 .DS_*
 **/*.backup.*

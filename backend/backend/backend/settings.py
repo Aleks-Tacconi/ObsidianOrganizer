@@ -165,3 +165,22 @@ CSRF_TRUSTED_ORIGINS = [
     "http://localhost:5173",
     "http://localhost:5174",
 ]
+
+VAULT_PATH = "/home/aleks/SecondBrain/"
+
+# ---------------------------------------------------------------------------
+# RAG configuration
+# ---------------------------------------------------------------------------
+RAG_CONFIG = {
+    "PROVIDER": "ollama",
+    "OLLAMA_BASE_URL": "http://localhost:11434",
+    "GENERATION_MODEL": "llama3.2",
+    "EMBEDDING_MODEL": "nomic-embed-text",
+    "RERANKER_MODEL": "cross-encoder/ms-marco-MiniLM-L-6-v2",
+    "CHROMA_PERSIST_DIR": str(BASE_DIR / "chroma_db"),
+    "CHROMA_COLLECTION": "obsidian_vault",
+    "CHUNK_SIZE": 512,
+    "CHUNK_OVERLAP": 64,
+    "TOP_K_RETRIEVAL": 20,
+    "TOP_K_RERANK": 5,
+}
