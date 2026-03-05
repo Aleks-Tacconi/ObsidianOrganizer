@@ -15,7 +15,7 @@ import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
 import rehypeRaw from "rehype-raw";
-import { FaAngleLeft, FaAngleRight, FaRegImage, FaRotate, FaThumbtack, FaXmark } from "react-icons/fa6";
+import { FaAngleLeft, FaAngleRight, FaRegImage, FaRotate, FaThumbtack, FaUpRightFromSquare, FaXmark } from "react-icons/fa6";
 import remarkMath from "remark-math";
 import rehypeKatex from "rehype-katex";
 import "katex/dist/katex.min.css";
@@ -187,6 +187,17 @@ export default forwardRef(function ObsidianFileDialog(
           </Box>
 
           <Box display="flex" alignItems="center" gap={0.5}>
+            <Tooltip title="Open in Obsidian">
+              <IconButton
+                size="small"
+                component="a"
+                href={`obsidian://open?vault=${encodeURIComponent("SecondBrain")}&file=${encodeURIComponent(currentName)}`}
+                aria-label="Open in Obsidian"
+                sx={{ color: "#6b6b6b", "&:hover": { color: "#ededed" } }}
+              >
+                <FaUpRightFromSquare size={13} />
+              </IconButton>
+            </Tooltip>
             <Tooltip title={isPinned ? "Unpin note" : "Pin note"}>
               <IconButton
                 size="small"
