@@ -4,7 +4,7 @@ import logging
 import os
 import re
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Set
 
 from django.conf import settings
 
@@ -52,6 +52,25 @@ class RAGResponse:
     chunks_after_rerank: int = 0
 
 
+def _normalize_tag(value: str) -> str:
+    """Strip all non-alphanumeric chars and lowercase for fuzzy tag comparison."""
+    return re.sub(r"[^a-z0-9]", "", value.lower())
+
+
+def _chunk_tag_set(tags_pipe: str) -> Set[str]:
+    """Build a normalized set from a pipe-separated tag string."""
+    result: Set[str] = set()
+    for raw in tags_pipe.split("|"):
+        raw = raw.strip()
+        if not raw:
+            continue
+        result.add(_normalize_tag(raw))
+        for part in raw.split("/"):
+            if part:
+                result.add(_normalize_tag(part))
+    return result
+
+
 def _resolve_note_path(name: str, vault: str) -> Optional[str]:
     """Try to find a vault file matching *name*."""
     if not name.endswith(".md"):
@@ -63,11 +82,17 @@ def _resolve_note_path(name: str, vault: str) -> Optional[str]:
     return None
 
 
-_AT_NOTE_RE = re.compile(r"@(\S+\.md)")
+# Matches @Filename.md or @Filename With Spaces.md.
+# Captures from the first non-whitespace after @ up to and including the
+# trailing `.md`, allowing spaces inside the filename (Obsidian convention).
+_AT_NOTE_RE = re.compile(r"@((?:[^\s@]|(?<=\w) (?=\w))+\.md)")
 
 
 def _parse_force_notes(query: str) -> List[str]:
-    """Extract ``@filename.md`` references from *query*."""
+    """Extract ``@filename.md`` references from *query*.
+
+    Handles filenames that contain spaces, e.g. ``@Access Control Lists.md``.
+    """
     return _AT_NOTE_RE.findall(query)
 
 
@@ -100,7 +125,6 @@ def query_rag(
     query: str,
     scope_module: Optional[str] = None,
     scope_category: Optional[str] = None,
-    force_notes: Optional[List[str]] = None,
     top_k: int = 0,
 ) -> RAGResponse:
     """Run the full RAG pipeline: retrieve -> rerank -> generate.
@@ -113,8 +137,6 @@ def query_rag(
         Limit retrieval to chunks from files tagged with this module.
     scope_category:
         Limit retrieval to chunks from files tagged with this category.
-    force_notes:
-        List of filenames (e.g. ``["lecture1.md"]``) to always include.
     top_k:
         Number of final chunks to feed the LLM (after reranking).
     """
@@ -123,7 +145,7 @@ def query_rag(
     # Parse @note.md references from the query itself.
     inline_notes = _parse_force_notes(query)
     clean_query = _strip_force_notes(query)
-    all_force = list(set((force_notes or []) + inline_notes))
+    all_force = list(set(inline_notes))
 
     # Build scope filter for ChromaDB.
     scope_filter: Optional[Dict] = None
@@ -132,14 +154,14 @@ def query_rag(
     retrieved = retrieve(clean_query or query, scope_filter=scope_filter)
 
     if scope_module or scope_category:
-        module_lower = (scope_module or "").lower()
-        category_lower = (scope_category or "").lower()
+        module_key = _normalize_tag(scope_module or "")
+        category_key = _normalize_tag(scope_category or "")
         filtered: List[RetrievedChunk] = []
         for chunk in retrieved:
-            tag_set = {tag.lower() for tag in chunk.tags.split("|") if tag}
-            if module_lower and module_lower not in tag_set:
+            tag_set = _chunk_tag_set(chunk.tags)
+            if module_key and module_key not in tag_set:
                 continue
-            if category_lower and category_lower not in tag_set:
+            if category_key and category_key not in tag_set:
                 continue
             filtered.append(chunk)
         retrieved = filtered

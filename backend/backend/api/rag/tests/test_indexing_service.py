@@ -45,3 +45,25 @@ class IndexVaultErrorHandlingTests(TestCase):
         self.assertEqual(progress.status, "error")
         self.assertGreaterEqual(len(progress.errors), 1)
         self.assertIn("Vault path does not exist", progress.errors[0])
+
+    def test_get_progress_uses_vault_file_count_when_vectorindex_empty(self):
+        progress = get_progress()
+        progress.status = "idle"
+        progress.total_chunks = 0
+        progress.total_files = 0
+
+        mock_store = MagicMock()
+        mock_store.count.return_value = 123
+
+        with patch("api.rag.services.indexing.ChromaStore", return_value=mock_store):
+            with patch(
+                "api.rag.services.indexing.VectorIndex.objects.count", return_value=0
+            ):
+                with patch(
+                    "api.rag.services.indexing._vault_markdown_files",
+                    return_value=["a.md", "b.md", "c.md"],
+                ):
+                    resolved = get_progress()
+
+        self.assertEqual(resolved.total_chunks, 123)
+        self.assertEqual(resolved.total_files, 3)

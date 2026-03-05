@@ -2,10 +2,12 @@
 
 import json
 import os
+import re
 import threading
 from dataclasses import asdict
 from typing import Optional
 
+from django.conf import settings
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 
@@ -46,6 +48,63 @@ def _list_indexed_file_names(query: str, limit: int) -> list[str]:
     return names[:limit]
 
 
+def _extract_frontmatter_tags_from_file(path: str) -> list[str]:
+    """Read YAML frontmatter tags from a markdown file."""
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            lines = fh.read().splitlines()
+    except OSError:
+        return []
+
+    if not lines or lines[0].strip() != "---":
+        return []
+
+    tags: list[str] = []
+    reading_tags = False
+    for line in lines[1:]:
+        if line.strip() == "---":
+            break
+        if "tags:" in line:
+            reading_tags = True
+            continue
+        if reading_tags:
+            stripped = line.strip()
+            if stripped.startswith("-"):
+                tags.append(stripped.lstrip("-").strip())
+            elif stripped:
+                reading_tags = False
+    return tags
+
+
+def _matches_scope(path: str, scope_module: str, scope_category: str) -> bool:
+    """Return True when file frontmatter tags satisfy selected scope."""
+    if not scope_module and not scope_category:
+        return True
+
+    def normalize(value: str) -> str:
+        return re.sub(r"[^a-z0-9]", "", value.lower())
+
+    raw_tags = _extract_frontmatter_tags_from_file(path)
+    normalized_tags: set[str] = set()
+
+    for tag in raw_tags:
+        if not tag:
+            continue
+        normalized_tags.add(normalize(tag))
+        for part in tag.split("/"):
+            if part:
+                normalized_tags.add(normalize(part))
+
+    module_key = normalize(scope_module)
+    category_key = normalize(scope_category)
+
+    if module_key and module_key not in normalized_tags:
+        return False
+    if category_key and category_key not in normalized_tags:
+        return False
+    return True
+
+
 # ------------------------------------------------------------------
 # Query
 # ------------------------------------------------------------------
@@ -65,7 +124,6 @@ def rag_query_view(request):
 
     scope_module = body.get("scope_module")
     scope_category = body.get("scope_category")
-    force_notes = body.get("force_notes", [])
     top_k = int(body.get("top_k", 0))
 
     try:
@@ -73,7 +131,6 @@ def rag_query_view(request):
             query=query,
             scope_module=scope_module,
             scope_category=scope_category,
-            force_notes=force_notes if isinstance(force_notes, list) else [],
             top_k=top_k,
         )
         return JsonResponse(
@@ -169,6 +226,8 @@ def rag_files_view(request):
         return JsonResponse({"error": "Method not allowed"}, status=405)
 
     query = str(request.GET.get("q", "")).strip()
+    scope_module = str(request.GET.get("scope_module", "")).strip()
+    scope_category = str(request.GET.get("scope_category", "")).strip()
     raw_limit = str(request.GET.get("limit", "50")).strip()
     try:
         limit = int(raw_limit)
@@ -177,7 +236,41 @@ def rag_files_view(request):
     limit = max(1, min(limit, 200))
 
     try:
-        files = _list_indexed_file_names(query=query, limit=limit)
+        q_lower = query.lower()
+        seen: set[str] = set()
+        files: list[str] = []
+
+        # Prefer DB-backed index records, but fall back to vault scan if the
+        # VectorIndex table is empty (e.g. after migrations on an existing Chroma DB).
+        indexed_paths = [
+            str(row.file_path)
+            for row in VectorIndex.objects.all().only("file_path")  # pylint: disable=E1101
+        ]
+
+        if indexed_paths:
+            source_paths = indexed_paths
+        else:
+            vault = getattr(settings, "VAULT_PATH", "")
+            source_paths = []
+            for root, _, filenames in os.walk(vault):
+                for fname in filenames:
+                    if fname.endswith(".md"):
+                        source_paths.append(os.path.join(root, fname))
+
+        for path in source_paths:
+            name = os.path.basename(path)
+            if not name or (q_lower and q_lower not in name.lower()):
+                continue
+            if name in seen:
+                continue
+            if not _matches_scope(path, scope_module, scope_category):
+                continue
+
+            seen.add(name)
+            files.append(name)
+
+        files.sort()
+        files = files[:limit]
         return JsonResponse({"files": files})
     except Exception as exc:  # pylint: disable=W0718
         return JsonResponse({"error": f"Cannot list files: {exc}"}, status=500)

@@ -1,9 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  Autocomplete,
   Box,
   Button,
-  Chip,
   CircularProgress,
   Divider,
   List,
@@ -19,7 +17,9 @@ import { useNavigate } from "react-router-dom";
 
 import SidebarLayout from "../../Components/Layout/SidebarLayout";
 import ChatMessage, { type ChatMessageItem } from "../../Components/RAG/ChatMessage";
-import CitationNoteDialog from "../../Components/RAG/CitationNoteDialog";
+import ObsidianFileDialog, {
+  type ObsidianFileDialogHandle,
+} from "../../Components/ModulePannel/Components/ObsidianFileDialog";
 import api, { type RAGCitation } from "../../Utils/api";
 import type { PrimaryTag } from "../../Utils/types/api.schemas";
 
@@ -48,14 +48,6 @@ function detectMentionContext(text: string, cursorIndex: number): { start: numbe
     end: cursorIndex,
     term: match[1] ?? "",
   };
-}
-
-function normalizeForceNotes(values: string[]): string[] {
-  const next = values
-    .flatMap((value) => value.split(","))
-    .map((value) => normalizeNoteName(value))
-    .filter((value) => value.length > 0);
-  return Array.from(new Set(next));
 }
 
 // ─── Sub-components ─────────────────────────────────────────────────────────
@@ -166,10 +158,6 @@ export default function RAGPage() {
   const [query, setQuery] = useState("");
   const [scopeModule, setScopeModule] = useState("");
   const [scopeCategory, setScopeCategory] = useState("");
-  const [forceNotes, setForceNotes] = useState<string[]>([]);
-  const [forceInput, setForceInput] = useState("");
-  const [forceOptions, setForceOptions] = useState<string[]>([]);
-  const [loadingForceOptions, setLoadingForceOptions] = useState(false);
 
   const [mentionContext, setMentionContext] = useState<{ start: number; end: number; term: string } | null>(null);
   const [mentionOptions, setMentionOptions] = useState<string[]>([]);
@@ -185,11 +173,14 @@ export default function RAGPage() {
   const [healthError, setHealthError] = useState("");
 
   const [allModules, setAllModules] = useState<PrimaryTag[]>([]);
-  const [selectedCitation, setSelectedCitation] = useState<RAGCitation | null>(null);
+  const [noteDialogOpen, setNoteDialogOpen] = useState(false);
+  const [activeFile, setActiveFile] = useState<{ name: string; content: string } | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
 
   const chatEndRef = useRef<HTMLDivElement | null>(null);
   const queryInputRef = useRef<HTMLTextAreaElement | null>(null);
   const mentionAnchorRef = useRef<HTMLDivElement | null>(null);
+  const noteDialogRef = useRef<ObsidianFileDialogHandle>(null);
 
   // ── Bootstrap ──────────────────────────────────────────────────────────────
 
@@ -217,7 +208,12 @@ export default function RAGPage() {
     api.rag.getIndexStatus().then((res) => {
       if (!res?.data) return;
       const d = res.data;
-      const base = `${d.status} · ${d.processed_files}/${d.total_files} files · ${d.total_chunks} chunks`;
+      const indexedFiles = d.processed_files + d.skipped_files;
+      const filesPart =
+        d.status === "running"
+          ? `${d.processed_files}/${d.total_files} files processed`
+          : `${indexedFiles}/${d.total_files} files indexed`;
+      const base = `${d.status} · ${filesPart} · ${d.total_chunks} chunks`;
       const currentFile = d.current_file ? ` · ${d.current_file}` : "";
       const errorSummary = d.errors.length > 0 ? ` · ${d.errors.length} error(s)` : "";
       setIndexStatus(base + currentFile + errorSummary);
@@ -256,35 +252,6 @@ export default function RAGPage() {
   const mentionOpen = mentionContext != null && mentionOptions.length > 0;
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setLoadingForceOptions(true);
-      api.rag
-        .getFiles(forceInput, 20)
-        .then((res) => {
-          setForceOptions(res?.data?.files ?? []);
-        })
-        .finally(() => {
-          setLoadingForceOptions(false);
-        });
-    }, 220);
-
-    return () => window.clearTimeout(timer);
-  }, [forceInput]);
-
-  useEffect(() => {
-    if (!forceInput.includes(",")) {
-      return;
-    }
-    const parts = forceInput.split(",");
-    const completed = parts.slice(0, -1);
-    const tail = parts.at(-1)?.trim() ?? "";
-    if (completed.length > 0) {
-      setForceNotes((prev) => normalizeForceNotes([...prev, ...completed]));
-    }
-    setForceInput(tail);
-  }, [forceInput]);
-
-  useEffect(() => {
     if (!mentionContext) {
       setMentionOptions([]);
       setMentionIndex(0);
@@ -294,7 +261,12 @@ export default function RAGPage() {
     const timer = window.setTimeout(() => {
       setLoadingMentionOptions(true);
       api.rag
-        .getFiles(mentionContext.term, 12)
+        .getFiles(
+          mentionContext.term,
+          12,
+          scopeModule || undefined,
+          scopeCategory || undefined,
+        )
         .then((res) => {
           setMentionOptions(res?.data?.files ?? []);
           setMentionIndex(0);
@@ -305,7 +277,7 @@ export default function RAGPage() {
     }, 180);
 
     return () => window.clearTimeout(timer);
-  }, [mentionContext]);
+  }, [mentionContext, scopeModule, scopeCategory]);
 
   // ── Scroll to latest message ───────────────────────────────────────────────
 
@@ -349,7 +321,6 @@ export default function RAGPage() {
       query: trimmed,
       scope_module: scopeModule || undefined,
       scope_category: scopeCategory || undefined,
-      force_notes: forceNotes,
       top_k: 6,
     });
 
@@ -376,6 +347,62 @@ export default function RAGPage() {
       },
     ]);
     setLoadingAnswer(false);
+  };
+
+  const openCitationNote = (citation: RAGCitation) => {
+    setFileError(null);
+    api
+      .post<{ name: string; content: string }>("obsidian-file/", { path: citation.file_path })
+      .then((res) => {
+        if (!res?.data) {
+          setFileError("Could not open referenced note.");
+          return;
+        }
+        setActiveFile(res.data);
+        setNoteDialogOpen(true);
+        noteDialogRef.current?.navigate(res.data);
+      })
+      .catch(() => {
+        setFileError("Could not open referenced note.");
+      });
+  };
+
+  const openWikiLink = (name: string) => {
+    setFileError(null);
+    api
+      .post<{ name: string; content: string }>("obsidian-file-by-name/", { name })
+      .then((res) => {
+        if (!res?.data) {
+          setFileError("Could not open linked note.");
+          return;
+        }
+        setActiveFile(res.data);
+        setNoteDialogOpen(true);
+        noteDialogRef.current?.navigate(res.data);
+      })
+      .catch(() => {
+        setFileError("Could not open linked note.");
+      });
+  };
+
+  const refreshActiveFile = () => {
+    if (!activeFile) {
+      return;
+    }
+    setFileError(null);
+    api
+      .post<{ name: string; content: string }>("obsidian-file-by-name/", { name: activeFile.name })
+      .then((res) => {
+        if (!res?.data) {
+          setFileError("Could not refresh note.");
+          return;
+        }
+        setActiveFile(res.data);
+        noteDialogRef.current?.refreshCurrent(res.data);
+      })
+      .catch(() => {
+        setFileError("Could not refresh note.");
+      });
   };
 
   const applyMention = (fileName: string) => {
@@ -463,7 +490,7 @@ export default function RAGPage() {
           onClearIndex={handleClearIndex}
         />
 
-        {/* Scope + force-notes */}
+        {/* Scope filters */}
         <Paper
           elevation={0}
           sx={{
@@ -502,54 +529,13 @@ export default function RAGPage() {
               disabled={!scopeModule}
               sx={{ minWidth: "200px" }}
             >
-              <MenuItem value="">All categories</MenuItem>
-              {categoryOptions.map((name) => (
-                <MenuItem key={name} value={name}>
-                  {name}
-                </MenuItem>
-              ))}
+                <MenuItem value="">All categories</MenuItem>
+                {categoryOptions.map((name) => (
+                  <MenuItem key={name} value={name}>
+                    {name}
+                  </MenuItem>
+                ))}
             </TextField>
-
-            <Autocomplete
-              multiple
-              freeSolo
-              filterOptions={(options) => options}
-              options={forceOptions}
-              value={forceNotes}
-              inputValue={forceInput}
-              loading={loadingForceOptions}
-              onInputChange={(_, value) => setForceInput(value)}
-              onFocus={() => {
-                if (forceOptions.length === 0) {
-                  setForceInput("");
-                }
-              }}
-              onChange={(_, values) => {
-                setForceNotes(normalizeForceNotes(values.map((v) => String(v))));
-              }}
-              renderTags={(tagValue, getTagProps) =>
-                tagValue.map((option, index) => (
-                  <Chip
-                    {...getTagProps({ index })}
-                    key={`${option}-${index}`}
-                    label={option}
-                    size="small"
-                    sx={{ borderRadius: "6px" }}
-                  />
-                ))
-              }
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Force notes"
-                  placeholder="Start typing a filename…"
-                  size="small"
-                  fullWidth
-                  helperText="Filenames only — selected notes are always included in context"
-                />
-              )}
-              sx={{ flex: 1 }}
-            />
           </Stack>
         </Paper>
 
@@ -596,7 +582,7 @@ export default function RAGPage() {
                 <ChatMessage
                   key={message.id}
                   message={message}
-                  onCitationClick={(citation) => setSelectedCitation(citation)}
+                  onCitationClick={openCitationNote}
                 />
               ))
             )}
@@ -703,13 +689,24 @@ export default function RAGPage() {
             </Button>
           </Stack>
         </Paper>
+
+        {fileError && (
+          <Typography variant="caption" sx={{ color: "rgba(255,80,80,0.9)" }}>
+            {fileError}
+          </Typography>
+        )}
       </Stack>
 
-      <CitationNoteDialog
-        open={selectedCitation != null}
-        citation={selectedCitation}
-        onClose={() => setSelectedCitation(null)}
-      />
+      {activeFile && (
+        <ObsidianFileDialog
+          ref={noteDialogRef}
+          open={noteDialogOpen}
+          onClose={() => setNoteDialogOpen(false)}
+          file={activeFile}
+          onWikiLink={openWikiLink}
+          onRefresh={refreshActiveFile}
+        />
+      )}
     </SidebarLayout>
   );
 }

@@ -128,7 +128,6 @@ export type RAGQueryRequest = {
     query: string;
     scope_module?: string;
     scope_category?: string;
-    force_notes?: string[];
     top_k?: number;
 };
 
@@ -188,9 +187,16 @@ const rag = {
     getHealth: async (): Promise<AxiosResponse<RAGHealthResponse> | undefined> => {
         return get<RAGHealthResponse>("rag/health/");
     },
-    getFiles: async (query = "", limit = 20): Promise<AxiosResponse<RAGFilesResponse> | undefined> => {
+    getFiles: async (
+        query = "",
+        limit = 20,
+        scopeModule?: string,
+        scopeCategory?: string,
+    ): Promise<AxiosResponse<RAGFilesResponse> | undefined> => {
         const q = encodeURIComponent(query);
-        return get<RAGFilesResponse>(`rag/files/?q=${q}&limit=${limit}`);
+        const moduleParam = scopeModule ? `&scope_module=${encodeURIComponent(scopeModule)}` : "";
+        const categoryParam = scopeCategory ? `&scope_category=${encodeURIComponent(scopeCategory)}` : "";
+        return get<RAGFilesResponse>(`rag/files/?q=${q}&limit=${limit}${moduleParam}${categoryParam}`);
     },
 };
 

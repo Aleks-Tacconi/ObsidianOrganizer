@@ -41,7 +41,24 @@ _progress = IndexProgress()
 
 
 def get_progress() -> IndexProgress:
-    """Return the current indexing progress."""
+    """Return the current indexing progress.
+
+    If indexing is not running and total_chunks is 0, attempt to query
+    ChromaDB for the actual count and VectorIndex for total files.
+    """
+    if _progress.status in ("idle", "done") and (
+        _progress.total_chunks == 0 or _progress.total_files == 0
+    ):
+        try:
+            store = ChromaStore()
+            _progress.total_chunks = store.count()
+            indexed_files = VectorIndex.objects.count()  # pylint: disable=E1101
+            _progress.total_files = indexed_files
+            if indexed_files == 0:
+                _progress.total_files = len(_vault_markdown_files(_vault_path()))
+        except Exception:  # pylint: disable=W0718
+            # ChromaDB might not be accessible (missing LD_LIBRARY_PATH)
+            pass
     return _progress
 
 
@@ -192,6 +209,13 @@ def index_vault(
                 logger.exception("Error indexing %s", path)
 
         _progress.status = "done"
+
+        # Update total_chunks with actual ChromaDB count
+        try:
+            _progress.total_chunks = store.count()
+        except Exception as count_exc:  # pylint: disable=W0718
+            logger.warning("Could not get ChromaDB count: %s", count_exc)
+
     except Exception as exc:  # pylint: disable=W0718
         _progress.status = "error"
         _progress.errors.append(str(exc))

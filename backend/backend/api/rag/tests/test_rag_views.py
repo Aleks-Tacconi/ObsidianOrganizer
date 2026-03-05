@@ -237,6 +237,31 @@ class RagQueryViewTests(TestCase):
 
         self.assertEqual(response.status_code, 200)
 
+    def test_force_notes_payload_is_ignored(self):
+        with patch("api.rag.views.query_rag") as mock_query_rag:
+            mock_query_rag.return_value = SimpleNamespace(
+                answer="ok",
+                citations=[],
+                model_used="ollama/llama3.2",
+                chunks_retrieved=0,
+                chunks_after_rerank=0,
+            )
+
+            response = self._post_query(
+                {
+                    "query": "What is TCP?",
+                    "scope_module": "Networking",
+                    "scope_category": "Protocols",
+                    "force_notes": ["manual.md"],
+                    "top_k": 3,
+                }
+            )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(mock_query_rag.call_count, 1)
+        _, kwargs = mock_query_rag.call_args
+        self.assertNotIn("force_notes", kwargs)
+
     def test_citation_contains_expected_fields(self):
         with (
             patch("api.rag.services.rag.retrieve", side_effect=_mock_retrieve),
