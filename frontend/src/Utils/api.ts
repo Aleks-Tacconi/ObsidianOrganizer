@@ -4,6 +4,75 @@ const APIUrl = "http://localhost:8000/api/";
 
 type ApiFunction<T> = () => Promise<AxiosResponse<T>>;
 
+export type ScanVaultTagsResponse = {
+    modules: { module: string; topics: string[] }[];
+};
+
+export type UntaggedFilesResponse = {
+    files: { name: string; path: string }[];
+};
+
+export type ApplyTagsRequest = {
+    path: string;
+    module: string;
+    topic: string;
+};
+
+export type ApplyTagsResponse = {
+    path: string;
+    tag: string;
+    updated: boolean;
+};
+
+export type ApplyTagsBulkRequest = {
+    paths: string[];
+    module: string;
+    topic: string;
+};
+
+export type ApplyTagsBulkResponse = {
+    tag: string;
+    applied_count: number;
+    failed_count: number;
+    results: { path: string; updated: boolean; error?: string }[];
+};
+
+export type MatchTagsRequest = {
+    tags: string[];
+};
+
+export type MatchTagsResponse = {
+    files: string[];
+};
+
+export type CategoryMembershipRequest = {
+    module: string;
+    topic: string;
+};
+
+export type CategoryMembershipFile = {
+    name: string;
+    path: string;
+};
+
+export type CategoryMembershipResponse = {
+    in_category: CategoryMembershipFile[];
+    not_in_category: CategoryMembershipFile[];
+};
+
+export type RemoveTagsBulkRequest = {
+    paths: string[];
+    module: string;
+    topic: string;
+};
+
+export type RemoveTagsBulkResponse = {
+    tag: string;
+    removed_count: number;
+    failed_count: number;
+    results: { path: string; updated: boolean; error?: string }[];
+};
+
 const _helper = async <T>(prefix: string, callable: ApiFunction<T>): Promise<AxiosResponse<T> | undefined> => {
     try {
         return await callable();
@@ -41,4 +110,28 @@ const del = async <T>(path: string): Promise<AxiosResponse<T> | undefined> => {
     return _helper(prefix, async () => axios.delete<T>(APIUrl + path));
 };
 
-export default { post, get, put, del };
+const organisation = {
+    scanVaultTags: async (): Promise<AxiosResponse<ScanVaultTagsResponse> | undefined> => {
+        return get<ScanVaultTagsResponse>("scan-vault-tags/");
+    },
+    getUntaggedFiles: async (): Promise<AxiosResponse<UntaggedFilesResponse> | undefined> => {
+        return get<UntaggedFilesResponse>("untagged-files/");
+    },
+    applyTags: async (payload: ApplyTagsRequest): Promise<AxiosResponse<ApplyTagsResponse> | undefined> => {
+        return post<ApplyTagsResponse>("apply-tags/", payload);
+    },
+    applyTagsBulk: async (payload: ApplyTagsBulkRequest): Promise<AxiosResponse<ApplyTagsBulkResponse> | undefined> => {
+        return post<ApplyTagsBulkResponse>("apply-tags-bulk/", payload);
+    },
+    getCategoryMembership: async (payload: CategoryMembershipRequest): Promise<AxiosResponse<CategoryMembershipResponse> | undefined> => {
+        return post<CategoryMembershipResponse>("category-membership/", payload);
+    },
+    removeTagsBulk: async (payload: RemoveTagsBulkRequest): Promise<AxiosResponse<RemoveTagsBulkResponse> | undefined> => {
+        return post<RemoveTagsBulkResponse>("remove-tags-bulk/", payload);
+    },
+    matchTags: async (payload: MatchTagsRequest): Promise<AxiosResponse<MatchTagsResponse> | undefined> => {
+        return post<MatchTagsResponse>("match-tags/", payload);
+    },
+};
+
+export default { post, get, put, del, organisation };

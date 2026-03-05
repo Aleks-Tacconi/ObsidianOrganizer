@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import api from "../../Utils/api";
 
-import { FaPlus, FaBookOpen } from "react-icons/fa6";
+import { FaPlus, FaBookOpen, FaTableColumns } from "react-icons/fa6";
 import type { PrimaryTag } from "../../Utils/types/api.schemas";
 
 import TagItem from "./Components/TagItem/TagItem";
@@ -30,6 +31,8 @@ export default function TagList({
   onChanged: () => void;
   selectedTagId: number | null;
 }) {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [tags, setTags] = useState<PrimaryTag[]>([]);
   const [editingTag, setEditingTag] = useState<PrimaryTag | null>(null);
   const [popupOpen, setPopupOpen] = useState(false);
@@ -126,8 +129,10 @@ export default function TagList({
     onChanged();
   };
 
+  const inOrganisationTool = location.pathname === "/organization-tool";
+
   return (
-    <div className="taglist-container" style={{ display: "flex", flexDirection: "column" }}>
+    <div className="taglist-container" style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
           <FaBookOpen size={15} style={{ color: "#6b6b6b" }} />
@@ -143,6 +148,7 @@ export default function TagList({
       </Box>
       <Divider />
 
+      <Box sx={{ flex: 1, overflow: "auto" }}>
       {loading ? (
         <div style={{ display: "flex", justifyContent: "center", padding: "32px" }}>
           <CircularProgress size={20} />
@@ -169,6 +175,29 @@ export default function TagList({
           ))}
         </List>
       )}
+      </Box>
+
+      <Divider sx={{ mt: 1.5, mb: 1.5 }} />
+      <Tooltip title="Open organisation tool">
+        <IconButton
+          onClick={() => navigate("/organization-tool")}
+          sx={{
+            width: "100%",
+            justifyContent: "flex-start",
+            borderRadius: "6px",
+            padding: "8px 10px",
+            backgroundColor: inOrganisationTool ? "rgba(255,255,255,0.08)" : "transparent",
+          }}
+          aria-label="Open organisation tool"
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+            <FaTableColumns size={14} style={{ color: inOrganisationTool ? "#ededed" : "#6b6b6b" }} />
+            <Typography variant="body2" color={inOrganisationTool ? "text.primary" : "text.secondary"}>
+              Organisation tool
+            </Typography>
+          </Box>
+        </IconButton>
+      </Tooltip>
 
       {popupOpen && <TagPopup tag={editingTag} onClose={closePopup} onSave={saveTag} />}
 
