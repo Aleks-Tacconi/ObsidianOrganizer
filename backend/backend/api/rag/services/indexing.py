@@ -31,6 +31,7 @@ class IndexProgress:
     processed_files: int = 0
     skipped_files: int = 0
     total_chunks: int = 0
+    current_file: str = ""
     errors: List[str] = field(default_factory=list)
     status: str = "idle"  # idle | running | done | error
 
@@ -90,100 +91,114 @@ def index_vault(
     vault = vault or _vault_path()
     _progress.status = "running"
     _progress.errors = []
+    _progress.total_files = 0
     _progress.processed_files = 0
     _progress.skipped_files = 0
     _progress.total_chunks = 0
+    _progress.current_file = ""
 
-    provider = get_llm_provider()
-    store = ChromaStore()
+    try:
+        if not os.path.isdir(vault):
+            raise FileNotFoundError(f"Vault path does not exist: {vault}")
 
-    all_files = _vault_markdown_files(vault)
-    _progress.total_files = len(all_files)
+        provider = get_llm_provider()
+        store = ChromaStore()
 
-    for path in all_files:
-        try:
-            content = _read_file(path)
-            if content is None:
-                _progress.errors.append(f"Unreadable: {path}")
-                continue
+        all_files = _vault_markdown_files(vault)
+        _progress.total_files = len(all_files)
 
-            # Scope filtering via frontmatter tags.
-            tags = _extract_frontmatter_tags(content)
-            if scope_module or scope_category:
-                if scope_module and scope_module.lower() not in {
-                    t.lower() for t in tags
-                }:
-                    _progress.skipped_files += 1
-                    continue
-                if scope_category and scope_category.lower() not in {
-                    t.lower() for t in tags
-                }:
-                    _progress.skipped_files += 1
+        for path in all_files:
+            _progress.current_file = os.path.relpath(path, vault)
+            try:
+                content = _read_file(path)
+                if content is None:
+                    _progress.errors.append(f"Unreadable: {path}")
                     continue
 
-            content_hash = file_content_hash(path)
-            existing_index = VectorIndex.objects.filter(file_path=path).first()
-            if (
-                not force
-                and existing_index is not None
-                and existing_index.content_hash == content_hash
-            ):
-                _progress.skipped_files += 1
-                continue
+                # Scope filtering via frontmatter tags.
+                tags = _extract_frontmatter_tags(content)
+                if scope_module or scope_category:
+                    if scope_module and scope_module.lower() not in {
+                        t.lower() for t in tags
+                    }:
+                        _progress.skipped_files += 1
+                        continue
+                    if scope_category and scope_category.lower() not in {
+                        t.lower() for t in tags
+                    }:
+                        _progress.skipped_files += 1
+                        continue
 
-            # Remove old chunks for this file.
-            store.delete_by_file(path)
+                content_hash = file_content_hash(path)
+                existing_index = VectorIndex.objects.filter(file_path=path).first()
+                if (
+                    not force
+                    and existing_index is not None
+                    and existing_index.content_hash == content_hash
+                ):
+                    _progress.skipped_files += 1
+                    continue
 
-            chunks = chunk_markdown(content)
-            if not chunks:
-                _progress.skipped_files += 1
-                continue
+                # Remove old chunks for this file.
+                store.delete_by_file(path)
 
-            # Embed in batches.
-            chunk_texts = [c.text for c in chunks]
-            all_embeddings: List[List[float]] = []
-            for i in range(0, len(chunk_texts), EMBED_BATCH):
-                batch = chunk_texts[i : i + EMBED_BATCH]
-                resp = provider.embed(batch)
-                all_embeddings.extend(resp.embeddings)
+                chunks = chunk_markdown(content)
+                if not chunks:
+                    _progress.skipped_files += 1
+                    continue
 
-            ids = [f"{path}::{uuid.uuid4().hex[:12]}" for _ in chunks]
-            rel_path = os.path.relpath(path, vault)
-            metadatas = [
-                {
-                    "file_path": path,
-                    "relative_path": rel_path,
-                    "file_name": os.path.basename(path),
-                    "heading": c.heading,
-                    "line_start": c.line_start,
-                    "line_end": c.line_end,
-                    "tags": "|".join(tags),
-                }
-                for c in chunks
-            ]
+                # Embed in batches.
+                chunk_texts = [c.text for c in chunks]
+                all_embeddings: List[List[float]] = []
+                for i in range(0, len(chunk_texts), EMBED_BATCH):
+                    batch = chunk_texts[i : i + EMBED_BATCH]
+                    resp = provider.embed(batch)
+                    all_embeddings.extend(resp.embeddings)
 
-            store.upsert(
-                ids=ids,
-                embeddings=all_embeddings,
-                documents=chunk_texts,
-                metadatas=metadatas,
-            )
+                ids = [f"{path}::{uuid.uuid4().hex[:12]}" for _ in chunks]
+                rel_path = os.path.relpath(path, vault)
+                metadatas = [
+                    {
+                        "file_path": path,
+                        "relative_path": rel_path,
+                        "file_name": os.path.basename(path),
+                        "heading": c.heading,
+                        "line_start": c.line_start,
+                        "line_end": c.line_end,
+                        "tags": "|".join(tags),
+                    }
+                    for c in chunks
+                ]
 
-            VectorIndex.objects.update_or_create(
-                file_path=path,
-                defaults={
-                    "content_hash": content_hash,
-                    "chunk_count": len(chunks),
-                },
-            )
-            _progress.processed_files += 1
-            _progress.total_chunks += len(chunks)
+                store.upsert(
+                    ids=ids,
+                    embeddings=all_embeddings,
+                    documents=chunk_texts,
+                    metadatas=metadatas,
+                )
 
-        except Exception as exc:  # pylint: disable=W0718
-            _progress.errors.append(f"{path}: {exc}")
-            logger.exception("Error indexing %s", path)
+                VectorIndex.objects.update_or_create(
+                    file_path=path,
+                    defaults={
+                        "content_hash": content_hash,
+                        "chunk_count": len(chunks),
+                    },
+                )
+                _progress.processed_files += 1
+                _progress.total_chunks += len(chunks)
 
-    _progress.status = "done"
+            except Exception as exc:  # pylint: disable=W0718
+                _progress.errors.append(f"{path}: {exc}")
+                logger.exception("Error indexing %s", path)
+
+        _progress.status = "done"
+    except Exception as exc:  # pylint: disable=W0718
+        _progress.status = "error"
+        _progress.errors.append(str(exc))
+        logger.exception("Indexing failed before completion")
+    finally:
+        _progress.current_file = ""
+
     return _progress
 
 

@@ -146,6 +146,7 @@ export type RAGIndexStatusResponse = {
     processed_files: number;
     skipped_files: number;
     total_chunks: number;
+    current_file?: string;
     errors: string[];
 };
 
@@ -162,6 +163,10 @@ export type RAGHealthResponse = {
     generation_model_ready?: boolean;
     embedding_model_ready?: boolean;
     error?: string;
+};
+
+export type RAGFilesResponse = {
+    files: string[];
 };
 
 const rag = {
@@ -182,6 +187,10 @@ const rag = {
     },
     getHealth: async (): Promise<AxiosResponse<RAGHealthResponse> | undefined> => {
         return get<RAGHealthResponse>("rag/health/");
+    },
+    getFiles: async (query = "", limit = 20): Promise<AxiosResponse<RAGFilesResponse> | undefined> => {
+        const q = encodeURIComponent(query);
+        return get<RAGFilesResponse>(`rag/files/?q=${q}&limit=${limit}`);
     },
 };
 

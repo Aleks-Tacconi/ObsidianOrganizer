@@ -3,6 +3,7 @@
 from django.urls import path
 
 from .views import (
+    rag_files_view,
     rag_health_view,
     rag_index_clear_view,
     rag_index_start_view,
@@ -18,4 +19,5 @@ urlpatterns = [
     path("index/", rag_index_clear_view),
     path("stats/", rag_stats_view),
     path("health/", rag_health_view),
+    path("files/", rag_files_view),
 ]

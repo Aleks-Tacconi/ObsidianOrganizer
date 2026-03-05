@@ -1,12 +1,15 @@
 """RAG API views."""
 
 import json
+import os
 import threading
 from dataclasses import asdict
 from typing import Optional
 
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+
+from ..models import VectorIndex
 
 from .llm.factory import get_llm_provider
 from .services.indexing import clear_index, get_progress, index_vault
@@ -22,6 +25,25 @@ def _parse_json_body(request) -> Optional[dict]:
     if isinstance(parsed, dict):
         return parsed
     return None
+
+
+def _list_indexed_file_names(query: str, limit: int) -> list[str]:
+    """Return unique indexed file basenames, optionally filtered by query."""
+    q_lower = query.lower()
+    seen: set[str] = set()
+    names: list[str] = []
+
+    for row in VectorIndex.objects.all().only("file_path"):  # pylint: disable=E1101
+        name = os.path.basename(str(row.file_path))
+        if not name or (q_lower and q_lower not in name.lower()):
+            continue
+        if name in seen:
+            continue
+        seen.add(name)
+        names.append(name)
+
+    names.sort()
+    return names[:limit]
 
 
 # ------------------------------------------------------------------
@@ -108,6 +130,7 @@ def rag_index_status_view(request):
             "processed_files": progress.processed_files,
             "skipped_files": progress.skipped_files,
             "total_chunks": progress.total_chunks,
+            "current_file": progress.current_file,
             "errors": progress.errors[:20],
         }
     )
@@ -137,6 +160,27 @@ def rag_stats_view(request):
         return JsonResponse(store.stats())
     except Exception as exc:  # pylint: disable=W0718
         return JsonResponse({"error": f"Cannot read stats: {exc}"}, status=500)
+
+
+@csrf_exempt
+def rag_files_view(request):
+    """GET /api/rag/files — filename suggestions for autocomplete."""
+    if request.method != "GET":
+        return JsonResponse({"error": "Method not allowed"}, status=405)
+
+    query = str(request.GET.get("q", "")).strip()
+    raw_limit = str(request.GET.get("limit", "50")).strip()
+    try:
+        limit = int(raw_limit)
+    except (TypeError, ValueError):
+        limit = 50
+    limit = max(1, min(limit, 200))
+
+    try:
+        files = _list_indexed_file_names(query=query, limit=limit)
+        return JsonResponse({"files": files})
+    except Exception as exc:  # pylint: disable=W0718
+        return JsonResponse({"error": f"Cannot list files: {exc}"}, status=500)
 
 
 @csrf_exempt
