@@ -22,12 +22,14 @@ type ObsidianFileResponse = {
 type CitationNoteDialogProps = {
   open: boolean;
   citation: RAGCitation | null;
+  highlightRange?: boolean;
   onClose: () => void;
 };
 
 export default function CitationNoteDialog({
   open,
   citation,
+  highlightRange = false,
   onClose,
 }: CitationNoteDialogProps) {
   const [content, setContent] = useState("");
@@ -65,9 +67,9 @@ export default function CitationNoteDialog({
 
   // Scroll highlighted region into view once content is available
   useEffect(() => {
-    if (!open || loading || !highlightedRef.current) return;
+    if (!open || loading || !highlightRange || !highlightedRef.current) return;
     highlightedRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
-  }, [open, loading, content]);
+  }, [open, loading, content, highlightRange]);
 
   const lines = useMemo(() => content.split("\n"), [content]);
 
@@ -160,6 +162,7 @@ export default function CitationNoteDialog({
             {lines.map((line, index) => {
               const lineNumber = index + 1;
               const isHighlighted =
+                highlightRange &&
                 citation != null &&
                 lineNumber >= citation.line_start &&
                 lineNumber <= citation.line_end;

@@ -117,3 +117,21 @@ class ChunkMarkdownTests(SimpleTestCase):
         self.assertIn("A", headings)
         self.assertIn("B", headings)
         self.assertIn("C", headings)
+
+    # ── Excalidraw payload stripping ────────────────────────────────────────
+
+    def test_compressed_json_block_is_removed(self):
+        text = (
+            "# Diagram\n\n"
+            "Intro text.\n\n"
+            "```compressed-json\n"
+            "N4KAkARALgngDgUwgLgAQQQDwMYEMA2AlgCYBOuA7hA\n"
+            "```\n\n"
+            "Key explanation remains.\n"
+        )
+        chunks = chunk_markdown(text, max_tokens=512)
+        all_text = "\n".join(chunk.text for chunk in chunks)
+        self.assertIn("Intro text", all_text)
+        self.assertIn("Key explanation remains", all_text)
+        self.assertNotIn("compressed-json", all_text)
+        self.assertNotIn("N4KAkARAL", all_text)

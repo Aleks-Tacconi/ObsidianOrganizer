@@ -1,72 +1,138 @@
 # Obsidian Organiser
 
-A note-taking app designed to organize my Obsidian vault using a simple, consistent structure.
-I organize my notes with two tags: module name and topic name. This app allows me to create.
+A note-taking app for organizing an Obsidian vault with a consistent module/topic structure.
 
 - One web page per module
 - One section per topic
-- Each section automatically fetches and displays all notes related to that topic as a list of files. Within a section, I can also create notes which can contain the following information:
-  - Lecture title
-  - Lecture summary
-  - Slide URL
-  - Lecture recording URL
-
-- All notes remain fully compatible with Obsidian: they are clickable and support normal wikilink navigation.
+- Notes grouped by tags and still fully Obsidian-compatible (wikilinks, markdown, etc.)
+- Built-in RAG chat over your vault notes
 
 ![./assets/1.png](./assets/1.png)
 ![./assets/2.png](./assets/2.png)
 ![./assets/3.png](./assets/3.png)
 
-## Dependencies
+## Prerequisites
 
-- `npm`
+Core tooling:
+
+- `node` + `npm`
 - `python 3.12+`
 - `poetry`
 - `make`
 - `mprocs`
 
-## Tech Stack
+RAG tooling:
 
-### Frontend
+- `ollama` (running locally)
 
-- `vite` + `react`
-- `MUI` as a component library
-- `axios` for API calls
-- `orval` for type generation
+## Ollama Setup (Required for RAG)
 
-### Backend
+The backend is configured to use Ollama by default (`backend/backend/backend/settings.py`).
 
-- `python` + `django`
-- `drf-spectacular` for Swagger-UI
+Default models:
 
-## Setup and Usage Instructions
+- Generation model: `llama3.2`
+- Embedding model: `nomic-embed-text`
 
-1. Clone the repository 
+Install and start Ollama, then pull models:
 
-  ```sh
-  git clone git@github.com:Aleks-Tacconi/ObsidianOrganizer.git
-  ```
+```sh
+ollama serve
+```
 
-2. Navigate to the repository
+In another terminal:
 
-  ```sh
-  cd ./ObsidianOrganizer
-  ```
+```sh
+ollama pull llama3.2
+ollama pull nomic-embed-text
+```
 
-3. Install dependencies
+Optional check:
 
-  ```sh
-  make install
-  ```
+```sh
+ollama list
+```
 
-4. Run the program
+You should see both models available before using RAG indexing/query.
 
-  ```sh
-  make run
-  ```
+## Configuration
+
+The default vault path is currently set in `backend/backend/backend/settings.py`:
+
+- `VAULT_PATH = "/home/aleks/SecondBrain/"`
+
+If your Obsidian vault is elsewhere, update `VAULT_PATH` accordingly.
+
+Relevant RAG config (same file):
+
+- `PROVIDER = "ollama"`
+- `OLLAMA_BASE_URL = "http://localhost:11434"`
+- `GENERATION_MODEL = "llama3.2"`
+- `EMBEDDING_MODEL = "nomic-embed-text"`
+
+## Setup and Run
+
+1. Clone the repository:
+
+```sh
+git clone git@github.com:Aleks-Tacconi/ObsidianOrganizer.git
+```
+
+2. Enter project directory:
+
+```sh
+cd ObsidianOrganizer
+```
+
+3. Install dependencies (frontend + backend):
+
+```sh
+make install
+```
+
+4. Run frontend and backend together:
+
+```sh
+make run
+```
+
+Frontend runs via Vite, backend runs via Django.
+
+## Useful Commands
+
+Frontend:
+
+```sh
+cd frontend && make lint
+cd frontend && npm run build
+```
+
+Backend:
+
+```sh
+cd backend && make lint
+cd backend && poetry run python backend/manage.py test
+```
+
+## RAG Quick Start
+
+1. Ensure Ollama is running and both models are pulled.
+2. Ensure `VAULT_PATH` points to a real vault with `.md` files.
+3. Open the RAG page and click **Update Vector Index**.
+4. Wait for indexing to complete, then ask questions.
+5. Use `@filename.md` in the query box to force context from specific notes.
+
+## Troubleshooting
+
+- **Indexing stuck at `running · 0/0 files · 0 chunks`**:
+  - Check `VAULT_PATH` exists and contains markdown files.
+  - Check Ollama is running on `http://localhost:11434`.
+  - Check required models are pulled.
+- **Ollama unavailable in UI**:
+  - Start `ollama serve`.
+  - Verify with `ollama list`.
 
 ## TODO / Upcoming Features
 
-- Open file in obsidian button.
 - Logging grades
 - Rearranging modules

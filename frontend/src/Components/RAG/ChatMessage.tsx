@@ -15,10 +15,32 @@ export type ChatMessageItem = {
 type ChatMessageProps = {
   message: ChatMessageItem;
   onCitationClick: (citation: RAGCitation) => void;
+  onWikiLinkClick: (name: string) => void;
 };
 
-export default function ChatMessage({ message, onCitationClick }: ChatMessageProps) {
+function stripInlineNoteReferences(content: string): string {
+  const withoutBracketNotes = content.replace(/\s*\[Note:\s*[^\]]+\]/g, "");
+  const withoutParenNotes = withoutBracketNotes.replace(/\s*\(\s*Note:\s*[^)]+\)/g, "");
+  const withoutParenWrappedCitations = withoutParenNotes.replace(/\(\s*\)/g, "");
+  return withoutParenWrappedCitations
+    .replace(/\s+([.,!?;:])/g, "$1")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function convertWikiLinksToLinks(content: string): string {
+  return content.replace(/\[\[([^\]|]+)(\|([^\]]+))?\]\]/g, (_match, name, _pipe, alias) => {
+    const target = String(name).trim();
+    const label = String(alias ?? name).trim();
+    return `[${label}](note-wiki://${encodeURIComponent(target)})`;
+  });
+}
+
+export default function ChatMessage({ message, onCitationClick, onWikiLinkClick }: ChatMessageProps) {
   const isUser = message.role === "user";
+  const contentWithRefLinks = isUser
+    ? message.content
+    : convertWikiLinksToLinks(stripInlineNoteReferences(message.content));
 
   return (
     <Stack alignItems={isUser ? "flex-end" : "flex-start"}>
@@ -112,9 +134,42 @@ export default function ChatMessage({ message, onCitationClick }: ChatMessagePro
                     {children}
                   </Box>
                 ),
+                a: ({ href, children }) => {
+                  if (!href || !href.startsWith("note-wiki://")) {
+                    return (
+                      <a href={href} style={{ color: "#e0e0e0" }}>
+                        {children}
+                      </a>
+                    );
+                  }
+
+                  const noteName = decodeURIComponent(href.replace("note-wiki://", ""));
+                  return (
+                    <Box
+                      component="button"
+                      type="button"
+                      onClick={() => onWikiLinkClick(noteName)}
+                      sx={{
+                        p: 0,
+                        m: 0,
+                        border: 0,
+                        background: "none",
+                        color: "#e0e0e0",
+                        cursor: "pointer",
+                        textDecoration: "underline",
+                        textUnderlineOffset: "2px",
+                        font: "inherit",
+                        lineHeight: "inherit",
+                        "&:hover": { color: "#c8c8c8" },
+                      }}
+                    >
+                      {children}
+                    </Box>
+                  );
+                },
               }}
             >
-              {message.content}
+              {contentWithRefLinks}
             </ReactMarkdown>
           </Box>
         )}
@@ -131,7 +186,7 @@ export default function ChatMessage({ message, onCitationClick }: ChatMessagePro
               {message.citations?.map((citation) => (
                 <Chip
                   key={`${citation.file_path}-${citation.line_start}`}
-                  label={`${citation.file_name}:${citation.line_start}`}
+                  label={`${citation.file_name}:${citation.line_start}${citation.line_end > citation.line_start ? `-${citation.line_end}` : ""}`}
                   size="small"
                   onClick={() => onCitationClick(citation)}
                   sx={{

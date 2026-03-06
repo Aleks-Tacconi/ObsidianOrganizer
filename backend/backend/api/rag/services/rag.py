@@ -8,6 +8,7 @@ from typing import Dict, List, Optional, Set
 
 from django.conf import settings
 
+from ...models import VectorIndex
 from ..llm.factory import get_llm_provider
 from .reranker import rerank
 from .retrieval import RetrievedChunk, retrieve
@@ -19,11 +20,19 @@ VAULT = getattr(settings, "VAULT_PATH", "/home/aleks/SecondBrain/")
 SYSTEM_PROMPT = """\
 You are a knowledgeable assistant that answers questions about the user's \
 Obsidian vault notes. Use ONLY the provided note excerpts to answer. \
-If the excerpts do not contain enough information, say so honestly.
+If excerpts are partial, still give the best direct answer you can from the
+available evidence.
 
-When you reference information from a note, cite it inline using the format \
-[Note: filename.md] so the user can verify the source. Be concise, accurate, \
-and well-structured in your responses.
+Start with a direct answer in 1-2 sentences, then add concise supporting
+details.
+
+Avoid meta phrasing such as "according to the provided excerpts", "it is
+unclear", "cannot be determined", or "without further information" unless
+there are truly zero relevant excerpts.
+
+When you reference information from an excerpt, cite it inline using the format
+[E1], [E2], etc. Every factual claim must have at least one excerpt citation.
+Do not cite excerpts you did not use.
 """
 
 
@@ -71,6 +80,116 @@ def _chunk_tag_set(tags_pipe: str) -> Set[str]:
     return result
 
 
+def _expand_query_variants(query: str) -> List[str]:
+    """Generate small lexical variants to improve recall for close synonyms."""
+    variants: List[str] = [query]
+    replacements = [
+        ("poisoning", "spoofing"),
+        ("spoofing", "poisoning"),
+        ("mitm", "man in the middle"),
+        ("man-in-the-middle", "mitm"),
+        ("acl", "access control list"),
+        ("acls", "access control lists"),
+    ]
+
+    lowered = query.lower()
+    for source, target in replacements:
+        if source in lowered:
+            variants.append(re.sub(source, target, lowered))
+
+    # Acronym expansion from note titles (e.g. arp -> address resolution protocol).
+    try:
+        indexed_files = [
+            str(row.file_path)
+            for row in VectorIndex.objects.all().only("file_path")  # pylint: disable=E1101
+        ]
+    except Exception:  # pylint: disable=W0718
+        indexed_files = []
+
+    acronym_map = _build_acronym_map_from_file_names(indexed_files)
+    tokens = re.findall(r"[a-z0-9]+", lowered)
+    for token in tokens:
+        expanded = acronym_map.get(token)
+        if expanded:
+            variants.append(re.sub(rf"\b{re.escape(token)}\b", expanded, lowered))
+
+    deduped: List[str] = []
+    seen: Set[str] = set()
+    for variant in variants:
+        cleaned = variant.strip()
+        if not cleaned or cleaned in seen:
+            continue
+        seen.add(cleaned)
+        deduped.append(cleaned)
+    return deduped
+
+
+def _build_acronym_map_from_file_names(file_names: List[str]) -> Dict[str, str]:
+    """Create acronym -> phrase map from note file names.
+
+    Example: ``Address Resolution Protocol.md`` -> ``arp``.
+    """
+    stopwords = {"and", "or", "the", "a", "an", "of", "to", "for", "in"}
+    mapping: Dict[str, str] = {}
+
+    for file_name in file_names:
+        stem = os.path.splitext(os.path.basename(file_name))[0]
+        words = [w.lower() for w in re.findall(r"[A-Za-z0-9]+", stem)]
+        words = [w for w in words if w and w not in stopwords]
+        if len(words) < 2:
+            continue
+        acronym = "".join(word[0] for word in words)
+        if 2 <= len(acronym) <= 6 and acronym not in mapping:
+            mapping[acronym] = " ".join(words)
+
+    return mapping
+
+
+def _merge_retrieved_chunks(chunks: List[RetrievedChunk]) -> List[RetrievedChunk]:
+    """Dedupe retrieved chunks by location, keeping best (lowest distance)."""
+    by_key: Dict[tuple, RetrievedChunk] = {}
+    for chunk in chunks:
+        key = (chunk.file_path, chunk.line_start, chunk.line_end)
+        existing = by_key.get(key)
+        if existing is None or chunk.distance < existing.distance:
+            by_key[key] = chunk
+    return list(by_key.values())
+
+
+def _find_title_matched_files(query: str, max_matches: int = 5) -> List[str]:
+    """Return note file names whose title appears in the query text."""
+    query_lower = query.lower()
+    scored: List[tuple[int, str]] = []
+
+    try:
+        file_paths = [
+            str(row.file_path)
+            for row in VectorIndex.objects.all().only("file_path")  # pylint: disable=E1101
+        ]
+    except Exception:  # pylint: disable=W0718
+        return []
+
+    for path in file_paths:
+        file_name = os.path.basename(path)
+        stem = os.path.splitext(file_name)[0].lower()
+        if len(stem) < 4:
+            continue
+        if stem in query_lower:
+            scored.append((len(stem), file_name))
+
+    scored.sort(key=lambda item: item[0], reverse=True)
+    matches: List[str] = []
+    seen: Set[str] = set()
+    for _, file_name in scored:
+        if file_name in seen:
+            continue
+        seen.add(file_name)
+        matches.append(file_name)
+        if len(matches) >= max_matches:
+            break
+    return matches
+
+
 def _resolve_note_path(name: str, vault: str) -> Optional[str]:
     """Try to find a vault file matching *name*."""
     if not name.endswith(".md"):
@@ -114,11 +233,41 @@ def _build_context(chunks: List[RetrievedChunk]) -> str:
     parts: List[str] = []
     for idx, chunk in enumerate(chunks, 1):
         parts.append(
-            f"--- Excerpt {idx} from [{chunk.file_name}] "
-            f"(lines {chunk.line_start}-{chunk.line_end}) ---\n"
+            f"[E{idx}] {chunk.file_name} (lines {chunk.line_start}-{chunk.line_end})\n"
             f"{chunk.text}\n"
         )
     return "\n".join(parts)
+
+
+_EXCERPT_REF_RE = re.compile(r"\[E(\d+)\]")
+
+
+def _extract_used_excerpt_indexes(answer: str) -> List[int]:
+    """Return excerpt indexes referenced by the LLM answer, preserving order."""
+    ordered: List[int] = []
+    seen: Set[int] = set()
+    for match in _EXCERPT_REF_RE.findall(answer):
+        idx = int(match)
+        if idx in seen:
+            continue
+        seen.add(idx)
+        ordered.append(idx)
+    return ordered
+
+
+def _replace_excerpt_refs_with_note_refs(
+    answer: str, chunks: List[RetrievedChunk]
+) -> str:
+    """Convert ``[E#]`` citations into note+line references for the UI."""
+
+    def repl(match: re.Match) -> str:
+        idx = int(match.group(1)) - 1
+        if idx < 0 or idx >= len(chunks):
+            return match.group(0)
+        chunk = chunks[idx]
+        return f"[Note: {chunk.file_name}:{chunk.line_start}-{chunk.line_end}]"
+
+    return _EXCERPT_REF_RE.sub(repl, answer)
 
 
 def query_rag(
@@ -150,8 +299,24 @@ def query_rag(
     # Build scope filter for ChromaDB.
     scope_filter: Optional[Dict] = None
 
-    # Step 1: Retrieve from vector store.
-    retrieved = retrieve(clean_query or query, scope_filter=scope_filter)
+    # Step 1: Retrieve from vector store with light query expansion.
+    retrieval_query = clean_query or query
+    query_variants = _expand_query_variants(retrieval_query)
+    retrieved_batches: List[RetrievedChunk] = []
+    for variant in query_variants:
+        retrieved_batches.extend(retrieve(variant, scope_filter=scope_filter))
+
+    title_matches = _find_title_matched_files(retrieval_query)
+    if title_matches:
+        retrieved_batches.extend(
+            retrieve(
+                retrieval_query,
+                top_k=8,
+                scope_filter={"file_name": {"$in": title_matches}},
+            )
+        )
+
+    retrieved = _merge_retrieved_chunks(retrieved_batches)
 
     if scope_module or scope_category:
         module_key = _normalize_tag(scope_module or "")
@@ -207,8 +372,10 @@ def query_rag(
     user_prompt = (
         f"Context from Obsidian vault notes:\n\n{context}\n\n"
         f"Question: {query}\n\n"
-        "Answer the question using the context above. "
-        "Cite notes with [Note: filename.md] where appropriate."
+        "Answer using the context above. "
+        "Be direct and informative; avoid hedge language. "
+        "Cite every factual statement with excerpt ids like [E1]. "
+        "Only say information is unavailable when no relevant excerpt exists."
     )
 
     provider = get_llm_provider()
@@ -217,10 +384,22 @@ def query_rag(
         system_prompt=SYSTEM_PROMPT,
     )
 
-    # Step 5: Build citations.
+    # Step 5: Keep only chunks actually cited in the answer.
+    used_indexes = _extract_used_excerpt_indexes(llm_resp.text)
+    used_chunks: List[RetrievedChunk] = []
+    for idx in used_indexes:
+        if 1 <= idx <= len(final_chunks):
+            used_chunks.append(final_chunks[idx - 1])
+
+    if not used_chunks:
+        used_chunks = final_chunks[:1]
+
+    formatted_answer = _replace_excerpt_refs_with_note_refs(llm_resp.text, final_chunks)
+
+    # Step 6: Build citations.
     citations: List[Citation] = []
     seen: set = set()
-    for chunk in final_chunks:
+    for chunk in used_chunks:
         key = (chunk.file_path, chunk.line_start, chunk.line_end)
         if key in seen:
             continue
@@ -239,7 +418,7 @@ def query_rag(
         )
 
     return RAGResponse(
-        answer=llm_resp.text,
+        answer=formatted_answer,
         citations=citations,
         model_used=f"{llm_resp.provider}/{llm_resp.model}",
         chunks_retrieved=len(retrieved),

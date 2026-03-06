@@ -31,6 +31,29 @@ def _strip_frontmatter(lines: List[str]) -> List[str]:
     return lines
 
 
+def _mask_compressed_json_blocks(lines: List[str]) -> List[str]:
+    """Remove fenced ```compressed-json payloads while preserving line count."""
+    masked: List[str] = []
+    in_compressed_block = False
+
+    for line in lines:
+        stripped = line.strip()
+        if not in_compressed_block and stripped == "```compressed-json":
+            in_compressed_block = True
+            masked.append("\n" if line.endswith("\n") else "")
+            continue
+
+        if in_compressed_block:
+            if stripped == "```":
+                in_compressed_block = False
+            masked.append("\n" if line.endswith("\n") else "")
+            continue
+
+        masked.append(line)
+
+    return masked
+
+
 _HEADING_RE = re.compile(r"^(#{1,6})\s+(.+)")
 
 
@@ -59,6 +82,7 @@ def chunk_markdown(
 
     raw_lines = text.splitlines(keepends=True)
     lines = _strip_frontmatter(raw_lines)
+    lines = _mask_compressed_json_blocks(lines)
     # Compute line-number offset caused by stripping frontmatter.
     offset = len(raw_lines) - len(lines)
 

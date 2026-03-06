@@ -262,6 +262,61 @@ class RagQueryViewTests(TestCase):
         _, kwargs = mock_query_rag.call_args
         self.assertNotIn("force_notes", kwargs)
 
+    def test_only_cited_excerpts_are_returned_as_sources(self):
+        provider = _mock_provider()
+        provider.generate.return_value = _GenerationResponse(
+            text="ARP resolves IP to MAC [E1].",
+            provider="ollama",
+            model="llama3.2",
+        )
+
+        with (
+            patch(
+                "api.rag.services.rag.retrieve",
+                return_value=[
+                    _chunk_stub(
+                        file_name="Address Resolution Protocol.md",
+                        line_start=7,
+                        line_end=13,
+                    ),
+                    _chunk_stub(
+                        file_name="Network Security.md",
+                        line_start=20,
+                        line_end=30,
+                        file_path="/vault/network-security.md",
+                        relative_path="network-security.md",
+                    ),
+                ],
+            ),
+            patch(
+                "api.rag.services.rag.rerank",
+                return_value=[
+                    _chunk_stub(
+                        file_name="Address Resolution Protocol.md",
+                        line_start=7,
+                        line_end=13,
+                    ),
+                    _chunk_stub(
+                        file_name="Network Security.md",
+                        line_start=20,
+                        line_end=30,
+                        file_path="/vault/network-security.md",
+                        relative_path="network-security.md",
+                    ),
+                ],
+            ),
+            patch("api.rag.services.rag.get_llm_provider", return_value=provider),
+        ):
+            response = self._post_query({"query": "what is arp"})
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn("[Note: Address Resolution Protocol.md:7-13]", data["answer"])
+        self.assertEqual(len(data["citations"]), 1)
+        self.assertEqual(
+            data["citations"][0]["file_name"], "Address Resolution Protocol.md"
+        )
+
     def test_citation_contains_expected_fields(self):
         with (
             patch("api.rag.services.rag.retrieve", side_effect=_mock_retrieve),

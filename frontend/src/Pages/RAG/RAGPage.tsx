@@ -176,6 +176,7 @@ export default function RAGPage() {
   const [noteDialogOpen, setNoteDialogOpen] = useState(false);
   const [activeFile, setActiveFile] = useState<{ name: string; content: string } | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
+  const [highlightedRange, setHighlightedRange] = useState<{ lineStart: number; lineEnd: number } | null>(null);
 
   const chatEndRef = useRef<HTMLDivElement | null>(null);
   const queryInputRef = useRef<HTMLTextAreaElement | null>(null);
@@ -351,6 +352,7 @@ export default function RAGPage() {
 
   const openCitationNote = (citation: RAGCitation) => {
     setFileError(null);
+    setHighlightedRange({ lineStart: citation.line_start, lineEnd: citation.line_end });
     api
       .post<{ name: string; content: string }>("obsidian-file/", { path: citation.file_path })
       .then((res) => {
@@ -369,6 +371,7 @@ export default function RAGPage() {
 
   const openWikiLink = (name: string) => {
     setFileError(null);
+    setHighlightedRange(null);
     api
       .post<{ name: string; content: string }>("obsidian-file-by-name/", { name })
       .then((res) => {
@@ -583,6 +586,7 @@ export default function RAGPage() {
                   key={message.id}
                   message={message}
                   onCitationClick={openCitationNote}
+                  onWikiLinkClick={openWikiLink}
                 />
               ))
             )}
@@ -695,16 +699,21 @@ export default function RAGPage() {
             {fileError}
           </Typography>
         )}
+
       </Stack>
 
       {activeFile && (
         <ObsidianFileDialog
           ref={noteDialogRef}
           open={noteDialogOpen}
-          onClose={() => setNoteDialogOpen(false)}
+          onClose={() => {
+            setNoteDialogOpen(false);
+            setHighlightedRange(null);
+          }}
           file={activeFile}
           onWikiLink={openWikiLink}
           onRefresh={refreshActiveFile}
+          highlightRange={highlightedRange}
         />
       )}
     </SidebarLayout>
