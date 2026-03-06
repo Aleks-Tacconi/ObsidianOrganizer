@@ -6,10 +6,23 @@ A note-taking app for organizing an Obsidian vault with a consistent module/topi
 - One section per topic
 - Notes grouped by tags and still fully Obsidian-compatible (wikilinks, markdown, etc.)
 - Built-in RAG chat over your vault notes
+- Organisation tool to quickly and easily tag repositories
 
-![./assets/1.png](./assets/1.png)
-![./assets/2.png](./assets/2.png)
-![./assets/3.png](./assets/3.png)
+<p align="center">
+  <img src="./assets/1.png" alt="Screenshot 1" width="32%" />
+  <img src="./assets/2.png" alt="Screenshot 2" width="32%" />
+  <img src="./assets/3.png" alt="Screenshot 3" width="32%" />
+</p>
+
+<p align="center">
+  <img src="./assets/4.png" alt="Screenshot 4" width="48%" />
+  <img src="./assets/5.png" alt="Screenshot 5" width="48%" />
+</p>
+
+<p align="center">
+  <img src="./assets/6.png" alt="Screenshot 6" width="48%" />
+  <img src="./assets/7.png" alt="Screenshot 7" width="48%" />
+</p>
 
 ## Prerequisites
 
