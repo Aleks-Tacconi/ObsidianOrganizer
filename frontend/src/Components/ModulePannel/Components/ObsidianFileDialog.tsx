@@ -10,7 +10,7 @@ import {
   ListItemButton,
   Divider,
 } from "@mui/material";
-import React, { forwardRef, useEffect, useImperativeHandle, useState } from "react";
+import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
@@ -49,6 +49,11 @@ export interface ObsidianFileDialogHandle {
   refreshCurrent: (file: { name: string; content: string }) => void;
 }
 
+type HighlightRange = {
+  lineStart: number;
+  lineEnd: number;
+};
+
 export default forwardRef(function ObsidianFileDialog(
   {
     open,
@@ -56,18 +61,21 @@ export default forwardRef(function ObsidianFileDialog(
     file,
     onWikiLink,
     onRefresh,
+    highlightRange,
   }: {
     open: boolean;
     onClose: () => void;
     file: { name: string; content: string } | null;
     onWikiLink: (name: string) => void;
     onRefresh: () => void;
+    highlightRange?: HighlightRange | null;
   },
   ref: React.Ref<ObsidianFileDialogHandle>,
 ) {
   const [history, setHistory] = useState<{ name: string; content: string }[]>([]);
   const [historyIndex, setHistoryIndex] = useState<number | null>(null);
   const [pinnedNotes, setPinnedNotes] = useState<string[]>(() => loadPins());
+  const contentContainerRef = useRef<HTMLDivElement | null>(null);
 
   // Seed history with the initial file when the dialog opens for the first time
   useEffect(() => {
@@ -116,10 +124,8 @@ export default forwardRef(function ObsidianFileDialog(
   };
 
   const currentFile = historyIndex !== null ? history[historyIndex] : file;
-  if (!currentFile) return null;
-
-  const currentName = normalizeName(currentFile.name);
-  const isPinned = pinnedNotes.includes(currentName);
+  const currentName = currentFile ? normalizeName(currentFile.name) : "";
+  const isPinned = currentFile ? pinnedNotes.includes(currentName) : false;
 
   const togglePin = () => {
     const next = isPinned
@@ -138,13 +144,50 @@ export default forwardRef(function ObsidianFileDialog(
   const hasBack = historyIndex !== null && historyIndex > 0;
   const hasForward = historyIndex !== null && historyIndex < history.length - 1;
 
-  const fileHeading = `## ${currentName}\n\n`;
+  const fileHeading = currentFile ? `## ${currentName}\n\n` : "";
+  const noteContent = currentFile?.content ?? "";
   const contentWithWikiLinks =
     fileHeading +
-    currentFile.content.replace(
+    noteContent.replace(
       /!?(\[\[([^\]|]+)(\|([^\]]+))?\]\])/g,
       (_, ___, name, __, alias) => `<wikilink name="${name}">${alias || name}</wikilink>`,
     );
+
+  const totalLines = Math.max(1, noteContent.split("\n").length);
+  const hasHighlight =
+    highlightRange != null &&
+    highlightRange.lineEnd > 0 &&
+    highlightRange.lineEnd >= highlightRange.lineStart;
+  const markerStartLine = hasHighlight
+    ? Math.min(Math.max(highlightRange.lineStart, 1), totalLines)
+    : 0;
+  const markerEndLine = hasHighlight
+    ? Math.min(Math.max(highlightRange.lineEnd, markerStartLine), totalLines)
+    : 0;
+  const markerTopPercent = hasHighlight
+    ? ((markerStartLine - 1) / totalLines) * 100
+    : 0;
+  const markerHeightPercent = hasHighlight
+    ? Math.max(((markerEndLine - markerStartLine + 1) / totalLines) * 100, 1)
+    : 0;
+
+  useEffect(() => {
+    if (!open || !currentFile || !hasHighlight || !contentContainerRef.current) {
+      return;
+    }
+    const container = contentContainerRef.current;
+    const targetRatio = (markerStartLine - 1) / Math.max(1, totalLines - 1);
+    const targetTop = targetRatio * container.scrollHeight;
+    const offset = container.clientHeight * 0.22;
+    container.scrollTo({
+      top: Math.max(0, targetTop - offset),
+      behavior: "smooth",
+    });
+  }, [open, currentFile, hasHighlight, markerStartLine, totalLines]);
+
+  if (!currentFile) {
+    return null;
+  }
 
   return (
     <Dialog
@@ -328,78 +371,119 @@ export default forwardRef(function ObsidianFileDialog(
 
         {/* Main content */}
         <DialogContent
+          ref={contentContainerRef}
           sx={{ flex: 1, overflowY: "auto", fontSize: "1rem", padding: "2vh 5vw" }}
         >
-          <ReactMarkdown
-            remarkPlugins={[remarkBreaks, remarkGfm, remarkMath]}
-            rehypePlugins={[rehypeRaw, rehypeKatex]}
-            components={{
-              table: ({ children }) => (
-                <table style={{ borderCollapse: "collapse", width: "100%" }}>{children}</table>
-              ),
-              th: ({ children }) => (
-                <th style={{ border: "1px solid rgba(255,255,255,0.07)", padding: "8px" }}>{children}</th>
-              ),
-              td: ({ children }) => (
-                <td style={{ border: "1px solid rgba(255,255,255,0.07)", padding: "8px" }}>{children}</td>
-              ),
-              // Custom rehype-raw element for Obsidian wiki-links — not part
-              // of the standard Components type, so we spread it via cast.
-              ...({
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                wikilink: ({ node, children }: { node: any; children: React.ReactNode }) => {
-                  const name = node.properties.name as string;
-                  const imageExtensions = [".png", ".jpg", ".jpeg", ".svg", ".gif"];
-                  const isImage =
-                    imageExtensions.some((ext) => name.toLowerCase().endsWith(ext)) ||
-                    /\d+$/.test(name);
+          {hasHighlight && (
+            <Typography
+              variant="caption"
+              sx={{
+                display: "inline-flex",
+                alignItems: "center",
+                mb: 1.5,
+                px: 1,
+                py: 0.5,
+                borderRadius: "6px",
+                border: "1px solid rgba(255,255,255,0.12)",
+                backgroundColor: "rgba(255,255,255,0.05)",
+                color: "#9a9a9a",
+                fontFamily: "monospace",
+              }}
+            >
+              Referenced lines {markerStartLine}
+              {markerEndLine !== markerStartLine ? `-${markerEndLine}` : ""}
+            </Typography>
+          )}
 
-                  if (isImage) {
+          <Box sx={{ position: "relative", pl: hasHighlight ? 1.5 : 0 }}>
+            {hasHighlight && (
+              <Box
+                aria-hidden
+                sx={{
+                  position: "absolute",
+                  left: 0,
+                  top: `${markerTopPercent}%`,
+                  width: "3px",
+                  height: `${markerHeightPercent}%`,
+                  minHeight: "10px",
+                  borderRadius: "2px",
+                  backgroundColor: "#e0e0e0",
+                  opacity: 0.9,
+                }}
+              />
+            )}
+
+            <ReactMarkdown
+              remarkPlugins={[remarkBreaks, remarkGfm, remarkMath]}
+              rehypePlugins={[rehypeRaw, rehypeKatex]}
+              components={{
+                table: ({ children }) => (
+                  <table style={{ borderCollapse: "collapse", width: "100%" }}>{children}</table>
+                ),
+                th: ({ children }) => (
+                  <th style={{ border: "1px solid rgba(255,255,255,0.07)", padding: "8px" }}>{children}</th>
+                ),
+                td: ({ children }) => (
+                  <td style={{ border: "1px solid rgba(255,255,255,0.07)", padding: "8px" }}>{children}</td>
+                ),
+                // Custom rehype-raw element for Obsidian wiki-links — not part
+                // of the standard Components type, so we spread it via cast.
+                ...({
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  wikilink: ({ node, children }: { node: any; children: React.ReactNode }) => {
+                    const name = node.properties.name as string;
+                    const imageExtensions = [".png", ".jpg", ".jpeg", ".svg", ".gif"];
+                    const isImage =
+                      imageExtensions.some((ext) => name.toLowerCase().endsWith(ext)) ||
+                      /\d+$/.test(name);
+
+                    if (isImage) {
+                      return (
+                        <Box
+                          sx={{
+                            display: "flex",
+                            justifyContent: "center",
+                            alignItems: "center",
+                            gap: 1,
+                            padding: "16px",
+                            color: "#6b6b6b",
+                            border: "1px solid rgba(255,255,255,0.07)",
+                            borderRadius: "6px",
+                            my: 1,
+                          }}
+                          title={name}
+                        >
+                          <FaRegImage />
+                          <Typography variant="body2" sx={{ fontSize: "0.875rem" }}>
+                            Image preview not available
+                          </Typography>
+                        </Box>
+                      );
+                    }
+
                     return (
-                      <Box
+                      <Typography
+                        component="span"
                         sx={{
-                          display: "flex",
-                          justifyContent: "center",
-                          alignItems: "center",
-                          gap: 1,
-                          padding: "16px",
-                          color: "#6b6b6b",
-                          border: "1px solid rgba(255,255,255,0.07)",
-                          borderRadius: "6px",
-                          my: 1,
+                          color: "#e0e0e0",
+                          cursor: "pointer",
+                          textDecoration: "underline",
+                          fontSize: "inherit",
                         }}
                         title={name}
+                        onClick={() => onWikiLink(name)}
                       >
-                        <FaRegImage />
-                        <Typography variant="body2" sx={{ fontSize: "0.875rem" }}>
-                          Image preview not available
-                        </Typography>
-                      </Box>
+                        {children}
+                      </Typography>
                     );
-                  }
-
-                  return (
-                    <Typography
-                      component="span"
-                      sx={{
-                        color: "#e0e0e0",
-                        cursor: "pointer",
-                        textDecoration: "underline",
-                        fontSize: "inherit",
-                      }}
-                      title={name}
-                      onClick={() => onWikiLink(name)}
-                    >
-                      {children}
-                    </Typography>
-                  );
-                },
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              } as any),
-            }}
-          >
-            {contentWithWikiLinks}
-          </ReactMarkdown>
+                  },
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                } as any),
+              }}
+            >
+              {contentWithWikiLinks}
+            </ReactMarkdown>
+          </Box>
         </DialogContent>
       </Box>
     </Dialog>

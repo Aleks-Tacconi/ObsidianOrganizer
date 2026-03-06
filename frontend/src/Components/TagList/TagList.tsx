@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import api from "../../Utils/api";
 
-import { FaPlus, FaBookOpen, FaTableColumns } from "react-icons/fa6";
+import { FaPlus, FaBookOpen, FaRegFileLines, FaTableColumns } from "react-icons/fa6";
 import type { PrimaryTag } from "../../Utils/types/api.schemas";
 
 import TagItem from "./Components/TagItem/TagItem";
@@ -129,6 +129,7 @@ export default function TagList({
     onChanged();
   };
 
+  const inRagPage = location.pathname === "/rag";
   const inOrganisationTool = location.pathname === "/organization-tool";
 
   return (
@@ -178,6 +179,27 @@ export default function TagList({
       </Box>
 
       <Divider sx={{ mt: 1.5, mb: 1.5 }} />
+      <Tooltip title="Open Ask Vault page">
+        <IconButton
+          onClick={() => navigate("/rag")}
+          sx={{
+            width: "100%",
+            justifyContent: "flex-start",
+            borderRadius: "6px",
+            padding: "8px 10px",
+            backgroundColor: inRagPage ? "rgba(255,255,255,0.08)" : "transparent",
+            mb: 1,
+          }}
+          aria-label="Open Ask Vault page"
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+            <FaRegFileLines size={14} style={{ color: inRagPage ? "#ededed" : "#6b6b6b" }} />
+            <Typography variant="body2" color={inRagPage ? "text.primary" : "text.secondary"}>
+              Ask Vault
+            </Typography>
+          </Box>
+        </IconButton>
+      </Tooltip>
       <Tooltip title="Open organisation tool">
         <IconButton
           onClick={() => navigate("/organization-tool")}

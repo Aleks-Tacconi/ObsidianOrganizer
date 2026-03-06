@@ -1,6 +1,11 @@
 {
   "version": 1,
   "skills": {
+    "django-expert": {
+      "source": "vintasoftware/django-ai-plugins",
+      "sourceType": "github",
+      "computedHash": "a6b8c224017570496d688a526fcbea74025a01cc90d9afb0977bfcc1f76af306"
+    },
     "frontend-design": {
       "source": "anthropics/skills",
       "sourceType": "github",

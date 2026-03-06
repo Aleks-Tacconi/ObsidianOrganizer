@@ -110,6 +110,96 @@ const del = async <T>(path: string): Promise<AxiosResponse<T> | undefined> => {
     return _helper(prefix, async () => axios.delete<T>(APIUrl + path));
 };
 
+// ---------------------------------------------------------------------------
+// RAG types
+// ---------------------------------------------------------------------------
+export type RAGCitation = {
+    file_path: string;
+    file_name: string;
+    relative_path: string;
+    heading: string;
+    snippet: string;
+    line_start: number;
+    line_end: number;
+    relevance_score: number;
+};
+
+export type RAGQueryRequest = {
+    query: string;
+    scope_module?: string;
+    scope_category?: string;
+    top_k?: number;
+};
+
+export type RAGQueryResponse = {
+    answer: string;
+    citations: RAGCitation[];
+    model_used: string;
+    chunks_retrieved: number;
+    chunks_after_rerank: number;
+};
+
+export type RAGIndexStatusResponse = {
+    status: string;
+    total_files: number;
+    processed_files: number;
+    skipped_files: number;
+    total_chunks: number;
+    current_file?: string;
+    errors: string[];
+};
+
+export type RAGStatsResponse = {
+    total_chunks: number;
+    collection: string;
+};
+
+export type RAGHealthResponse = {
+    healthy: boolean;
+    provider?: string;
+    base_url?: string;
+    models_available?: string[];
+    generation_model_ready?: boolean;
+    embedding_model_ready?: boolean;
+    error?: string;
+};
+
+export type RAGFilesResponse = {
+    files: string[];
+};
+
+const rag = {
+    query: async (payload: RAGQueryRequest): Promise<AxiosResponse<RAGQueryResponse> | undefined> => {
+        return post<RAGQueryResponse>("rag/query/", payload);
+    },
+    startIndex: async (force = false): Promise<AxiosResponse<{ status: string }> | undefined> => {
+        return post<{ status: string }>("rag/index/start/", { force });
+    },
+    getIndexStatus: async (): Promise<AxiosResponse<RAGIndexStatusResponse> | undefined> => {
+        return get<RAGIndexStatusResponse>("rag/index/status/");
+    },
+    clearIndex: async (): Promise<AxiosResponse<{ cleared: boolean }> | undefined> => {
+        return del<{ cleared: boolean }>("rag/index/");
+    },
+    getStats: async (): Promise<AxiosResponse<RAGStatsResponse> | undefined> => {
+        return get<RAGStatsResponse>("rag/stats/");
+    },
+    getHealth: async (): Promise<AxiosResponse<RAGHealthResponse> | undefined> => {
+        return get<RAGHealthResponse>("rag/health/");
+    },
+    getFiles: async (
+        query = "",
+        limit = 20,
+        scopeModule?: string,
+        scopeCategory?: string,
+    ): Promise<AxiosResponse<RAGFilesResponse> | undefined> => {
+        const q = encodeURIComponent(query);
+        const moduleParam = scopeModule ? `&scope_module=${encodeURIComponent(scopeModule)}` : "";
+        const categoryParam = scopeCategory ? `&scope_category=${encodeURIComponent(scopeCategory)}` : "";
+        return get<RAGFilesResponse>(`rag/files/?q=${q}&limit=${limit}${moduleParam}${categoryParam}`);
+    },
+};
+
 const organisation = {
     scanVaultTags: async (): Promise<AxiosResponse<ScanVaultTagsResponse> | undefined> => {
         return get<ScanVaultTagsResponse>("scan-vault-tags/");
@@ -134,4 +224,4 @@ const organisation = {
     },
 };
 
-export default { post, get, put, del, organisation };
+export default { post, get, put, del, organisation, rag };
