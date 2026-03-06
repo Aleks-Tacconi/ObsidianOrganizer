@@ -8,21 +8,35 @@ A note-taking app for organizing an Obsidian vault with a consistent module/topi
 - Built-in RAG chat over your vault notes
 - Organisation tool to quickly and easily tag repositories
 
-<p align="center">
-  <img src="./assets/1.png" alt="Screenshot 1" width="32%" />
-  <img src="./assets/2.png" alt="Screenshot 2" width="32%" />
-  <img src="./assets/3.png" alt="Screenshot 3" width="32%" />
-</p>
+## Screenshots
 
-<p align="center">
-  <img src="./assets/4.png" alt="Screenshot 4" width="48%" />
-  <img src="./assets/5.png" alt="Screenshot 5" width="48%" />
-</p>
+**1. Modules Page**
 
-<p align="center">
-  <img src="./assets/6.png" alt="Screenshot 6" width="48%" />
-  <img src="./assets/7.png" alt="Screenshot 7" width="48%" />
-</p>
+![Screenshot 1](./assets/1.png)
+
+**2. Category Search**
+
+![Screenshot 2](./assets/2.png)
+
+**3. Sidebar**
+
+![Screenshot 3](./assets/3.png)
+
+**4. Edit / New note modal**
+
+![Screenshot 4](./assets/4.png)
+
+**5. Note view**
+
+![Screenshot 5](./assets/5.png)
+
+**6. RAG chat**
+
+![Screenshot 6](./assets/6.png)
+
+**7. Organisation tool**
+
+![Screenshot 7](./assets/7.png)
 
 ## Prerequisites
 
