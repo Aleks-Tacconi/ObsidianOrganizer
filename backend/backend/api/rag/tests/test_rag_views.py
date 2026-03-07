@@ -340,3 +340,31 @@ class RagQueryViewTests(TestCase):
             "relevance_score",
         ):
             self.assertIn(field_name, citation, msg=f"Missing field: {field_name}")
+
+    def test_retries_generation_when_first_answer_is_uncited_and_meta(self):
+        provider = _mock_provider()
+        provider.generate.side_effect = [
+            _GenerationResponse(
+                text="According to the provided excerpts, ARP resolves IP to MAC.",
+                provider="ollama",
+                model="llama3.2",
+            ),
+            _GenerationResponse(
+                text="ARP resolves IP to MAC [E1].",
+                provider="ollama",
+                model="llama3.2",
+            ),
+        ]
+
+        with (
+            patch("api.rag.services.rag.retrieve", side_effect=_mock_retrieve),
+            patch("api.rag.services.rag.rerank", return_value=[_chunk_stub()]),
+            patch("api.rag.services.rag.get_llm_provider", return_value=provider),
+        ):
+            response = self._post_query({"query": "What is ARP?"})
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(provider.generate.call_count, 2)
+        self.assertIn("[Note: note.md:1-5]", data["answer"])
+        self.assertNotIn("According to the provided excerpts", data["answer"])

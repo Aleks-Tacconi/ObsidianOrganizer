@@ -5,6 +5,8 @@ from unittest.mock import patch
 from django.test import SimpleTestCase
 
 from ..services.rag import (
+    _answer_needs_retry,
+    _clean_answer_text,
     _build_acronym_map_from_file_names,
     _chunk_tag_set,
     _expand_query_variants,
@@ -194,6 +196,33 @@ class ExcerptReferenceParsingTests(SimpleTestCase):
         answer = "ARP poisoning is cache poisoning [E1]."
         converted = _replace_excerpt_refs_with_note_refs(answer, chunks)
         self.assertIn("[Note: ARP Poisoning.md:7-17]", converted)
+
+
+class AnswerCleanupTests(SimpleTestCase):
+    def test_answer_needs_retry_when_missing_citation(self):
+        self.assertTrue(_answer_needs_retry("ARP poisoning corrupts ARP caches."))
+
+    def test_answer_needs_retry_when_using_meta_phrasing(self):
+        self.assertTrue(
+            _answer_needs_retry(
+                "According to the provided excerpts, ARP poisoning is spoofing [E1]."
+            )
+        )
+
+    def test_answer_does_not_need_retry_when_direct_and_cited(self):
+        self.assertFalse(_answer_needs_retry("ARP poisoning is spoofing [E1]."))
+
+    def test_clean_answer_text_removes_leading_meta_phrase(self):
+        cleaned = _clean_answer_text(
+            "According to the provided excerpts, ARP poisoning is spoofing [E1]."
+        )
+        self.assertEqual(cleaned, "ARP poisoning is spoofing [E1].")
+
+    def test_clean_answer_text_removes_reference_based_phrase(self):
+        cleaned = _clean_answer_text(
+            "Based on the notes, TCP provides reliable delivery [E2]."
+        )
+        self.assertEqual(cleaned, "TCP provides reliable delivery [E2].")
 
 
 class AcronymExpansionTests(SimpleTestCase):

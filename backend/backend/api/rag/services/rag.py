@@ -240,6 +240,11 @@ def _build_context(chunks: List[RetrievedChunk]) -> str:
 
 
 _EXCERPT_REF_RE = re.compile(r"\[E(\d+)\]")
+_FORBIDDEN_META_RE = re.compile(
+    r"^\s*(?:according to (?:the )?(?:provided )?(?:excerpts|notes),?\s*|"
+    r"based on (?:the )?(?:provided )?(?:excerpts|notes),?\s*)",
+    re.IGNORECASE,
+)
 
 
 def _extract_used_excerpt_indexes(answer: str) -> List[int]:
@@ -253,6 +258,19 @@ def _extract_used_excerpt_indexes(answer: str) -> List[int]:
         seen.add(idx)
         ordered.append(idx)
     return ordered
+
+
+def _answer_needs_retry(answer: str) -> bool:
+    """Return True when the model answer is not ready for user display."""
+    if not _extract_used_excerpt_indexes(answer):
+        return True
+    return _FORBIDDEN_META_RE.search(answer) is not None
+
+
+def _clean_answer_text(answer: str) -> str:
+    """Remove leading meta phrasing that makes grounded answers sound awkward."""
+    cleaned = _FORBIDDEN_META_RE.sub("", answer, count=1)
+    return cleaned.strip()
 
 
 def _replace_excerpt_refs_with_note_refs(
@@ -383,6 +401,17 @@ def query_rag(
         prompt=user_prompt,
         system_prompt=SYSTEM_PROMPT,
     )
+    if _answer_needs_retry(llm_resp.text):
+        retry_prompt = (
+            f"{user_prompt}\n\n"
+            "Rewrite the answer so it starts directly with the conclusion, "
+            "uses no meta phrasing, and includes inline excerpt citations like [E1] "
+            "for every factual statement."
+        )
+        llm_resp = provider.generate(
+            prompt=retry_prompt,
+            system_prompt=SYSTEM_PROMPT,
+        )
 
     # Step 5: Keep only chunks actually cited in the answer.
     used_indexes = _extract_used_excerpt_indexes(llm_resp.text)
@@ -394,7 +423,10 @@ def query_rag(
     if not used_chunks:
         used_chunks = final_chunks[:1]
 
-    formatted_answer = _replace_excerpt_refs_with_note_refs(llm_resp.text, final_chunks)
+    cleaned_answer = _clean_answer_text(llm_resp.text)
+    formatted_answer = _replace_excerpt_refs_with_note_refs(
+        cleaned_answer, final_chunks
+    )
 
     # Step 6: Build citations.
     citations: List[Citation] = []
