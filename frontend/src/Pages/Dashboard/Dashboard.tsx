@@ -80,9 +80,10 @@ export default function Dashboard() {
       onSelectTag={handleSelectTag}
       onTagsChanged={triggerRefresh}
       selectedTagId={selectedTag?.id ?? null}
+      refreshKey={refresh}
     >
       {selectedTag && !loading ? (
-        <ModulePanel moduleId={selectedTag} refresh={refresh} />
+        <ModulePanel moduleId={selectedTag} refresh={refresh} onNotesChanged={triggerRefresh} />
       ) : (
         !loading && (
           <Box

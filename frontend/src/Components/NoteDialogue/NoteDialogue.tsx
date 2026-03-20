@@ -20,7 +20,7 @@ import {
 
 import api from "../../Utils/api";
 import type { SubTag, NoteURL, Note as NoteType } from "../../Utils/types/api.schemas";
-import { FaTrash } from "react-icons/fa6";
+import { FaPlus, FaTrash } from "react-icons/fa6";
 
 interface Props {
   open: boolean;
@@ -229,7 +229,7 @@ export default function NoteDialog({ open, onClose, primaryTagId, tagColor, note
           )}
         />
 
-        <Stack direction="row" spacing={1}>
+        <Stack direction="row" spacing={1} alignItems="center">
           <TextField
             label="Link label"
             value={urlAlias}
@@ -246,9 +246,27 @@ export default function NoteDialog({ open, onClose, primaryTagId, tagColor, note
             error={urlError && !urlValue.trim()}
             helperText={urlError && !urlValue.trim() ? "Required" : ""}
           />
-          <Button onClick={handleAddUrl} sx={{ whiteSpace: "nowrap", alignSelf: "flex-start", mt: "4px" }}>
-            Add
-          </Button>
+          <Tooltip title="Add link">
+            <IconButton
+              onClick={handleAddUrl}
+              aria-label="Add link"
+              sx={{
+                width: 40,
+                height: 40,
+                borderRadius: "6px",
+                border: "1px solid rgba(255,255,255,0.12)",
+                color: "text.secondary",
+                flexShrink: 0,
+                "&:hover": {
+                  borderColor: "rgba(255,255,255,0.2)",
+                  backgroundColor: "rgba(255,255,255,0.04)",
+                  color: "text.primary",
+                },
+              }}
+            >
+              <FaPlus size={14} />
+            </IconButton>
+          </Tooltip>
         </Stack>
 
         {urls.length > 0 && (

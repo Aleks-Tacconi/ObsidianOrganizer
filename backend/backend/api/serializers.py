@@ -70,10 +70,26 @@ class SectionSerializer(serializers.ModelSerializer):
 
 class PrimaryTagSerializer(serializers.ModelSerializer):
     subtags = SubTagSerializer(many=True, read_only=True)
+    note_count = serializers.IntegerField(read_only=True)
+    completed_note_count = serializers.IntegerField(read_only=True)
+    is_complete = serializers.SerializerMethodField()
 
     class Meta:
         model = PrimaryTag
-        fields = ["id", "name", "color", "subtags"]
+        fields = [
+            "id",
+            "name",
+            "color",
+            "subtags",
+            "note_count",
+            "completed_note_count",
+            "is_complete",
+        ]
+
+    def get_is_complete(self, obj):
+        note_count = getattr(obj, "note_count", 0) or 0
+        completed_note_count = getattr(obj, "completed_note_count", 0) or 0
+        return note_count > 0 and note_count == completed_note_count
 
 
 class ModuleInfoSerializer(serializers.ModelSerializer):

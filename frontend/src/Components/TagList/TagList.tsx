@@ -5,7 +5,7 @@ import api from "../../Utils/api";
 import { FaPlus, FaBookOpen, FaRegFileLines, FaTableColumns } from "react-icons/fa6";
 import type { PrimaryTag } from "../../Utils/types/api.schemas";
 
-import TagItem from "./Components/TagItem/TagItem";
+import TagItem, { type SidebarTag } from "./Components/TagItem/TagItem";
 import TagPopup from "./Components/TagPopup/TagPopup";
 
 import "./TagList.css";
@@ -26,24 +26,26 @@ export default function TagList({
   onSelect,
   onChanged,
   selectedTagId,
+  refreshKey,
 }: {
   onSelect: (tag: PrimaryTag) => void;
   onChanged: () => void;
   selectedTagId: number | null;
+  refreshKey: number;
 }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const [tags, setTags] = useState<PrimaryTag[]>([]);
-  const [editingTag, setEditingTag] = useState<PrimaryTag | null>(null);
+  const [tags, setTags] = useState<SidebarTag[]>([]);
+  const [editingTag, setEditingTag] = useState<SidebarTag | null>(null);
   const [popupOpen, setPopupOpen] = useState(false);
-  const [tagToDelete, setTagToDelete] = useState<PrimaryTag | null>(null);
+  const [tagToDelete, setTagToDelete] = useState<SidebarTag | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   const loadTags = async () => {
     setLoading(true);
     await api
-      .get<PrimaryTag[]>("primary-tags/")
+      .get<SidebarTag[]>("primary-tags/")
       .then((res) => {
         if (res) setTags(res.data);
       })
@@ -55,7 +57,7 @@ export default function TagList({
 
   useEffect(() => {
     loadTags();
-  }, []);
+  }, [refreshKey]);
 
   const openPopup = (tag?: PrimaryTag) => {
     setEditingTag(tag || null);
@@ -69,7 +71,7 @@ export default function TagList({
   const saveTag = async (tag: Omit<PrimaryTag, "id"> & { id?: number }) => {
     if (tag.id) {
       await api
-        .put<PrimaryTag>(`primary-tags/${tag.id}/`, tag)
+        .put<SidebarTag>(`primary-tags/${tag.id}/`, tag)
         .then((res) => {
           if (res?.data != null) {
             const savedTag = res.data;
@@ -81,7 +83,7 @@ export default function TagList({
         });
     } else {
       const res = await api
-        .post<PrimaryTag>("primary-tags/", tag)
+        .post<SidebarTag>("primary-tags/", tag)
         .catch(() => {
           setError("Failed to create module. Please try again.");
           return undefined;
@@ -100,7 +102,7 @@ export default function TagList({
         }
 
         // Re-fetch the tag to include the newly created subtags
-        const refreshed = await api.get<PrimaryTag>(`primary-tags/${savedTag.id}/`);
+        const refreshed = await api.get<SidebarTag>(`primary-tags/${savedTag.id}/`);
         if (refreshed?.data) {
           setTags([...tags, refreshed.data]);
         } else {

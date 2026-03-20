@@ -3,8 +3,9 @@ from pathlib import Path
 from unittest.mock import patch
 
 from django.test import TestCase
+from django.utils import timezone
 
-from .models import PrimaryTag, SubTag
+from .models import Note, PrimaryTag, SubTag
 
 
 class VaultTagToolsApiTests(TestCase):
@@ -238,6 +239,94 @@ class VaultTagToolsApiTests(TestCase):
         response = self.client.get("/api/apply-tags-bulk/")
 
         self.assertEqual(response.status_code, 405)
+
+
+class PrimaryTagSidebarSummaryApiTests(TestCase):
+    def test_primary_tags_list_includes_completion_summary(self):
+        complete_module = PrimaryTag.objects.create(  # pylint: disable=E1101
+            name="Complete Module", color="#112233"
+        )
+        incomplete_module = PrimaryTag.objects.create(  # pylint: disable=E1101
+            name="Incomplete Module", color="#445566"
+        )
+        PrimaryTag.objects.create(  # pylint: disable=E1101
+            name="Empty Module", color="#778899"
+        )
+
+        first_topic = SubTag.objects.create(  # pylint: disable=E1101
+            name="Topic A", parent=complete_module
+        )
+        second_topic = SubTag.objects.create(  # pylint: disable=E1101
+            name="Topic B", parent=complete_module
+        )
+        SubTag.objects.create(name="Topic C", parent=incomplete_module)  # pylint: disable=E1101
+
+        first_complete = Note.objects.create(  # pylint: disable=E1101
+            name="Lecture 1",
+            description="",
+            date=timezone.now(),
+            completed=True,
+            primary_tag=complete_module,
+        )
+        second_complete = Note.objects.create(  # pylint: disable=E1101
+            name="Lecture 2",
+            description="",
+            date=timezone.now(),
+            completed=True,
+            primary_tag=complete_module,
+        )
+        Note.objects.create(  # pylint: disable=E1101
+            name="Lecture 3",
+            description="",
+            date=timezone.now(),
+            completed=True,
+            primary_tag=incomplete_module,
+        )
+        Note.objects.create(  # pylint: disable=E1101
+            name="Lecture 4",
+            description="",
+            date=timezone.now(),
+            completed=False,
+            primary_tag=incomplete_module,
+        )
+
+        first_complete.subtags.add(first_topic)
+        second_complete.subtags.add(second_topic)
+
+        response = self.client.get("/api/primary-tags/")
+
+        self.assertEqual(response.status_code, 200)
+        payload = {item["name"]: item for item in response.json()}
+
+        self.assertEqual(payload["Complete Module"]["note_count"], 2)
+        self.assertEqual(payload["Complete Module"]["completed_note_count"], 2)
+        self.assertTrue(payload["Complete Module"]["is_complete"])
+
+        self.assertEqual(payload["Incomplete Module"]["note_count"], 2)
+        self.assertEqual(payload["Incomplete Module"]["completed_note_count"], 1)
+        self.assertFalse(payload["Incomplete Module"]["is_complete"])
+
+        self.assertEqual(payload["Empty Module"]["note_count"], 0)
+        self.assertEqual(payload["Empty Module"]["completed_note_count"], 0)
+        self.assertFalse(payload["Empty Module"]["is_complete"])
+
+    def test_primary_tag_detail_includes_completion_summary(self):
+        module = PrimaryTag.objects.create(name="Algorithms", color="#abcdef")  # pylint: disable=E1101
+        Note.objects.create(  # pylint: disable=E1101
+            name="Search",
+            description="",
+            date=timezone.now(),
+            completed=True,
+            primary_tag=module,
+        )
+
+        response = self.client.get(f"/api/primary-tags/{module.id}/")
+
+        self.assertEqual(response.status_code, 200)
+        payload = response.json()
+        self.assertEqual(payload["note_count"], 1)
+        self.assertEqual(payload["completed_note_count"], 1)
+        self.assertTrue(payload["is_complete"])
 
     def test_apply_tags_rejects_malformed_json(self):
         response = self.client.post(

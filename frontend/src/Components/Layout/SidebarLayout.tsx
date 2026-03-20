@@ -11,6 +11,7 @@ type SidebarLayoutProps = {
   selectedTagId: number | null;
   onSelectTag: (tag: PrimaryTag) => void;
   onTagsChanged: () => void;
+  refreshKey: number;
   children: ReactNode;
 };
 
@@ -18,6 +19,7 @@ export default function SidebarLayout({
   selectedTagId,
   onSelectTag,
   onTagsChanged,
+  refreshKey,
   children,
 }: SidebarLayoutProps) {
   const [open, setOpen] = useState(false);
@@ -50,6 +52,7 @@ export default function SidebarLayout({
           }}
           onChanged={onTagsChanged}
           selectedTagId={selectedTagId}
+          refreshKey={refreshKey}
         />
       </Drawer>
 

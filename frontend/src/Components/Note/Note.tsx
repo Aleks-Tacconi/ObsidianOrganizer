@@ -12,10 +12,11 @@ type Props = {
   note: NoteType;
   onUpdate: (note: NoteType) => void;
   onDelete: (id: number) => void;
+  onChanged?: () => void;
   refresh?: number;
 };
 
-export default function Note({ note, onUpdate, onDelete, refresh }: Props) {
+export default function Note({ note, onUpdate, onDelete, onChanged, refresh }: Props) {
   const [editing, setEditing] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -34,6 +35,9 @@ export default function Note({ note, onUpdate, onDelete, refresh }: Props) {
         subtags_ids: updated.subtags.map((s) => s.id),
         urls_ids: updated.urls.map((u) => u.id),
       })
+      .then(() => {
+        onChanged?.();
+      })
       .catch(() => {
         // revert optimistic update on failure
         onUpdate(note);
@@ -47,6 +51,7 @@ export default function Note({ note, onUpdate, onDelete, refresh }: Props) {
       .del(`notes/${note.id}/`)
       .then(() => {
         onDelete(note.id);
+        onChanged?.();
       })
       .catch(() => {
         setDeleting(false);
@@ -57,12 +62,18 @@ export default function Note({ note, onUpdate, onDelete, refresh }: Props) {
     <>
       <Card
         sx={{
-          mb: 2,
+          mb: 3,
+          border: "1px solid rgba(255,255,255,0.07)",
+          backgroundColor: "#141414",
           opacity: note.completed ? 0.55 : 1,
-          transition: "opacity 150ms ease-out",
+          transition: "opacity 150ms ease-out, border-color 150ms ease-out, background-color 150ms ease-out",
+          "&:hover": {
+            borderColor: "rgba(255,255,255,0.12)",
+            backgroundColor: "#171717",
+          },
         }}
       >
-        <CardContent>
+        <CardContent sx={{ pb: 2 }}>
           <NoteDisplay note={note} />
         </CardContent>
 
@@ -120,7 +131,10 @@ export default function Note({ note, onUpdate, onDelete, refresh }: Props) {
         primaryTagId={note.primary_tag?.id ?? 0}
         tagColor={note.primary_tag?.color}
         note={note}
-        onSaved={onUpdate}
+        onSaved={(savedNote) => {
+          onUpdate(savedNote);
+          onChanged?.();
+        }}
         refresh={refresh}
       />
 

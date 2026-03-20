@@ -7,6 +7,8 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "preview": "vite preview",
     "orval:gen": "orval --config src/orval.config.ts"
   },
@@ -31,10 +33,13 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
     "@types/node": "^24.6.0",
     "@types/react": "^19.1.16",
     "@types/react-dom": "^19.1.9",
     "@vitejs/plugin-react": "^5.0.4",
+    "@vitest/coverage-v8": "^4.0.18",
     "baseline-browser-mapping": "^2.9.11",
     "eslint": "^9.39.1",
     "eslint-plugin-react": "^7.37.5",
@@ -42,12 +47,14 @@
     "eslint-plugin-react-refresh": "^0.4.22",
     "globals": "^16.5.0",
     "jiti": "^2.6.1",
+    "jsdom": "^28.1.0",
     "orval": "^7.17.0",
     "stylelint": "^16.25.0",
     "stylelint-config-standard": "^39.0.1",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.3",
-    "vite": "^7.1.7"
+    "vite": "^7.1.7",
+    "vitest": "^4.0.18"
   },
   "description": "",
   "main": "eslint.config.js",

@@ -6,6 +6,7 @@ from typing import Dict, List, Optional, Set, Tuple
 
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.db.models import Count, Q
 from rest_framework import viewsets
 from rest_framework.permissions import AllowAny
 
@@ -40,7 +41,12 @@ class SectionView(viewsets.ModelViewSet):
 
 
 class PrimaryTagView(viewsets.ModelViewSet):  # pylint: disable=R0901
-    queryset = PrimaryTag.objects.all()  # pylint: disable=E1101
+    queryset = PrimaryTag.objects.prefetch_related("subtags").annotate(  # pylint: disable=E1101
+        note_count=Count("notes", distinct=True),
+        completed_note_count=Count(
+            "notes", filter=Q(notes__completed=True), distinct=True
+        ),
+    )
     serializer_class = PrimaryTagSerializer
     permission_classes = [AllowAny]
 

@@ -33,9 +33,11 @@ import { useModuleNotes } from "../../Utils/useModuleNotes";
 export default function ModulePanel({
   moduleId,
   refresh,
+  onNotesChanged,
 }: {
   moduleId: PrimaryTag;
   refresh: number;
+  onNotesChanged?: () => void;
 }) {
   const { moduleInfo, updateNote, deleteNote, addOrReplaceNote } = useModuleNotes(
     moduleId,
@@ -615,10 +617,11 @@ export default function ModulePanel({
                                ) : (
                                   sectionNotes.map((note) => (
                                     <Note
-                                      key={note.id}
-                                      note={note}
+                                     key={note.id}
+                                     note={note}
                                       onUpdate={updateNote}
                                       onDelete={deleteNote}
+                                      onChanged={onNotesChanged}
                                       refresh={refresh}
                                     />
                                   ))
@@ -659,7 +662,10 @@ export default function ModulePanel({
         onClose={() => setOpen(false)}
         primaryTagId={moduleInfo?.primary_tag.id ?? 0}
         tagColor={moduleInfo?.primary_tag.color}
-        onSaved={addOrReplaceNote}
+        onSaved={(note) => {
+          addOrReplaceNote(note);
+          onNotesChanged?.();
+        }}
         refresh={refresh}
       />
 
