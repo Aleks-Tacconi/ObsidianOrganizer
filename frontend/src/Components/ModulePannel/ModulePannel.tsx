@@ -105,7 +105,7 @@ export default function ModulePanel({
       .catch(() => {/* silently ignore */});
   }, []);
 
-  // Restore persisted expanded sections or fall back to first section
+  // Restore persisted expanded sections; otherwise keep all sections collapsed
   useEffect(() => {
     if (!moduleInfo?.sections.length) return;
 
@@ -121,11 +121,10 @@ export default function ModulePanel({
         }
       }
     } catch {
-      // fall through to default
+      // fall through to collapsed default
     }
 
-    // No valid persisted state — expand first section
-    setExpandedSections([moduleInfo.sections[0].id]);
+    setExpandedSections([]);
   }, [moduleInfo, expandedKey]);
 
   // Pre-fetch file names for all sections so global search can match against them
