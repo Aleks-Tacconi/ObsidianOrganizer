@@ -172,12 +172,24 @@ def _is_valid_vault_path(path: str) -> bool:
 
 def scan_vault_tags() -> List[Dict[str, object]]:
     module_topics: Dict[str, Set[str]] = {}
+    known_pairs = _module_topic_pairs()
 
     for _, path in _vault_markdown_files():
         normalized_tags = _normalized_file_tags(path)
-        for module, topic in _module_topic_pairs():
+        matched_known_pair = False
+
+        for module, topic in known_pairs:
             if module in normalized_tags and topic in normalized_tags:
                 module_topics.setdefault(module, set()).add(topic)
+                matched_known_pair = True
+
+        if not matched_known_pair and len(normalized_tags) >= 2:
+            ordered_tags = [_normalize_tag_name(tag) for tag in extract_tags(path)]
+            if len(ordered_tags) >= 2:
+                module = ordered_tags[0]
+                for topic in ordered_tags[1:]:
+                    if topic != module:
+                        module_topics.setdefault(module, set()).add(topic)
 
     return [
         {"module": module, "topics": sorted(topics)}
@@ -368,10 +380,17 @@ def remove_module_topic_tag(path: str, module: str, topic: str) -> bool:
         for subtag in module_obj.subtags.all()
         if _normalize_tag_name(subtag.name) != topic_tag
     ]
+    normalized_updated_tags = {
+        _normalize_tag_name(tag_name) for tag_name in updated_tags
+    }
     has_other_module_topic = any(
-        sibling_topic in {_normalize_tag_name(tag_name) for tag_name in updated_tags}
-        for sibling_topic in sibling_topics
+        sibling_topic in normalized_updated_tags for sibling_topic in sibling_topics
     )
+    if not sibling_topics:
+        has_other_module_topic = any(
+            normalized_tag != module_tag for normalized_tag in normalized_updated_tags
+        )
+
     if not has_other_module_topic and module_tag in {
         _normalize_tag_name(tag_name) for tag_name in updated_tags
     }:

@@ -5,7 +5,7 @@ lint:
 	poetry run pylint --fail-under 9 backend
 
 test:
-	echo "testing..."
+	poetry run python backend/manage.py test api.tests -v 2
 
 migrate:
 	poetry run python backend/manage.py makemigrations
