@@ -1,76 +1,146 @@
 import type { Note } from "../../../Utils/types/api.schemas";
-import { Box, Chip, Typography, Stack, Link, Divider } from "@mui/material";
-import { FaLink } from "react-icons/fa6";
+import { Box, Button, Divider, Link, Stack, Typography } from "@mui/material";
+import { alpha } from "@mui/material/styles";
+import { useState } from "react";
+import { FaBookOpen, FaChevronDown, FaChevronUp, FaLink } from "react-icons/fa6";
 import ReactMarkdown from "react-markdown";
+
+import { getNoteTitleLayout } from "./noteTitleLayout";
 
 type NoteDisplayProps = {
   note: Note;
 };
 
+const DESCRIPTION_PREVIEW_LENGTH = 220;
+const DESCRIPTION_PREVIEW_LINES = 3;
+const DESCRIPTION_COLLAPSED_MAX_HEIGHT = 288;
+
 export default function NoteDisplay({ note }: NoteDisplayProps) {
+  const [expanded, setExpanded] = useState(false);
+  const titleLayout = getNoteTitleLayout({ completed: Boolean(note.completed) });
+  const descriptionLineCount = note.description
+    ? note.description.split(/\r?\n/).filter((line) => line.trim()).length
+    : 0;
+  const isDescriptionCollapsible = Boolean(
+    note.description
+    && (note.description.length > DESCRIPTION_PREVIEW_LENGTH || descriptionLineCount > DESCRIPTION_PREVIEW_LINES),
+  );
+
   return (
     <Box>
-      {/* Title */}
-      <Typography
-        variant="h6"
-        sx={{
-          fontWeight: 600,
-          textDecoration: note.completed ? "line-through" : "none",
-          color: note.completed ? "text.secondary" : "text.primary",
-          mb: note.subtags.length > 0 ? 1 : note.description ? 1.5 : 0,
-        }}
+      <Stack
+        direction="row"
+        spacing={1.5}
+        alignItems={titleLayout.titleRowAlignItems}
+        sx={{ mb: note.description ? 1.5 : 0 }}
+        data-testid="note-title-row"
       >
-        {note.name}
-      </Typography>
+        <Box
+          data-testid="note-title-icon"
+          sx={{
+            width: titleLayout.iconSize,
+            height: titleLayout.iconSize,
+            borderRadius: "6px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+            backgroundColor: note.primary_tag?.color ? alpha(note.primary_tag.color, 0.14) : "rgba(255,255,255,0.06)",
+            color: note.primary_tag?.color ?? "text.secondary",
+            border: note.primary_tag?.color ? `1px solid ${alpha(note.primary_tag.color, 0.32)}` : "1px solid rgba(255,255,255,0.07)",
+          }}
+        >
+          <FaBookOpen size={14} />
+        </Box>
 
-      {/* Subtag chips */}
-      {note.subtags.length > 0 && (
-        <Stack direction="row" spacing={0.5} flexWrap="wrap" sx={{ mb: note.description ? 2 : 0 }}>
-          {note.subtags.map((subtag) => (
-            <Chip
-              key={subtag.id}
-              label={subtag.name}
-              size="small"
-              sx={{
-                backgroundColor: "rgba(255,255,255,0.06)",
-                color: "text.secondary",
-                border: "1px solid rgba(255,255,255,0.08)",
-                borderLeft: `2px solid ${note.primary_tag.color}`,
-              }}
-            />
-          ))}
-        </Stack>
-      )}
+        <Typography
+          variant={titleLayout.titleVariant}
+          sx={{
+            fontWeight: 600,
+            textDecoration: note.completed ? "line-through" : "none",
+            color: note.completed ? "text.secondary" : "text.primary",
+            lineHeight: titleLayout.titleLineHeight,
+          }}
+        >
+          {note.name}
+        </Typography>
+      </Stack>
 
-      {/* Description */}
       {note.description && (
         <Box sx={{ color: "text.primary" }}>
-          <ReactMarkdown
-            components={{
-              p: ({ children }) => (
-                <Typography variant="body2" component="div" sx={{ mb: 1 }}>
-                  {children}
-                </Typography>
-              ),
-              ul: ({ children }) => (
-                <ul style={{ paddingLeft: "1.4em", margin: "4px 0 12px" }}>{children}</ul>
-              ),
-              ol: ({ children }) => (
-                <ol style={{ paddingLeft: "1.4em", margin: "4px 0 12px" }}>{children}</ol>
-              ),
-              li: ({ children }) => (
-                <li style={{ marginBottom: "4px" }}>
-                  <Typography variant="body2" component="span">{children}</Typography>
-                </li>
-              ),
+          <Box
+            sx={{
+              position: "relative",
+              maxHeight: expanded || !isDescriptionCollapsible ? "none" : DESCRIPTION_COLLAPSED_MAX_HEIGHT,
+              overflow: "hidden",
+              mb: isDescriptionCollapsible ? 0.5 : 0,
             }}
           >
-            {note.description}
-          </ReactMarkdown>
+            <ReactMarkdown
+              components={{
+                p: ({ children }) => (
+                  <Typography variant="body2" component="div" sx={{ mb: 1 }}>
+                    {children}
+                  </Typography>
+                ),
+                ul: ({ children }) => (
+                  <ul style={{ paddingLeft: "1.4em", margin: "4px 0 12px" }}>{children}</ul>
+                ),
+                ol: ({ children }) => (
+                  <ol style={{ paddingLeft: "1.4em", margin: "4px 0 12px" }}>{children}</ol>
+                ),
+                li: ({ children }) => (
+                  <li style={{ marginBottom: "4px" }}>
+                    <Typography variant="body2" component="span">{children}</Typography>
+                  </li>
+                ),
+              }}
+            >
+              {note.description}
+            </ReactMarkdown>
+
+            {!expanded && isDescriptionCollapsible && (
+              <Box
+                sx={{
+                  position: "absolute",
+                  inset: "auto 0 0 0",
+                  height: 28,
+                  background: "linear-gradient(to bottom, rgba(20,20,20,0), rgba(20,20,20,0.72) 72%, #141414 100%)",
+                  transition: "background 150ms ease-out",
+                  ".MuiCard-root:hover &": {
+                    background: "linear-gradient(to bottom, rgba(23,23,23,0), rgba(23,23,23,0.72) 72%, #171717 100%)",
+                  },
+                  pointerEvents: "none",
+                }}
+              />
+            )}
+          </Box>
+
+          {isDescriptionCollapsible && (
+            <Button
+              variant="text"
+              size="small"
+              onClick={() => setExpanded((prev) => !prev)}
+              aria-expanded={expanded}
+              endIcon={expanded ? <FaChevronUp size={11} /> : <FaChevronDown size={11} />}
+              sx={{
+                px: 0,
+                minWidth: 0,
+                textTransform: "none",
+                fontWeight: 500,
+                color: "text.secondary",
+                "&:hover": {
+                  backgroundColor: "transparent",
+                  color: "text.primary",
+                },
+              }}
+            >
+              {expanded ? "Show less" : "Show more"}
+            </Button>
+          )}
         </Box>
       )}
 
-      {/* Related resources */}
       {note.urls.length > 0 && (
         <Box sx={{ mt: 2 }}>
           <Divider sx={{ mb: 2 }} />

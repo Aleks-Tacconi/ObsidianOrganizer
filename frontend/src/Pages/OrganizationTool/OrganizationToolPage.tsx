@@ -29,7 +29,7 @@ export default function OrganizationToolPage() {
   };
 
   return (
-    <SidebarLayout selectedTagId={selectedTagId} onSelectTag={handleSelectTag} onTagsChanged={() => {}}>
+    <SidebarLayout selectedTagId={selectedTagId} onSelectTag={handleSelectTag} onTagsChanged={() => {}} refreshKey={0}>
       <OrganisationPanel />
     </SidebarLayout>
   );
