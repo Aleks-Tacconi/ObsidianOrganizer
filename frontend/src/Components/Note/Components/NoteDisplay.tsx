@@ -1,8 +1,7 @@
 import type { Note } from "../../../Utils/types/api.schemas";
 import { Box, Button, Divider, Link, Stack, Typography } from "@mui/material";
-import { alpha } from "@mui/material/styles";
 import { useState } from "react";
-import { FaBookOpen, FaChevronDown, FaChevronUp, FaLink } from "react-icons/fa6";
+import { FaChevronDown, FaChevronUp, FaLink } from "react-icons/fa6";
 import ReactMarkdown from "react-markdown";
 
 import { getNoteTitleLayout } from "./noteTitleLayout";
@@ -36,27 +35,11 @@ export default function NoteDisplay({ note }: NoteDisplayProps) {
     <Box>
       <Stack
         direction="row"
-        spacing={1.25}
+        spacing={0}
         alignItems={titleLayout.titleRowAlignItems}
         sx={{ mb: note.description || note.urls.length > 0 ? 2 : 0 }}
         data-testid="note-title-row"
       >
-        <Box
-          data-testid="note-title-icon"
-          sx={{
-            width: titleLayout.iconSize,
-            height: titleLayout.iconSize,
-            borderRadius: "6px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
-            color: note.primary_tag?.color ? alpha(note.primary_tag.color, 0.88) : "text.secondary",
-          }}
-        >
-          <FaBookOpen size={13} />
-        </Box>
-
         <Typography
           variant={titleLayout.titleVariant}
           component="h3"

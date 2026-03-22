@@ -381,6 +381,9 @@ export default function ModulePanel({
                                 },
                               }}
                             >
+                              <ListItemIcon sx={{ minWidth: 24, color: moduleInfo.primary_tag.color }}>
+                                <FaFolder size={13} />
+                              </ListItemIcon>
                               <ListItemText
                                 primary={section.subtag.name}
                                 secondary={`${section.notes.length} lecture${section.notes.length === 1 ? "" : "s"}`}
@@ -514,12 +517,9 @@ export default function ModulePanel({
                           spacing={1.5}
                         >
                           <Box>
-                            <Stack direction="row" alignItems="center" spacing={1.25} sx={{ mb: 0.75 }}>
-                              <FaFolder size={14} style={{ color: moduleInfo.primary_tag.color }} />
-                              <Typography variant="h5" component="h2" sx={{ textWrap: "balance" }}>
-                                {activeSection.subtag.name}
-                              </Typography>
-                            </Stack>
+                            <Typography variant="h5" component="h2" sx={{ mb: 0.75, textWrap: "balance" }}>
+                              {activeSection.subtag.name}
+                            </Typography>
                             <Typography variant="body2" color="text.secondary">
                               {filteredNotes.length} of {activeSection.notes.length} lectures visible
                               {activeSectionQuery.trim() ? ` for "${activeSectionQuery}"` : ""}

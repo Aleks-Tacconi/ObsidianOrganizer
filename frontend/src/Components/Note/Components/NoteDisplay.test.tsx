@@ -36,7 +36,6 @@ describe("NoteDisplay", () => {
     );
 
     expect(screen.getByTestId("note-title-row")).toHaveStyle({ alignItems: "center" });
-    expect(screen.getByTestId("note-title-icon")).toHaveStyle({ width: "18px", height: "18px" });
     expect(screen.getByRole("heading", { level: 3, name: "Test note title" })).toHaveStyle({
       fontSize: "1.5rem",
       lineHeight: "1.2",
