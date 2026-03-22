@@ -291,22 +291,26 @@ export default function NoteDialog({ open, onClose, primaryTagId, tagColor, note
               />
             </Stack>
           ) : (
-            <Stack spacing={3} sx={{ pt: 1 }}>
+            <Stack spacing={3} sx={{ pt: 1.5 }}>
               {error && (
                 <Alert severity="error" onClose={() => setError(null)}>
                   {error}
                 </Alert>
               )}
 
-              <TextField
-                label="Name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-                fullWidth
-                size="small"
-                sx={{ mt: 0.5 }}
-              />
+              <Box>
+                <Typography variant="subtitle2" color="text.primary" sx={{ mb: 1, letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                  Name
+                </Typography>
+                <TextField
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  fullWidth
+                  size="small"
+                  placeholder="Enter note title"
+                />
+              </Box>
 
               <Box
                 sx={{
@@ -318,7 +322,7 @@ export default function NoteDialog({ open, onClose, primaryTagId, tagColor, note
               >
                 <Stack direction={{ xs: "column", sm: "row" }} spacing={2} justifyContent="space-between" alignItems={{ xs: "flex-start", sm: "center" }}>
                   <Box>
-                    <Typography variant="subtitle2" color="text.primary" sx={{ mb: 0.5 }}>
+                    <Typography variant="subtitle2" color="text.primary" sx={{ mb: 0.5, letterSpacing: "0.12em", textTransform: "uppercase" }}>
                       Description
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
