@@ -16,7 +16,6 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { alpha } from "@mui/material/styles";
 import {
   FaBars,
   FaBookOpen,
@@ -368,18 +367,15 @@ export default function ModulePanel({
                                 px: 1.25,
                                 py: 1.125,
                                 gap: 1,
-                                border: "1px solid transparent",
-                                backgroundColor: sectionIsActive ? alpha(moduleInfo.primary_tag.color, 0.08) : "transparent",
-                                transition: "background-color 150ms ease-out, border-color 150ms ease-out",
+                                transition: "background-color 150ms ease-out",
                                 "&:hover": {
-                                  backgroundColor: sectionIsActive ? alpha(moduleInfo.primary_tag.color, 0.1) : "rgba(255,255,255,0.03)",
+                                  backgroundColor: "rgba(255,255,255,0.03)",
                                 },
                                 "&.Mui-selected": {
-                                  backgroundColor: alpha(moduleInfo.primary_tag.color, 0.08),
-                                  border: `1px solid ${alpha(moduleInfo.primary_tag.color, 0.22)}`,
+                                  backgroundColor: "transparent",
                                 },
                                 "&.Mui-selected:hover": {
-                                  backgroundColor: alpha(moduleInfo.primary_tag.color, 0.1),
+                                  backgroundColor: "rgba(255,255,255,0.03)",
                                 },
                               }}
                             >
