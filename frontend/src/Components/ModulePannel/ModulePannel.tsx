@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
+import { motion } from "framer-motion";
 import Fuse from "fuse.js";
 import {
   Chip,
@@ -26,6 +27,7 @@ import SectionFiles from "./Components/SectionFiles";
 import Grades from "./Components/Grades";
 import ObsidianFileDialog, { type ObsidianFileDialogHandle } from "./Components/ObsidianFileDialog";
 import api from "../../Utils/api";
+import { motionTransitions, staggerContainer, staggerItem } from "../../Utils/motion";
 
 import type { PrimaryTag } from "../../Utils/types/api.schemas";
 import { useModuleNotes } from "../../Utils/useModuleNotes";
@@ -454,57 +456,99 @@ export default function ModulePanel({
               })()
             ) : (
               /* Normal section cards view */
-              <Stack spacing={2}>
+              <Stack
+                component={motion.div}
+                variants={staggerContainer}
+                initial="hidden"
+                animate="visible"
+                spacing={2}
+              >
                 {moduleInfo.sections.map((section) => {
-                   const sectionNotes = section.notes;
+                    const sectionNotes = section.notes;
                   const sectionQuery = sectionQueries[section.id] ?? "";
                   const isExpanded = expandedSections.includes(section.id);
 
                   return (
-                    <Paper
-                      key={section.id}
-                      sx={{ borderRadius: "6px" }}
-                      elevation={0}
-                    >
-                      {/* Section header — clickable */}
-                      <Stack
-                        direction="row"
-                        alignItems="center"
-                        spacing={1.5}
-                        sx={{
-                          cursor: "pointer",
-                          px: 3,
-                          py: 2,
-                          userSelect: "none",
-                          "&:hover": { backgroundColor: "rgba(255,255,255,0.02)" },
-                          borderRadius: isExpanded ? "6px 6px 0 0" : "6px",
-                          transition: "background-color 150ms ease-out",
-                        }}
+                     <Paper
+                       key={section.id}
+                       component={motion.div}
+                       variants={staggerItem}
+                       transition={motionTransitions.layout}
+                       layout
+                       sx={{
+                         borderRadius: "6px",
+                         border: "1px solid rgba(255,255,255,0.07)",
+                         backgroundColor: "#141414",
+                         overflow: "hidden",
+                       }}
+                       elevation={0}
+                     >
+                       {/* Section header — clickable */}
+                        <Stack
+                          component="button"
+                          type="button"
+                         direction="row"
+                         alignItems="center"
+                         spacing={1.5}
+                         aria-expanded={isExpanded}
+                          sx={{
+                            width: "100%",
+                            cursor: "pointer",
+                            color: "text.primary",
+                            px: 3,
+                            py: 2,
+                           userSelect: "none",
+                           border: 0,
+                           backgroundColor: "transparent",
+                           textAlign: "left",
+                           "&:hover": { backgroundColor: "rgba(255,255,255,0.02)" },
+                           "&:focus-visible": {
+                             outline: "2px solid #e0e0e0",
+                             outlineOffset: -2,
+                           },
+                           borderRadius: isExpanded ? "6px 6px 0 0" : "6px",
+                           transition: "background-color 150ms ease-out",
+                         }}
                         onClick={() => toggleSection(section.id)}
                       >
                         <Box sx={{ color: "text.secondary", display: "flex", alignItems: "center" }}>
-                          {isExpanded ? <FaAngleDown size={14} /> : <FaAngleRight size={14} />}
+                          <Box
+                            component={motion.div}
+                            key={isExpanded ? "expanded" : "collapsed"}
+                            initial={{ opacity: 0.55, y: -2 }}
+                            animate={{ opacity: isExpanded ? 0.95 : 0.72, y: 0 }}
+                            transition={motionTransitions.base}
+                          >
+                            {isExpanded ? <FaAngleDown size={14} /> : <FaAngleRight size={14} />}
+                          </Box>
                         </Box>
-                        <FaFolder size={14} style={{ color: moduleInfo.primary_tag.color }} />
-                        <Typography variant="h6" sx={{ flex: 1 }}>
-                          {section.subtag.name}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {sectionNotes.length}{" "}
-                          {sectionNotes.length === 1 ? "lecture" : "lectures"}
-                        </Typography>
+                         <FaFolder size={14} style={{ color: moduleInfo.primary_tag.color }} />
+                         <Typography component="h2" variant="h6" sx={{ flex: 1, minWidth: 0, textWrap: "balance" }}>
+                           {section.subtag.name}
+                         </Typography>
+                         <Typography variant="caption" color="text.secondary">
+                           {sectionNotes.length}{" "}
+                           {sectionNotes.length === 1 ? "lecture" : "lectures"}
+                         </Typography>
                       </Stack>
 
-                      <Collapse in={isExpanded}>
+                      <Collapse in={isExpanded} timeout={220}>
                         <Divider />
-                        <Box sx={{ px: 3, pt: 3, pb: 3 }}>
+                        <Box
+                          component={motion.div}
+                          initial={false}
+                          animate={{ opacity: isExpanded ? 1 : 0, y: isExpanded ? 0 : -8 }}
+                          transition={motionTransitions.base}
+                          sx={{ px: 3, pt: 3, pb: 3 }}
+                        >
                           {/* Per-section search */}
                           <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
-                            <TextField
-                              fullWidth
-                              size="small"
-                              placeholder="Search this section…"
-                              value={sectionQuery}
+                             <TextField
+                               fullWidth
+                               size="small"
+                               placeholder="Search this section…"
+                               inputProps={{ "aria-label": "Search this section" }}
+                               value={sectionQuery}
                               onChange={(e) =>
                                 setSectionQueries((prev) => ({
                                   ...prev,
@@ -561,15 +605,19 @@ export default function ModulePanel({
                                     border: "1px solid",
                                     borderColor: on ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.07)",
                                     backgroundColor: on ? "rgba(255,255,255,0.06)" : "transparent",
-                                    color: on ? "#ededed" : "#6b6b6b",
-                                    fontSize: "0.75rem",
-                                    fontWeight: 500,
-                                    whiteSpace: "nowrap",
-                                    transition: "background-color 150ms ease-out, border-color 150ms ease-out, color 150ms ease-out",
-                                    "&:hover": { backgroundColor: "rgba(255,255,255,0.06)", borderColor: "rgba(255,255,255,0.12)", color: "#ededed" },
-                                    outline: "none",
-                                  }}
-                                >
+                                     color: on ? "#ededed" : "#6b6b6b",
+                                     fontSize: "0.75rem",
+                                     fontWeight: 500,
+                                     whiteSpace: "nowrap",
+                                     transition: "background-color 150ms ease-out, border-color 150ms ease-out, color 150ms ease-out",
+                                     "&:hover": { backgroundColor: "rgba(255,255,255,0.06)", borderColor: "rgba(255,255,255,0.12)", color: "#ededed" },
+                                     "&:focus-visible": {
+                                       outline: "2px solid #e0e0e0",
+                                       outlineOffset: 2,
+                                     },
+                                     touchAction: "manipulation",
+                                   }}
+                                 >
                                   <FaBars size={11} />
                                   Preview {on ? "on" : "off"}
                                 </Box>
@@ -596,16 +644,23 @@ export default function ModulePanel({
                                />
                              </Box>
                            ) : (
-                           <Stack direction="row" spacing={4} alignItems="flex-start">
-                             {/* Lectures column */}
-                             <Box sx={{ flex: "1 1 0", minWidth: 0 }}>
-                               <Typography
-                                 variant="subtitle2"
-                                 color="text.secondary"
-                                 sx={{ mb: 2 }}
-                               >
-                                 Lectures
-                               </Typography>
+                            <Box
+                              sx={{
+                                display: "grid",
+                                gridTemplateColumns: { xs: "1fr", lg: "minmax(0, 1fr) 220px" },
+                                gap: { xs: 3, lg: 5 },
+                                alignItems: "start",
+                              }}
+                            >
+                              {/* Lectures column */}
+                              <Box sx={{ minWidth: 0 }}>
+                                <Typography
+                                  variant="subtitle2"
+                                  color="text.secondary"
+                                  sx={{ mb: 2, letterSpacing: "0.12em", textTransform: "uppercase" }}
+                                >
+                                  Lectures
+                                </Typography>
                                {sectionNotes.length === 0 ? (
                                  <Stack direction="row" spacing={1.5} alignItems="center" sx={{ py: 3 }}>
                                    <FaNoteSticky size={16} style={{ color: "#6b6b6b", flexShrink: 0 }} />
@@ -614,10 +669,10 @@ export default function ModulePanel({
                                    </Typography>
                                  </Stack>
                                ) : (
-                                  sectionNotes.map((note) => (
-                                    <Note
-                                     key={note.id}
-                                     note={note}
+                                   sectionNotes.map((note) => (
+                                     <Note
+                                      key={note.id}
+                                      note={note}
                                       onUpdate={updateNote}
                                       onDelete={deleteNote}
                                       onChanged={onNotesChanged}
@@ -625,28 +680,35 @@ export default function ModulePanel({
                                     />
                                   ))
                                )}
-                             </Box>
+                              </Box>
 
-                             {/* Notes / files column */}
-                             <Box sx={{ width: 200, flexShrink: 0 }}>
-                               <Typography
-                                 variant="subtitle2"
-                                 color="text.secondary"
-                                 sx={{ mb: 2 }}
-                               >
-                                 Notes
-                               </Typography>
-                               <SectionFiles
-                                 primaryTagName={moduleInfo.primary_tag.name}
-                                 subtagName={section.subtag.name}
-                                 showSnippets={false}
-                                 sectionQuery=""
-                               />
-                             </Box>
-                           </Stack>
-                           )}
-                        </Box>
-                      </Collapse>
+                              {/* Notes / files column */}
+                              <Box
+                                sx={{
+                                  minWidth: 0,
+                                  pl: { lg: 3 },
+                                  borderLeft: { lg: "1px solid rgba(255,255,255,0.05)" },
+                                }}
+                              >
+                                <Typography
+                                  variant="subtitle2"
+                                  color="text.secondary"
+                                  sx={{ mb: 2, letterSpacing: "0.12em", textTransform: "uppercase" }}
+                                >
+                                  Notes
+                                </Typography>
+                                <SectionFiles
+                                  primaryTagName={moduleInfo.primary_tag.name}
+                                  subtagName={section.subtag.name}
+                                  compact
+                                  showSnippets={false}
+                                  sectionQuery=""
+                                />
+                              </Box>
+                            </Box>
+                            )}
+                         </Box>
+                       </Collapse>
                     </Paper>
                   );
                 })}

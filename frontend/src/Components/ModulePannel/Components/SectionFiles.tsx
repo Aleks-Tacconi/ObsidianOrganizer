@@ -31,12 +31,14 @@ export default function SectionFiles({
   fileFilter,
   showSnippets,
   sectionQuery,
+  compact = false,
 }: {
   primaryTagName: string;
   subtagName: string;
   fileFilter?: string;
   showSnippets?: boolean;
   sectionQuery?: string;
+  compact?: boolean;
 }) {
   const [files, setFiles] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
@@ -189,7 +191,7 @@ export default function SectionFiles({
           {fileError}
         </Typography>
       )}
-      <List dense disablePadding>
+      <List dense disablePadding sx={{ display: "flex", flexDirection: "column", gap: compact ? 0.25 : 0.5 }}>
         {displayFiles.map((file) => {
           const fileName = file.split("/").pop()?.replace(/\.md$/, "") ?? file;
           const snippets = showSnippets ? (snippetCache[fileName] ?? []) : [];
@@ -197,15 +199,37 @@ export default function SectionFiles({
             <ListItemButton
               key={file}
               onClick={() => openFile(file)}
-              sx={{ py: 1, borderRadius: "6px", alignItems: snippets.length > 0 ? "flex-start" : "center" }}
+              sx={{
+                px: compact ? 1 : 1.25,
+                py: compact ? 0.75 : 1,
+                borderRadius: "6px",
+                alignItems: snippets.length > 0 ? "flex-start" : "center",
+                color: compact ? "text.secondary" : "text.primary",
+                transition: "background-color 150ms ease-out, color 150ms ease-out",
+                "&:hover": {
+                  backgroundColor: "rgba(255,255,255,0.03)",
+                  color: "text.primary",
+                },
+                "&.Mui-focusVisible": {
+                  outline: "2px solid #e0e0e0",
+                  outlineOffset: 2,
+                  backgroundColor: "rgba(255,255,255,0.04)",
+                },
+              }}
             >
-              <ListItemIcon sx={{ minWidth: 28, mt: snippets.length > 0 ? "2px" : 0 }}>
-                <FaRegFileLines size={16} />
+              <ListItemIcon sx={{ minWidth: compact ? 24 : 28, mt: snippets.length > 0 ? "2px" : 0, color: "inherit" }}>
+                <FaRegFileLines size={compact ? 14 : 16} />
               </ListItemIcon>
               <Box sx={{ flex: 1, minWidth: 0 }}>
                 <ListItemText
                   primary={fileName}
-                  primaryTypographyProps={{ fontSize: "0.875rem", fontWeight: 500 }}
+                  primaryTypographyProps={{
+                    fontSize: "0.875rem",
+                    fontWeight: compact ? 400 : 500,
+                    lineHeight: 1.4,
+                    color: "inherit",
+                    sx: { overflowWrap: "anywhere" },
+                  }}
                 />
                 {showSnippets && snippets.length > 0 && (
                   <Box sx={{ mt: 1.5, display: "flex", flexDirection: "column", gap: "12px" }}>

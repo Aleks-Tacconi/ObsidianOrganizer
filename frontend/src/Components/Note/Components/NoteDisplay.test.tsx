@@ -36,8 +36,21 @@ describe("NoteDisplay", () => {
     );
 
     expect(screen.getByTestId("note-title-row")).toHaveStyle({ alignItems: "center" });
-    expect(screen.getByTestId("note-title-icon")).toHaveStyle({ width: "32px", height: "32px" });
-    expect(screen.getByText("Test note title")).toHaveStyle({ fontSize: "1.5rem", lineHeight: "1.2" });
+    expect(screen.getByTestId("note-title-icon")).toHaveStyle({ width: "18px", height: "18px" });
+    expect(screen.getByRole("heading", { level: 3, name: "Test note title" })).toHaveStyle({
+      fontSize: "1.5rem",
+      lineHeight: "1.2",
+    });
+  });
+
+  it("keeps completed titles readable without a strikethrough", () => {
+    render(
+      <ThemeProvider theme={theme}>
+        <NoteDisplay note={makeNote({ completed: true })} />
+      </ThemeProvider>,
+    );
+
+    expect(screen.getByText("Test note title")).toHaveStyle({ textDecoration: "none" });
   });
 
   it("does not render the description section when there is no description", () => {
@@ -49,6 +62,29 @@ describe("NoteDisplay", () => {
 
     expect(screen.queryByText("Show more")).not.toBeInTheDocument();
     expect(screen.queryByText("Short description")).not.toBeInTheDocument();
+    expect(screen.queryByText("Description")).not.toBeInTheDocument();
+  });
+
+  it("renders a description heading when description text is present", () => {
+    render(
+      <ThemeProvider theme={theme}>
+        <NoteDisplay note={makeNote()} />
+      </ThemeProvider>,
+    );
+
+    expect(screen.getByText("Description")).toBeInTheDocument();
+    expect(screen.getByText("Short description")).toBeInTheDocument();
+  });
+
+  it("suppresses the description label when markdown already starts with a heading", () => {
+    render(
+      <ThemeProvider theme={theme}>
+        <NoteDisplay note={makeNote({ description: "# Web basics\n\nLooked at HTTP." })} />
+      </ThemeProvider>,
+    );
+
+    expect(screen.queryByText("Description")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 4, name: "Web basics" })).toBeInTheDocument();
   });
 
   it("expands long descriptions on demand", () => {
