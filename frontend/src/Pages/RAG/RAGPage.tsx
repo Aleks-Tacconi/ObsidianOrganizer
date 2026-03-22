@@ -76,77 +76,64 @@ function IndexCard({
   const statusColour = indexing ? "#e0e0e0" : "#6b6b6b";
 
   return (
-    <Paper
-      elevation={0}
-      sx={{
-        p: 2,
-        border: "1px solid rgba(255,255,255,0.07)",
-        borderRadius: "6px",
-        backgroundColor: "#141414",
-      }}
-    >
-      <Stack spacing={1.5}>
-        {/* Health row */}
-        <Stack direction="row" alignItems="center" spacing={1}>
-          <Box
-            sx={{
-              width: 8,
-              height: 8,
-              borderRadius: "50%",
-              flexShrink: 0,
-              backgroundColor:
-                healthy === null ? "#6b6b6b" : healthy ? "#ededed" : "rgba(255,80,80,0.8)",
-            }}
-          />
-          <Typography variant="caption" sx={{ color: "#6b6b6b" }}>
-            {healthy === null
-              ? "Checking Ollama…"
-              : healthy
-              ? "Ollama ready"
-              : `Ollama unavailable — ${healthError}`}
-          </Typography>
-        </Stack>
-
-        {/* Action row */}
-        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-          <Button
-            size="small"
-            variant="contained"
-            onClick={onStartIndex}
-            disabled={indexing}
-            sx={{ minWidth: 160 }}
-          >
-            {indexing ? (
-              <Stack direction="row" spacing={1} alignItems="center">
-                <CircularProgress size={12} color="inherit" />
-                <span>Indexing…</span>
-              </Stack>
-            ) : (
-              "Update Vector Index"
-            )}
-          </Button>
-          <Button
-            size="small"
-            variant="outlined"
-            color="inherit"
-            onClick={onClearIndex}
-            disabled={indexing}
-          >
-            Clear
-          </Button>
-        </Stack>
-
-        {/* Status text */}
-        <Typography variant="caption" sx={{ color: statusColour }}>
-          {status}
+    <Stack spacing={1.5}>
+      <Stack direction="row" alignItems="center" spacing={1}>
+        <Box
+          sx={{
+            width: 8,
+            height: 8,
+            borderRadius: "50%",
+            flexShrink: 0,
+            backgroundColor:
+              healthy === null ? "#6b6b6b" : healthy ? "#ededed" : "rgba(255,80,80,0.8)",
+          }}
+        />
+        <Typography variant="caption" sx={{ color: "#6b6b6b" }}>
+          {healthy === null
+            ? "Checking Ollama..."
+            : healthy
+            ? "Ollama ready"
+            : `Ollama unavailable — ${healthError}`}
         </Typography>
-        {errors.length > 0 && (
-          <Typography variant="caption" sx={{ color: "rgba(255,80,80,0.9)" }}>
-            {errors[0]}
-          </Typography>
-        )}
       </Stack>
-    </Paper>
+
+      <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+        <Button
+          size="small"
+          variant="contained"
+          onClick={onStartIndex}
+          disabled={indexing}
+          sx={{ minWidth: 160 }}
+        >
+          {indexing ? (
+            <Stack direction="row" spacing={1} alignItems="center">
+              <CircularProgress size={12} color="inherit" />
+              <span>Indexing...</span>
+            </Stack>
+          ) : (
+            "Update Vector Index"
+          )}
+        </Button>
+        <Button
+          size="small"
+          variant="outlined"
+          color="inherit"
+          onClick={onClearIndex}
+          disabled={indexing}
+        >
+          Clear
+        </Button>
+      </Stack>
+
+      <Typography variant="caption" sx={{ color: statusColour }}>
+        {status}
+      </Typography>
+      {errors.length > 0 && (
+        <Typography variant="caption" sx={{ color: "rgba(255,80,80,0.9)" }}>
+          {errors[0]}
+        </Typography>
+      )}
+    </Stack>
   );
 }
 
@@ -496,55 +483,58 @@ export default function RAGPage() {
           titleVariant="h5"
           description="Ask questions about your notes. Mention specific files inline with @filename.md."
         >
-          <Stack direction={{ xs: "column", md: "row" }} spacing={1.5}>
-            <TextField
-              select
-              label="Module"
-              size="small"
-              value={scopeModule}
-              onChange={(e) => {
-                setScopeModule(e.target.value);
-                setScopeCategory("");
-              }}
-              sx={{ minWidth: "200px" }}
-            >
-              <MenuItem value="">All modules</MenuItem>
-              {moduleOptions.map((name) => (
-                <MenuItem key={name} value={name}>
-                  {name}
-                </MenuItem>
-              ))}
-            </TextField>
+          <Stack spacing={3}>
+            <Stack direction={{ xs: "column", md: "row" }} spacing={1.5}>
+              <TextField
+                select
+                label="Module"
+                size="small"
+                value={scopeModule}
+                onChange={(e) => {
+                  setScopeModule(e.target.value);
+                  setScopeCategory("");
+                }}
+                sx={{ minWidth: "200px" }}
+              >
+                <MenuItem value="">All modules</MenuItem>
+                {moduleOptions.map((name) => (
+                  <MenuItem key={name} value={name}>
+                    {name}
+                  </MenuItem>
+                ))}
+              </TextField>
 
-            <TextField
-              select
-              label="Category"
-              size="small"
-              value={scopeCategory}
-              onChange={(e) => setScopeCategory(e.target.value)}
-              disabled={!scopeModule}
-              sx={{ minWidth: "200px" }}
-            >
-              <MenuItem value="">All categories</MenuItem>
-              {categoryOptions.map((name) => (
-                <MenuItem key={name} value={name}>
-                  {name}
-                </MenuItem>
-              ))}
-            </TextField>
+              <TextField
+                select
+                label="Category"
+                size="small"
+                value={scopeCategory}
+                onChange={(e) => setScopeCategory(e.target.value)}
+                disabled={!scopeModule}
+                sx={{ minWidth: "200px" }}
+              >
+                <MenuItem value="">All categories</MenuItem>
+                {categoryOptions.map((name) => (
+                  <MenuItem key={name} value={name}>
+                    {name}
+                  </MenuItem>
+                ))}
+              </TextField>
+            </Stack>
+
+            <Divider sx={{ borderColor: "rgba(255,255,255,0.07)" }} />
+
+            <IndexCard
+              status={indexStatus}
+              errors={indexErrors}
+              healthy={healthy}
+              healthError={healthError}
+              indexing={indexing}
+              onStartIndex={handleStartIndexing}
+              onClearIndex={handleClearIndex}
+            />
           </Stack>
         </PageHeaderCard>
-
-        {/* Index + health card */}
-        <IndexCard
-          status={indexStatus}
-          errors={indexErrors}
-          healthy={healthy}
-          healthError={healthError}
-          indexing={indexing}
-          onStartIndex={handleStartIndexing}
-          onClearIndex={handleClearIndex}
-        />
 
         {/* Chat area */}
         <Paper
