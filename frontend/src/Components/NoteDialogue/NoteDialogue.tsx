@@ -291,7 +291,7 @@ export default function NoteDialog({ open, onClose, primaryTagId, tagColor, note
               />
             </Stack>
           ) : (
-            <Stack spacing={3}>
+            <Stack spacing={3} sx={{ pt: 0.5 }}>
               {error && (
                 <Alert severity="error" onClose={() => setError(null)}>
                   {error}
@@ -371,111 +371,103 @@ export default function NoteDialog({ open, onClose, primaryTagId, tagColor, note
                 )}
               />
 
-              <Box
-                sx={{
-                  border: "1px solid rgba(255,255,255,0.07)",
-                  borderRadius: "6px",
-                  p: 2,
-                }}
-              >
-                <Stack spacing={2}>
-                  <Box>
-                    <Typography variant="subtitle2" color="text.primary" sx={{ mb: 0.5 }}>
-                      Resources
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Add links for recordings, slides, or supporting references.
-                    </Typography>
-                  </Box>
+              <Stack spacing={2}>
+                <Box>
+                  <Typography variant="subtitle2" color="text.primary" sx={{ mb: 0.5 }}>
+                    Resources
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Add links for recordings, slides, or supporting references.
+                  </Typography>
+                </Box>
 
-                  <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems="flex-start">
-                    <TextField
-                      label="Link label"
-                      value={urlAlias}
-                      onChange={(e) => { setUrlAlias(e.target.value); setUrlError(false); }}
-                      fullWidth
-                      size="small"
-                      error={urlError && !urlAlias.trim()}
-                      helperText={urlError && !urlAlias.trim() ? "Required" : ""}
-                    />
-                    <TextField
-                      label="URL"
-                      value={urlValue}
-                      onChange={(e) => { setUrlValue(e.target.value); setUrlError(false); }}
-                      fullWidth
-                      size="small"
-                      error={urlError && !urlValue.trim()}
-                      helperText={urlError && !urlValue.trim() ? "Required" : ""}
-                    />
-                    <Tooltip title="Add link">
-                      <IconButton
-                        onClick={handleAddUrl}
-                        aria-label="Add link"
+                <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems="flex-start">
+                  <TextField
+                    label="Link label"
+                    value={urlAlias}
+                    onChange={(e) => { setUrlAlias(e.target.value); setUrlError(false); }}
+                    fullWidth
+                    size="small"
+                    error={urlError && !urlAlias.trim()}
+                    helperText={urlError && !urlAlias.trim() ? "Required" : ""}
+                  />
+                  <TextField
+                    label="URL"
+                    value={urlValue}
+                    onChange={(e) => { setUrlValue(e.target.value); setUrlError(false); }}
+                    fullWidth
+                    size="small"
+                    error={urlError && !urlValue.trim()}
+                    helperText={urlError && !urlValue.trim() ? "Required" : ""}
+                  />
+                  <Tooltip title="Add link">
+                    <IconButton
+                      onClick={handleAddUrl}
+                      aria-label="Add link"
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: "6px",
+                        border: "1px solid rgba(255,255,255,0.12)",
+                        color: "text.secondary",
+                        flexShrink: 0,
+                        mt: { xs: 0, sm: 0.5 },
+                        "&:hover": {
+                          borderColor: "rgba(255,255,255,0.2)",
+                          backgroundColor: "rgba(255,255,255,0.04)",
+                          color: "text.primary",
+                        },
+                      }}
+                    >
+                      <FaPlus size={14} />
+                    </IconButton>
+                  </Tooltip>
+                </Stack>
+
+                {urls.length > 0 && (
+                  <Stack spacing={1}>
+                    {urls.map((u, i) => (
+                      <Stack
+                        key={i}
+                        direction={{ xs: "column", sm: "row" }}
+                        spacing={1}
+                        alignItems={{ xs: "stretch", sm: "center" }}
                         sx={{
-                          width: 40,
-                          height: 40,
+                          p: 1.5,
                           borderRadius: "6px",
-                          border: "1px solid rgba(255,255,255,0.12)",
-                          color: "text.secondary",
-                          flexShrink: 0,
-                          mt: { xs: 0, sm: 0.5 },
-                          "&:hover": {
-                            borderColor: "rgba(255,255,255,0.2)",
-                            backgroundColor: "rgba(255,255,255,0.04)",
-                            color: "text.primary",
-                          },
+                          backgroundColor: "rgba(255,255,255,0.03)",
+                          border: "1px solid rgba(255,255,255,0.05)",
                         }}
                       >
-                        <FaPlus size={14} />
-                      </IconButton>
-                    </Tooltip>
+                        <TextField
+                          label="Label"
+                          value={u.alias}
+                          onChange={(e) => updateUrl(i, "alias", e.target.value)}
+                          fullWidth
+                          size="small"
+                        />
+                        <TextField
+                          label="URL"
+                          value={u.url}
+                          onChange={(e) => updateUrl(i, "url", e.target.value)}
+                          fullWidth
+                          size="small"
+                        />
+                        <Tooltip title="Remove link">
+                          <IconButton
+                            onClick={() => removeUrl(i)}
+                            aria-label="Remove link"
+                            size="small"
+                            sx={{ alignSelf: { xs: "flex-end", sm: "center" }, padding: "8px" }}
+                          >
+                            <FaTrash size={14} />
+                          </IconButton>
+                        </Tooltip>
+                      </Stack>
+                    ))}
                   </Stack>
-
-                  {urls.length > 0 && (
-                    <Stack spacing={1}>
-                      {urls.map((u, i) => (
-                        <Stack
-                          key={i}
-                          direction={{ xs: "column", sm: "row" }}
-                          spacing={1}
-                          alignItems={{ xs: "stretch", sm: "center" }}
-                          sx={{
-                            p: 1.5,
-                            borderRadius: "6px",
-                            backgroundColor: "rgba(255,255,255,0.03)",
-                            border: "1px solid rgba(255,255,255,0.05)",
-                          }}
-                        >
-                          <TextField
-                            label="Label"
-                            value={u.alias}
-                            onChange={(e) => updateUrl(i, "alias", e.target.value)}
-                            fullWidth
-                            size="small"
-                          />
-                          <TextField
-                            label="URL"
-                            value={u.url}
-                            onChange={(e) => updateUrl(i, "url", e.target.value)}
-                            fullWidth
-                            size="small"
-                          />
-                          <Tooltip title="Remove link">
-                            <IconButton
-                              onClick={() => removeUrl(i)}
-                              aria-label="Remove link"
-                              size="small"
-                              sx={{ alignSelf: { xs: "flex-end", sm: "center" }, padding: "8px" }}
-                            >
-                              <FaTrash size={14} />
-                            </IconButton>
-                          </Tooltip>
-                        </Stack>
-                      ))}
-                    </Stack>
-                  )}
-                </Stack>
-              </Box>
+                )}
+              </Stack>
 
               <Box
                 sx={{
