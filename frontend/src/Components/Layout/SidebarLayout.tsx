@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from "react";
 import { motion } from "framer-motion";
-import { Box, Button, Drawer, IconButton, Tooltip } from "@mui/material";
+import { Box, Drawer, IconButton, Tooltip, Typography } from "@mui/material";
 import { FaBars, FaBookOpen } from "react-icons/fa6";
 
 import TagList from "../TagList/TagList";
@@ -30,27 +30,35 @@ export default function SidebarLayout({
   const [open, setOpen] = useState(false);
 
   const menuTrigger = menuPlacement === "inline" ? (
-    <Button
+    <Box
+      component="button"
       onClick={() => setOpen(true)}
-      startIcon={<FaBookOpen size={14} />}
-      variant="outlined"
       sx={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 1,
         alignSelf: "flex-start",
-        borderColor: "rgba(255,255,255,0.07)",
-        color: "text.primary",
+        border: 0,
         borderRadius: "6px",
-        textTransform: "none",
-        px: 1.5,
-        py: 0.75,
-        minWidth: 0,
+        backgroundColor: "transparent",
+        color: "text.secondary",
+        cursor: "pointer",
+        px: 0,
+        py: 0,
         "&:hover": {
-          borderColor: "rgba(255,255,255,0.12)",
-          backgroundColor: "rgba(255,255,255,0.04)",
+          color: "text.primary",
+        },
+        "&:focus-visible": {
+          outline: "2px solid #e0e0e0",
+          outlineOffset: 6,
         },
       }}
     >
-      Modules
-    </Button>
+      <FaBookOpen size={14} />
+      <Typography variant="body2" sx={{ color: "inherit", fontWeight: 500 }}>
+        Modules
+      </Typography>
+    </Box>
   ) : (
     <Tooltip title={open ? "Close sidebar" : "Open sidebar"}>
       <Box sx={{ position: "fixed", top: 12, left: 12, zIndex: 2000 }}>

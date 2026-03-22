@@ -470,7 +470,13 @@ export default function RAGPage() {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <SidebarLayout selectedTagId={selectedTagId} onSelectTag={handleSelectTag} onTagsChanged={() => {}} refreshKey={0}>
+    <SidebarLayout
+      selectedTagId={selectedTagId}
+      onSelectTag={handleSelectTag}
+      onTagsChanged={() => {}}
+      refreshKey={0}
+      menuPlacement="inline"
+    >
       <Stack spacing={2} sx={{ maxWidth: "900px", mx: "auto" }}>
         {/* Page header */}
         <Box>

@@ -269,7 +269,7 @@ export default function OrganisationPanel() {
   const selectionMissing = !selectedModule || !selectedCategory;
 
   return (
-    <Stack spacing={3} sx={{ mt: 6, px: { xs: 0, sm: 2 }, width: "100%" }}>
+    <Stack spacing={3} sx={{ px: { xs: 0, sm: 2 }, width: "100%" }}>
       <Box>
         <Typography variant="h5" sx={{ mb: 1 }}>
           Organisation Tool

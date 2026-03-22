@@ -200,7 +200,7 @@ export default function ModulePanel({
 
   return (
     <Box sx={{ width: "100%" }}>
-      <Box sx={{ mt: 6, px: { xs: 0, sm: 2 } }}>
+      <Box sx={{ px: { xs: 0, sm: 2 } }}>
         {loading ? (
           <Stack spacing={3} sx={{ width: "100%" }}>
             <Skeleton variant="rectangular" height={168} sx={{ borderRadius: "6px" }} />
