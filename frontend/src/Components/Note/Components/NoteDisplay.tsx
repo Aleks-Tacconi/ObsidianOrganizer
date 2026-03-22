@@ -1,9 +1,11 @@
+import { motion } from "framer-motion";
 import type { Note } from "../../../Utils/types/api.schemas";
 import { Box, Button, Divider, Link, Stack, Typography } from "@mui/material";
 import { useState } from "react";
-import { FaChevronDown, FaChevronUp, FaLink } from "react-icons/fa6";
+import { FaChevronDown, FaLink } from "react-icons/fa6";
 import ReactMarkdown from "react-markdown";
 
+import { motionTransitions } from "../../../Utils/motion";
 import { getNoteTitleLayout } from "./noteTitleLayout";
 
 type NoteDisplayProps = {
@@ -68,12 +70,17 @@ export default function NoteDisplay({ note }: NoteDisplayProps) {
             </Typography>
           )}
           <Box
+            component={motion.div}
             sx={{
               position: "relative",
-              maxHeight: expanded || !isDescriptionCollapsible ? "none" : DESCRIPTION_COLLAPSED_MAX_HEIGHT,
               overflow: "hidden",
               mb: isDescriptionCollapsible ? 0.5 : 0,
             }}
+            initial={false}
+            animate={{
+              height: expanded || !isDescriptionCollapsible ? "auto" : DESCRIPTION_COLLAPSED_MAX_HEIGHT,
+            }}
+            transition={motionTransitions.base}
           >
             <ReactMarkdown
               components={{
@@ -150,7 +157,17 @@ export default function NoteDisplay({ note }: NoteDisplayProps) {
               size="small"
               onClick={() => setExpanded((prev) => !prev)}
               aria-expanded={expanded}
-              endIcon={expanded ? <FaChevronUp size={11} /> : <FaChevronDown size={11} />}
+              endIcon={(
+                <Box
+                  component={motion.span}
+                  initial={false}
+                  animate={{ rotate: expanded ? 180 : 0 }}
+                  transition={motionTransitions.base}
+                  sx={{ display: "inline-flex" }}
+                >
+                  <FaChevronDown size={11} />
+                </Box>
+              )}
               sx={{
                 px: 0,
                 minWidth: 0,
