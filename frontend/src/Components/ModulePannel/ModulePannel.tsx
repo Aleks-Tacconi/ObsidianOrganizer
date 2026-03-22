@@ -1,24 +1,34 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion } from "framer-motion";
-import Fuse from "fuse.js";
 import {
-  Chip,
+  Box,
+  Divider,
   IconButton,
   InputAdornment,
   List,
   ListItemButton,
   ListItemIcon,
+  ListItemText,
   Paper,
-  TextField,
-  Typography,
-  Stack,
-  Collapse,
-  Divider,
   Skeleton,
+  Stack,
+  TextField,
   Tooltip,
-  Box,
+  Typography,
 } from "@mui/material";
-import { FaPlus, FaAngleRight, FaAngleDown, FaGraduationCap, FaFolder, FaFolderOpen, FaNoteSticky, FaMagnifyingGlass, FaXmark, FaRegFileLines, FaBars, FaBookOpen } from "react-icons/fa6";
+import { alpha } from "@mui/material/styles";
+import {
+  FaAngleDown,
+  FaAngleRight,
+  FaBars,
+  FaBookOpen,
+  FaFolder,
+  FaGraduationCap,
+  FaMagnifyingGlass,
+  FaPlus,
+  FaRegFileLines,
+  FaXmark,
+} from "react-icons/fa6";
 
 import Note from "../Note/Note";
 import NoteDialog from "../NoteDialogue/NoteDialogue";
@@ -29,8 +39,32 @@ import ObsidianFileDialog, { type ObsidianFileDialogHandle } from "./Components/
 import api from "../../Utils/api";
 import { motionTransitions, staggerContainer, staggerItem } from "../../Utils/motion";
 
-import type { PrimaryTag } from "../../Utils/types/api.schemas";
+import type { Note as NoteType, PrimaryTag } from "../../Utils/types/api.schemas";
 import { useModuleNotes } from "../../Utils/useModuleNotes";
+
+function readStoredNumber(key: string): number | null {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = Number(raw);
+    return Number.isNaN(parsed) ? null : parsed;
+  } catch {
+    return null;
+  }
+}
+
+function matchesNoteQuery(note: NoteType, query: string): boolean {
+  const normalized = query.trim().toLowerCase();
+  if (!normalized) return true;
+
+  const searchableText = [
+    note.name,
+    note.description ?? "",
+    ...note.urls.map((url) => `${url.alias} ${url.url}`),
+  ].join("\n").toLowerCase();
+
+  return searchableText.includes(normalized);
+}
 
 export default function ModulePanel({
   moduleId,
@@ -46,126 +80,80 @@ export default function ModulePanel({
     refresh,
   );
 
-  const expandedKey = `module-panel:expanded-sections:${moduleId.id}`;
-  const [expandedSections, setExpandedSections] = useState<number[]>(() => {
-    try {
-      const raw = localStorage.getItem(expandedKey);
-      return raw ? (JSON.parse(raw) as number[]) : [];
-    } catch {
-      return [];
-    }
-  });
-  const [open, setOpen] = useState(false);
-  const [globalQuery, setGlobalQuery] = useState("");
+  const activeSectionKey = `module-panel:active-section:${moduleId.id}`;
+  const [activeSectionId, setActiveSectionId] = useState<number | null>(() => readStoredNumber(activeSectionKey));
+  const [activeNoteId, setActiveNoteId] = useState<number | null>(null);
+  const [treeQuery, setTreeQuery] = useState("");
   const [sectionQueries, setSectionQueries] = useState<Record<number, string>>({});
   const [sectionSnippets, setSectionSnippets] = useState<Record<number, boolean>>({});
-  const [sectionFiles, setSectionFiles] = useState<Record<number, string[]>>({});
+  const [open, setOpen] = useState(false);
   const [searchFileOpen, setSearchFileOpen] = useState(false);
   const [searchActiveFile, setSearchActiveFile] = useState<{ name: string; content: string } | null>(null);
-  const [showSnippets, setShowSnippets] = useState(false);
-  const [snippetCache, setSnippetCache] = useState<Record<string, string[]>>({});
-  const [lastNote, setLastNote] = useState<string | null>(
-    () => localStorage.getItem("obsidian-last-note"),
-  );
+  const [lastNote, setLastNote] = useState<string | null>(() => localStorage.getItem("obsidian-last-note"));
   const searchDialogRef = useRef<ObsidianFileDialogHandle>(null);
 
-  // Fetch file names for every section so search can match against them
-  const fetchSectionFiles = useCallback((primaryTagName: string, sections: { id: number; subtag: { name: string } }[]) => {
-    sections.forEach((section) => {
-      api
-        .post<{ files: string[] }>("match-tags/", {
-          tags: [primaryTagName, section.subtag.name],
-        })
-        .then((res) => {
-          if (res?.data) {
-            const basenames = res.data.files.map(
-              (f) => f.split("/").pop()?.replace(/\.md$/, "") ?? f,
-            );
-            setSectionFiles((prev) => ({ ...prev, [section.id]: basenames }));
-          }
-        })
-        .catch(() => {/* silently ignore */});
-    });
-  }, []);
+  const allSections = useMemo(() => moduleInfo?.sections ?? [], [moduleInfo]);
+  const allNotes = useMemo(() => allSections.flatMap((section) => section.notes), [allSections]);
+  const normalizedTreeQuery = treeQuery.trim().toLowerCase();
+  const visibleSections = useMemo(
+    () => allSections.filter((section) => (
+      !normalizedTreeQuery
+      || section.subtag.name.toLowerCase().includes(normalizedTreeQuery)
+      || section.notes.some((note) => matchesNoteQuery(note, normalizedTreeQuery))
+    )),
+    [allSections, normalizedTreeQuery],
+  );
 
-  const fetchSnippets = useCallback((query: string, files: string[]) => {
-    if (!query.trim() || files.length === 0) return;
-    api
-      .post<{ results: { name: string; snippets: string[] }[] }>("search-in-files/", {
-        query,
-        files,
-      })
-      .then((res) => {
-        if (res?.data) {
-          const cache: Record<string, string[]> = {};
-          res.data.results.forEach(({ name, snippets }) => {
-            cache[name] = snippets;
-          });
-          setSnippetCache(cache);
-        }
-      })
-      .catch(() => {/* silently ignore */});
-  }, []);
-
-  // Restore persisted expanded sections; otherwise keep all sections collapsed
   useEffect(() => {
-    if (!moduleInfo?.sections.length) return;
-
-    const sectionIds = new Set(moduleInfo.sections.map((s) => s.id));
-
-    try {
-      const raw = localStorage.getItem(expandedKey);
-      if (raw) {
-        const persisted = (JSON.parse(raw) as number[]).filter((id) => sectionIds.has(id));
-        if (persisted.length > 0) {
-          setExpandedSections(persisted);
-          return;
-        }
-      }
-    } catch {
-      // fall through to collapsed default
-    }
-
-    setExpandedSections([]);
-  }, [moduleInfo, expandedKey]);
-
-  // Pre-fetch file names for all sections so global search can match against them
-  useEffect(() => {
-    if (!moduleInfo) return;
-    fetchSectionFiles(
-      moduleInfo.primary_tag.name,
-      moduleInfo.sections.map((s) => ({ id: s.id, subtag: { name: s.subtag.name } })),
-    );
-  }, [moduleInfo, fetchSectionFiles]);
-
-  // When showSnippets is on and a global query is active, search file content
-  // across ALL section files so content-only hits are also discovered.
-  useEffect(() => {
-    if (!showSnippets || !globalQuery.trim() || !moduleInfo) {
-      setSnippetCache({});
+    if (allSections.length === 0) {
+      setActiveSectionId(null);
       return;
     }
-    const allFiles: string[] = [];
-    moduleInfo.sections.forEach((section) => {
-      const files = sectionFiles[section.id] ?? [];
-      files.forEach((f) => allFiles.push(f));
+
+    setActiveSectionId((current) => {
+      if (current && allSections.some((section) => section.id === current)) {
+        return current;
+      }
+
+      const stored = readStoredNumber(activeSectionKey);
+      if (stored && allSections.some((section) => section.id === stored)) {
+        return stored;
+      }
+
+      return allSections[0].id;
     });
-    if (allFiles.length > 0) {
-      fetchSnippets(globalQuery, allFiles);
-    } else {
-      setSnippetCache({});
+  }, [activeSectionKey, allSections]);
+
+  useEffect(() => {
+    if (activeSectionId === null) return;
+    localStorage.setItem(activeSectionKey, String(activeSectionId));
+  }, [activeSectionId, activeSectionKey]);
+
+  useEffect(() => {
+    if (!normalizedTreeQuery || visibleSections.length === 0) return;
+    if (!visibleSections.some((section) => section.id === activeSectionId)) {
+      setActiveSectionId(visibleSections[0].id);
     }
-  }, [showSnippets, globalQuery, sectionFiles, moduleInfo, fetchSnippets]);
+  }, [activeSectionId, normalizedTreeQuery, visibleSections]);
 
-  const allNotes = moduleInfo?.sections.flatMap((s) => s.notes) ?? [];
+  const activeSection = allSections.find((section) => section.id === activeSectionId) ?? null;
+  const activeSectionQuery = activeSection ? sectionQueries[activeSection.id] ?? "" : "";
+  const activeSectionSnippets = activeSection ? sectionSnippets[activeSection.id] ?? false : false;
+  const filteredNotes = useMemo(
+    () => activeSection?.notes.filter((note) => matchesNoteQuery(note, activeSectionQuery)) ?? [],
+    [activeSection, activeSectionQuery],
+  );
 
-  const toggleSection = (id: number) => {
-    setExpandedSections((p) => {
-      const next = p.includes(id) ? p.filter((x) => x !== id) : [...p, id];
-      localStorage.setItem(expandedKey, JSON.stringify(next));
-      return next;
-    });
-  };
+  useEffect(() => {
+    if (filteredNotes.length === 0) {
+      setActiveNoteId(null);
+      return;
+    }
+
+    if (!filteredNotes.some((note) => note.id === activeNoteId)) {
+      setActiveNoteId(filteredNotes[0].id);
+    }
+  }, [activeNoteId, filteredNotes]);
 
   const openSearchFile = (name: string) => {
     api
@@ -176,545 +164,496 @@ export default function ModulePanel({
           setSearchFileOpen(true);
           searchDialogRef.current?.navigate(res.data);
           setLastNote(name);
+          localStorage.setItem("obsidian-last-note", name);
         }
       })
       .catch(() => {/* silently ignore */});
   };
 
-  // Highlight all occurrences of query inside a snippet block — returns React nodes
-  const highlightSnippet = (text: string, query: string): React.ReactNode => {
-    if (!query.trim()) return text;
-    const lower = text.toLowerCase();
-    const qLower = query.toLowerCase();
-    const parts: React.ReactNode[] = [];
-    let cursor = 0;
-    let idx = lower.indexOf(qLower, cursor);
-    while (idx !== -1) {
-      if (idx > cursor) parts.push(text.slice(cursor, idx));
-      parts.push(
-        <strong key={idx} style={{ color: "#ededed", fontWeight: 600 }}>
-          {text.slice(idx, idx + query.length)}
-        </strong>
-      );
-      cursor = idx + query.length;
-      idx = lower.indexOf(qLower, cursor);
-    }
-    if (cursor < text.length) parts.push(text.slice(cursor));
-    return <>{parts}</>;
+  const setActiveSectionQuery = (value: string) => {
+    if (!activeSection) return;
+    setSectionQueries((prev) => ({
+      ...prev,
+      [activeSection.id]: value,
+    }));
+  };
+
+  const toggleSectionPreview = () => {
+    if (!activeSection) return;
+    setSectionSnippets((prev) => ({
+      ...prev,
+      [activeSection.id]: !(prev[activeSection.id] ?? false),
+    }));
+  };
+
+  const focusNote = (noteId: number) => {
+    setActiveNoteId(noteId);
+    requestAnimationFrame(() => {
+      document.getElementById(`module-note-${noteId}`)?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    });
   };
 
   const loading = moduleInfo === null;
 
   return (
-    <div style={{ width: "100%" }}>
-      <Box sx={{ position: "fixed", top: 16, right: 16, zIndex: 2000, display: "flex", alignItems: "center", gap: 0.5 }}>
-        <Tooltip title={lastNote ? `Open: ${lastNote}` : "No recently opened note"}>
-          <span>
-            <IconButton
-              onClick={() => { if (lastNote) openSearchFile(lastNote); }}
-              disabled={!lastNote || loading}
-              aria-label="Open last note"
-            >
-              <FaBookOpen size={16} />
-            </IconButton>
-          </span>
-        </Tooltip>
-        <Tooltip title="Add note">
-          <span>
-            <IconButton
-              onClick={() => setOpen(true)}
-              disabled={loading}
-              aria-label="Add note"
-            >
-              <FaPlus size={16} />
-            </IconButton>
-          </span>
-        </Tooltip>
-      </Box>
-
+    <Box sx={{ width: "100%" }}>
       <Box sx={{ mt: 6, px: { xs: 0, sm: 2 } }}>
         {loading ? (
-          <Stack spacing={3} sx={{ maxWidth: 720, mx: "auto" }}>
-            <Skeleton variant="text" width="45%" height={48} sx={{ mx: "auto" }} />
-            <Skeleton variant="text" width="55%" height={22} sx={{ mx: "auto" }} />
-            <Skeleton variant="rectangular" height={8} sx={{ borderRadius: "6px" }} />
-            <Skeleton variant="rectangular" height={96} sx={{ borderRadius: "6px" }} />
-            <Skeleton variant="rectangular" height={96} sx={{ borderRadius: "6px" }} />
+          <Stack spacing={3} sx={{ width: "100%" }}>
+            <Skeleton variant="rectangular" height={168} sx={{ borderRadius: "6px" }} />
+            <Box sx={{ display: "grid", gap: 3, gridTemplateColumns: { xs: "1fr", xl: "320px minmax(0, 1.8fr) 360px" } }}>
+              <Skeleton variant="rectangular" height={520} sx={{ borderRadius: "6px" }} />
+              <Skeleton variant="rectangular" height={520} sx={{ borderRadius: "6px" }} />
+              <Skeleton variant="rectangular" height={520} sx={{ borderRadius: "6px" }} />
+            </Box>
           </Stack>
         ) : (
-          <>
-            {/* Module header */}
-            <Box sx={{ textAlign: "center", mb: 4 }}>
-              <Stack direction="row" alignItems="center" justifyContent="center" spacing={1.5} sx={{ mb: 1 }}>
-                <FaGraduationCap size={22} style={{ color: moduleInfo?.primary_tag.color }} />
-                <Typography variant="h4">
-                  {moduleInfo?.primary_tag.name}
-                </Typography>
-              </Stack>
-              {moduleInfo?.description && (
-                <Typography variant="body1" color="text.secondary">
-                  {moduleInfo.description}
-                </Typography>
-              )}
-            </Box>
-
-            {/* Progress */}
-            <Box sx={{ mb: 4 }}>
-              <ProgressBar Notes={allNotes} color={moduleInfo?.primary_tag.color} />
-            </Box>
-
-            {/* Grades */}
-            {moduleInfo?.grades && moduleInfo.grades.length > 0 && (
-              <Box sx={{ mb: 4 }}>
-                <Grades moduleInfo={moduleInfo} />
-              </Box>
-            )}
-
-            {/* Global search */}
-            <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
-              <TextField
-                fullWidth
-                size="small"
-                placeholder="Search all sections…"
-                value={globalQuery}
-                onChange={(e) => setGlobalQuery(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <FaMagnifyingGlass size={13} style={{ color: "#6b6b6b" }} />
-                    </InputAdornment>
-                  ),
-                  endAdornment: globalQuery ? (
-                    <InputAdornment position="end">
-                      <IconButton
-                        size="small"
-                        onClick={() => setGlobalQuery("")}
-                        aria-label="Clear search"
-                        sx={{ padding: "4px" }}
-                      >
-                        <FaXmark size={12} />
-                      </IconButton>
-                    </InputAdornment>
-                  ) : null,
-                }}
-              />
-              <Box
-                component="button"
-                onClick={() => setShowSnippets((p) => !p)}
-                aria-label="Toggle content preview"
-                aria-pressed={showSnippets}
-                sx={{
-                  flexShrink: 0,
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "6px",
-                  px: "10px",
-                  height: 32,
-                  cursor: "pointer",
-                  borderRadius: "6px",
-                  border: "1px solid",
-                  borderColor: showSnippets ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.07)",
-                  backgroundColor: showSnippets ? "rgba(255,255,255,0.06)" : "transparent",
-                  color: showSnippets ? "#ededed" : "#6b6b6b",
-                  fontSize: "0.75rem",
-                  fontWeight: 500,
-                  whiteSpace: "nowrap",
-                  transition: "background-color 150ms ease-out, border-color 150ms ease-out, color 150ms ease-out",
-                  "&:hover": { backgroundColor: "rgba(255,255,255,0.06)", borderColor: "rgba(255,255,255,0.12)", color: "#ededed" },
-                  outline: "none",
-                }}
-              >
-                <FaBars size={11} />
-                Preview {showSnippets ? "on" : "off"}
-              </Box>
-            </Stack>
-
-            {/* Sections */}
-            {moduleInfo?.sections.length === 0 ? (
-              <Stack alignItems="center" spacing={2} sx={{ py: 8 }}>
-                <FaFolderOpen size={32} style={{ color: "#6b6b6b" }} />
-                <Typography variant="body1" color="text.secondary">
-                  No sections yet. Add a note to get started.
-                </Typography>
-              </Stack>
-            ) : globalQuery.trim() ? (
-              /* Flat file search results */
-              (() => {
-                const seen = new Set<string>();
-                const allMatches: { file: string; sectionName: string; score: number; source: "filename" | "content" }[] = [];
-
-                // 1. Filename fuzzy matches (always active) — scored by Fuse
-                moduleInfo.sections.forEach((section) => {
-                  const files = sectionFiles[section.id] ?? [];
-                  const fuse = new Fuse(files, { threshold: 0.4, ignoreLocation: true });
-                  fuse.search(globalQuery).forEach((r) => {
-                    if (!seen.has(r.item)) {
-                      seen.add(r.item);
-                      allMatches.push({ file: r.item, sectionName: section.subtag.name, score: r.score ?? 0, source: "filename" });
-                    }
-                  });
-                });
-
-                // 2. Content matches (only when Preview is on) — add files that
-                //    matched by content but were not already found by filename.
-                if (showSnippets) {
-                  const contentHits = new Set(Object.keys(snippetCache));
-                  moduleInfo.sections.forEach((section) => {
-                    const files = sectionFiles[section.id] ?? [];
-                    files.forEach((f) => {
-                      if (contentHits.has(f) && !seen.has(f)) {
-                        seen.add(f);
-                        allMatches.push({ file: f, sectionName: section.subtag.name, score: 1, source: "content" });
-                      }
-                    });
-                  });
-                }
-
-                // Sort: filename matches first (by closeness), then content-only
-                allMatches.sort((a, b) => {
-                  if (a.source !== b.source) return a.source === "filename" ? -1 : 1;
-                  return a.score - b.score;
-                });
-
-                if (allMatches.length === 0) {
-                  return (
-                    <Stack alignItems="center" spacing={2} sx={{ py: 8 }}>
-                      <FaMagnifyingGlass size={24} style={{ color: "#6b6b6b" }} />
-                      <Typography variant="body1" color="text.secondary">
-                        No files match your search.
+          <Stack spacing={3} sx={{ width: "100%" }}>
+            <Paper
+              component={motion.section}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={motionTransitions.dialog}
+              elevation={0}
+              sx={{
+                p: { xs: 2.5, md: 3 },
+                borderRadius: "6px",
+                border: "1px solid rgba(255,255,255,0.07)",
+                backgroundColor: "#141414",
+              }}
+            >
+              <Stack spacing={3}>
+                <Stack
+                  direction={{ xs: "column", md: "row" }}
+                  justifyContent="space-between"
+                  alignItems={{ xs: "flex-start", md: "center" }}
+                  spacing={2}
+                >
+                  <Box sx={{ minWidth: 0 }}>
+                    <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 1 }}>
+                      <FaGraduationCap size={20} style={{ color: moduleInfo?.primary_tag.color }} />
+                      <Typography variant="h4" sx={{ textWrap: "balance" }}>
+                        {moduleInfo?.primary_tag.name}
                       </Typography>
                     </Stack>
-                  );
-                }
-                 return (
-                   <List dense disablePadding>
-                     {allMatches.map(({ file, sectionName }) => {
-                       const snippets = showSnippets ? (snippetCache[file] ?? []) : [];
-                       return (
-                         <ListItemButton
-                           key={`${sectionName}-${file}`}
-                           onClick={() => openSearchFile(file)}
-                           sx={{ py: 1, borderRadius: "6px", alignItems: "flex-start" }}
-                         >
-                           <ListItemIcon sx={{ minWidth: 28, mt: "2px" }}>
-                             <FaRegFileLines size={16} />
-                           </ListItemIcon>
-                           <Box sx={{ flex: 1, minWidth: 0 }}>
-                             <Stack direction="row" alignItems="center" spacing={1}>
-                               <Typography sx={{ fontSize: "0.875rem", fontWeight: 500, flex: 1, minWidth: 0 }} noWrap>
-                                 {file}
-                               </Typography>
-                               <Chip
-                                 label={sectionName}
-                                 size="small"
-                                 sx={{
-                                   flexShrink: 0,
-                                   height: 18,
-                                   fontSize: "0.65rem",
-                                   backgroundColor: "rgba(255,255,255,0.06)",
-                                   color: "text.secondary",
-                                   border: "1px solid rgba(255,255,255,0.08)",
-                                   "& .MuiChip-label": { px: 0.75 },
-                                 }}
-                               />
-                             </Stack>
-                             {showSnippets && snippets.length > 0 && (
-                               <Box sx={{ mt: 1.5, display: "flex", flexDirection: "column", gap: "12px" }}>
-                                 {snippets.map((snippet, i) => (
-                                   <Box
-                                     key={i}
-                                     sx={{
-                                       pl: 1.5,
-                                       borderLeft: "2px solid rgba(255,255,255,0.12)",
-                                       py: "2px",
-                                     }}
-                                   >
-                                     <Typography
-                                       component="pre"
-                                       sx={{
-                                         m: 0,
-                                         fontFamily: "monospace",
-                                         fontSize: "0.72rem",
-                                         color: "#6b6b6b",
-                                         lineHeight: 1.6,
-                                         whiteSpace: "pre-wrap",
-                                         wordBreak: "break-word",
-                                       }}
-                                     >
-                                       {highlightSnippet(snippet, globalQuery)}
-                                     </Typography>
-                                   </Box>
-                                 ))}
-                               </Box>
-                             )}
-                           </Box>
-                         </ListItemButton>
-                       );
-                     })}
-                   </List>
-                 );
-              })()
-            ) : (
-              /* Normal section cards view */
-              <Stack
-                component={motion.div}
-                variants={staggerContainer}
-                initial="hidden"
-                animate="visible"
-                spacing={2}
-              >
-                {moduleInfo.sections.map((section) => {
-                    const sectionNotes = section.notes;
-                  const sectionQuery = sectionQueries[section.id] ?? "";
-                  const isExpanded = expandedSections.includes(section.id);
+                    {moduleInfo?.description && (
+                      <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 920 }}>
+                        {moduleInfo.description}
+                      </Typography>
+                    )}
+                  </Box>
 
-                  return (
-                     <Paper
-                       key={section.id}
-                       component={motion.div}
-                       variants={staggerItem}
-                       transition={motionTransitions.layout}
-                       layout
-                       sx={{
-                         borderRadius: "6px",
-                         border: "1px solid rgba(255,255,255,0.07)",
-                         backgroundColor: "#141414",
-                         overflow: "hidden",
-                       }}
-                       elevation={0}
-                     >
-                       {/* Section header — clickable */}
-                        <Stack
-                          component="button"
-                          type="button"
-                         direction="row"
-                         alignItems="center"
-                         spacing={1.5}
-                         aria-expanded={isExpanded}
-                          sx={{
-                            width: "100%",
-                            cursor: "pointer",
-                            color: "text.primary",
-                            px: 3,
-                            py: 2,
-                           userSelect: "none",
-                           border: 0,
-                           backgroundColor: "transparent",
-                           textAlign: "left",
-                           "&:hover": { backgroundColor: "rgba(255,255,255,0.02)" },
-                           "&:focus-visible": {
-                             outline: "2px solid #e0e0e0",
-                             outlineOffset: -2,
-                           },
-                           borderRadius: isExpanded ? "6px 6px 0 0" : "6px",
-                           transition: "background-color 150ms ease-out",
-                         }}
-                        onClick={() => toggleSection(section.id)}
-                      >
-                        <Box sx={{ color: "text.secondary", display: "flex", alignItems: "center" }}>
-                          <Box
-                            component={motion.div}
-                            key={isExpanded ? "expanded" : "collapsed"}
-                            initial={{ opacity: 0.55, y: -2 }}
-                            animate={{ opacity: isExpanded ? 0.95 : 0.72, y: 0 }}
-                            transition={motionTransitions.base}
-                          >
-                            {isExpanded ? <FaAngleDown size={14} /> : <FaAngleRight size={14} />}
-                          </Box>
-                        </Box>
-                         <FaFolder size={14} style={{ color: moduleInfo.primary_tag.color }} />
-                         <Typography component="h2" variant="h6" sx={{ flex: 1, minWidth: 0, textWrap: "balance" }}>
-                           {section.subtag.name}
-                         </Typography>
-                         <Typography variant="caption" color="text.secondary">
-                           {sectionNotes.length}{" "}
-                           {sectionNotes.length === 1 ? "lecture" : "lectures"}
-                         </Typography>
-                      </Stack>
-
-                      <Collapse in={isExpanded} timeout={220}>
-                        <Divider />
-                        <Box
-                          component={motion.div}
-                          initial={false}
-                          animate={{ opacity: isExpanded ? 1 : 0, y: isExpanded ? 0 : -8 }}
-                          transition={motionTransitions.base}
-                          sx={{ px: 3, pt: 3, pb: 3 }}
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Tooltip title={lastNote ? `Open: ${lastNote}` : "No recently opened note"}>
+                      <span>
+                        <IconButton
+                          onClick={() => { if (lastNote) openSearchFile(lastNote); }}
+                          disabled={!lastNote}
+                          aria-label="Open last note"
                         >
-                          {/* Per-section search */}
-                          <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 2 }}>
-                             <TextField
-                               fullWidth
-                               size="small"
-                               placeholder="Search this section…"
-                               inputProps={{ "aria-label": "Search this section" }}
-                               value={sectionQuery}
-                              onChange={(e) =>
-                                setSectionQueries((prev) => ({
-                                  ...prev,
-                                  [section.id]: e.target.value,
-                                }))
-                              }
-                              onClick={(e) => e.stopPropagation()}
-                              InputProps={{
-                                startAdornment: (
-                                  <InputAdornment position="start">
-                                    <FaMagnifyingGlass size={13} style={{ color: "#6b6b6b" }} />
-                                  </InputAdornment>
-                                ),
-                                endAdornment: sectionQuery ? (
-                                  <InputAdornment position="end">
-                                    <IconButton
-                                      size="small"
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setSectionQueries((prev) => ({
-                                          ...prev,
-                                          [section.id]: "",
-                                        }));
-                                      }}
-                                      aria-label="Clear section search"
-                                      sx={{ padding: "4px" }}
-                                    >
-                                      <FaXmark size={12} />
-                                    </IconButton>
-                                  </InputAdornment>
-                                ) : null,
-                              }}
-                            />
-                            {sectionQuery.trim() && (() => {
-                              const on = sectionSnippets[section.id] ?? false;
-                              return (
-                                <Box
-                                  component="button"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setSectionSnippets((prev) => ({ ...prev, [section.id]: !on }));
-                                  }}
-                                  aria-label="Toggle content preview"
-                                  aria-pressed={on}
-                                  sx={{
-                                    flexShrink: 0,
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: "6px",
-                                    px: "10px",
-                                    height: 32,
-                                    cursor: "pointer",
-                                    borderRadius: "6px",
-                                    border: "1px solid",
-                                    borderColor: on ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.07)",
-                                    backgroundColor: on ? "rgba(255,255,255,0.06)" : "transparent",
-                                     color: on ? "#ededed" : "#6b6b6b",
-                                     fontSize: "0.75rem",
-                                     fontWeight: 500,
-                                     whiteSpace: "nowrap",
-                                     transition: "background-color 150ms ease-out, border-color 150ms ease-out, color 150ms ease-out",
-                                     "&:hover": { backgroundColor: "rgba(255,255,255,0.06)", borderColor: "rgba(255,255,255,0.12)", color: "#ededed" },
-                                     "&:focus-visible": {
-                                       outline: "2px solid #e0e0e0",
-                                       outlineOffset: 2,
-                                     },
-                                     touchAction: "manipulation",
-                                   }}
-                                 >
-                                  <FaBars size={11} />
-                                  Preview {on ? "on" : "off"}
-                                </Box>
-                              );
-                            })()}
-                          </Stack>
+                          <FaBookOpen size={16} />
+                        </IconButton>
+                      </span>
+                    </Tooltip>
+                    <Tooltip title="Add note">
+                      <span>
+                        <IconButton
+                          onClick={() => setOpen(true)}
+                          aria-label="Add note"
+                        >
+                          <FaPlus size={16} />
+                        </IconButton>
+                      </span>
+                    </Tooltip>
+                  </Stack>
+                </Stack>
 
-                          {sectionQuery.trim() ? (
-                             /* Search active — show only the files column at full width */
-                             <Box>
-                               <Typography
-                                 variant="subtitle2"
-                                 color="text.secondary"
-                                 sx={{ mb: 2 }}
-                               >
-                                 Notes
-                               </Typography>
-                               <SectionFiles
-                                 primaryTagName={moduleInfo.primary_tag.name}
-                                 subtagName={section.subtag.name}
-                                 fileFilter={sectionQuery}
-                                 showSnippets={sectionSnippets[section.id] ?? false}
-                                 sectionQuery={sectionQuery}
-                               />
-                             </Box>
-                           ) : (
-                            <Box
+                <Stack direction={{ xs: "column", md: "row" }} spacing={3}>
+                  <Box sx={{ minWidth: 180 }}>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.75, letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                      Overview
+                    </Typography>
+                    <Stack spacing={0.5}>
+                      <Typography variant="body2">{moduleInfo.sections.length} sections</Typography>
+                      <Typography variant="body2">{allNotes.length} lectures</Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {moduleInfo.grades.length} grade items
+                      </Typography>
+                    </Stack>
+                  </Box>
+
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <ProgressBar Notes={allNotes} color={moduleInfo?.primary_tag.color} />
+                  </Box>
+                </Stack>
+
+                <Divider />
+
+                <Box>
+                  <Grades moduleInfo={moduleInfo} embedded />
+                </Box>
+              </Stack>
+            </Paper>
+
+            <Box
+              sx={{
+                display: "grid",
+                gap: 3,
+                gridTemplateColumns: { xs: "1fr", xl: "320px minmax(0, 1.9fr) 360px" },
+                alignItems: "start",
+              }}
+            >
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 2,
+                  borderRadius: "6px",
+                  border: "1px solid rgba(255,255,255,0.07)",
+                  backgroundColor: "#141414",
+                  position: { xl: "sticky" },
+                  top: { xl: 88 },
+                }}
+              >
+                <Stack spacing={2}>
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                      Sections
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
+                      Browse one section at a time with a cleaner explorer layout.
+                    </Typography>
+                  </Box>
+
+                  <TextField
+                    fullWidth
+                    size="small"
+                    placeholder="Filter sections…"
+                    value={treeQuery}
+                    onChange={(event) => setTreeQuery(event.target.value)}
+                    inputProps={{ "aria-label": "Filter sections" }}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <FaMagnifyingGlass size={13} style={{ color: "#6b6b6b" }} />
+                        </InputAdornment>
+                      ),
+                      endAdornment: treeQuery ? (
+                        <InputAdornment position="end">
+                          <IconButton
+                            size="small"
+                            onClick={() => setTreeQuery("")}
+                            aria-label="Clear section filter"
+                            sx={{ padding: "4px" }}
+                          >
+                            <FaXmark size={12} />
+                          </IconButton>
+                        </InputAdornment>
+                      ) : null,
+                    }}
+                  />
+
+                  {visibleSections.length === 0 ? (
+                    <Stack spacing={1} alignItems="flex-start" sx={{ py: 3 }}>
+                      <Typography variant="body2" color="text.secondary">
+                        No sections match that filter.
+                      </Typography>
+                    </Stack>
+                  ) : (
+                    <List
+                      dense
+                      disablePadding
+                      component={motion.div}
+                      variants={staggerContainer}
+                      initial="hidden"
+                      animate="visible"
+                      sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}
+                    >
+                      {visibleSections.map((section) => {
+                        const sectionIsActive = section.id === activeSectionId;
+                        const sectionNotes = sectionIsActive
+                          ? section.notes.filter((note) => matchesNoteQuery(note, activeSectionQuery))
+                          : section.notes;
+
+                        return (
+                          <Box key={section.id} component={motion.div} variants={staggerItem}>
+                            <ListItemButton
+                              selected={sectionIsActive}
+                              onClick={() => setActiveSectionId(section.id)}
                               sx={{
-                                display: "grid",
-                                gridTemplateColumns: { xs: "1fr", lg: "minmax(0, 1fr) 220px" },
-                                gap: { xs: 3, lg: 5 },
-                                alignItems: "start",
+                                borderRadius: "6px",
+                                alignItems: "center",
+                                px: 1.25,
+                                py: 1,
+                                "&.Mui-selected": {
+                                  backgroundColor: alpha(moduleInfo.primary_tag.color, 0.12),
+                                  border: `1px solid ${alpha(moduleInfo.primary_tag.color, 0.3)}`,
+                                },
+                                "&.Mui-selected:hover": {
+                                  backgroundColor: alpha(moduleInfo.primary_tag.color, 0.16),
+                                },
                               }}
                             >
-                              {/* Lectures column */}
-                              <Box sx={{ minWidth: 0 }}>
-                                <Typography
-                                  variant="subtitle2"
-                                  color="text.secondary"
-                                  sx={{ mb: 2, letterSpacing: "0.12em", textTransform: "uppercase" }}
-                                >
-                                  Lectures
-                                </Typography>
-                               {sectionNotes.length === 0 ? (
-                                 <Stack direction="row" spacing={1.5} alignItems="center" sx={{ py: 3 }}>
-                                   <FaNoteSticky size={16} style={{ color: "#6b6b6b", flexShrink: 0 }} />
-                                   <Typography variant="body2" color="text.secondary">
-                                     No lectures in this section.
-                                   </Typography>
-                                 </Stack>
-                               ) : (
-                                   sectionNotes.map((note) => (
-                                     <Note
-                                      key={note.id}
-                                      note={note}
-                                      onUpdate={updateNote}
-                                      onDelete={deleteNote}
-                                      onChanged={onNotesChanged}
-                                      refresh={refresh}
-                                    />
-                                  ))
-                               )}
-                              </Box>
+                              <ListItemIcon sx={{ minWidth: 24, color: "text.secondary" }}>
+                                {sectionIsActive ? <FaAngleDown size={12} /> : <FaAngleRight size={12} />}
+                              </ListItemIcon>
+                              <ListItemIcon sx={{ minWidth: 24, color: moduleInfo.primary_tag.color }}>
+                                <FaFolder size={13} />
+                              </ListItemIcon>
+                              <ListItemText
+                                primary={section.subtag.name}
+                                secondary={`${section.notes.length} lecture${section.notes.length === 1 ? "" : "s"}`}
+                                primaryTypographyProps={{ fontWeight: 600, fontSize: "0.95rem", color: "text.primary" }}
+                                secondaryTypographyProps={{ fontSize: "0.75rem", color: "text.secondary" }}
+                              />
+                            </ListItemButton>
 
-                              {/* Notes / files column */}
-                              <Box
-                                sx={{
-                                  minWidth: 0,
-                                  pl: { lg: 3 },
-                                  borderLeft: { lg: "1px solid rgba(255,255,255,0.05)" },
-                                }}
-                              >
-                                <Typography
-                                  variant="subtitle2"
-                                  color="text.secondary"
-                                  sx={{ mb: 2, letterSpacing: "0.12em", textTransform: "uppercase" }}
-                                >
-                                  Notes
-                                </Typography>
-                                <SectionFiles
-                                  primaryTagName={moduleInfo.primary_tag.name}
-                                  subtagName={section.subtag.name}
-                                  compact
-                                  showSnippets={false}
-                                  sectionQuery=""
-                                />
-                              </Box>
-                            </Box>
+                            {sectionIsActive && sectionNotes.length > 0 && (
+                              <List disablePadding sx={{ mt: 0.5, ml: 4.5, display: "flex", flexDirection: "column", gap: 0.25 }}>
+                                {sectionNotes.map((note) => (
+                                  <ListItemButton
+                                    key={note.id}
+                                    selected={note.id === activeNoteId}
+                                    onClick={() => focusNote(note.id)}
+                                    sx={{
+                                      minHeight: 34,
+                                      borderRadius: "6px",
+                                      px: 1,
+                                      py: 0.625,
+                                      color: note.id === activeNoteId ? "text.primary" : "text.secondary",
+                                      "&.Mui-selected": {
+                                        backgroundColor: "rgba(255,255,255,0.05)",
+                                      },
+                                    }}
+                                  >
+                                    <ListItemIcon sx={{ minWidth: 22, color: "inherit" }}>
+                                      <FaRegFileLines size={12} />
+                                    </ListItemIcon>
+                                    <ListItemText
+                                      primary={note.name}
+                                      primaryTypographyProps={{
+                                        fontSize: "0.8125rem",
+                                        fontWeight: note.id === activeNoteId ? 500 : 400,
+                                        lineHeight: 1.35,
+                                        color: "inherit",
+                                        sx: { overflowWrap: "anywhere" },
+                                      }}
+                                    />
+                                  </ListItemButton>
+                                ))}
+                              </List>
                             )}
-                         </Box>
-                       </Collapse>
-                    </Paper>
-                  );
-                })}
-              </Stack>
-            )}
-          </>
+                          </Box>
+                        );
+                      })}
+                    </List>
+                  )}
+                </Stack>
+              </Paper>
+
+              <Paper
+                elevation={0}
+                sx={{
+                  p: { xs: 2, md: 2.5 },
+                  borderRadius: "6px",
+                  border: "1px solid rgba(255,255,255,0.07)",
+                  backgroundColor: "#141414",
+                  minHeight: 520,
+                }}
+              >
+                {visibleSections.length === 0 ? (
+                  <Stack alignItems="center" justifyContent="center" spacing={1.5} sx={{ minHeight: 420 }}>
+                    <Typography variant="h6">No Matching Sections</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Try a broader filter in the section explorer.
+                    </Typography>
+                  </Stack>
+                ) : activeSection ? (
+                  <Stack spacing={3}>
+                    <Stack
+                      direction={{ xs: "column", md: "row" }}
+                      justifyContent="space-between"
+                      alignItems={{ xs: "flex-start", md: "flex-start" }}
+                      spacing={1.5}
+                    >
+                      <Box>
+                        <Stack direction="row" alignItems="center" spacing={1.25} sx={{ mb: 0.75 }}>
+                          <FaFolder size={14} style={{ color: moduleInfo.primary_tag.color }} />
+                          <Typography variant="h5" component="h2" sx={{ textWrap: "balance" }}>
+                            {activeSection.subtag.name}
+                          </Typography>
+                        </Stack>
+                        <Typography variant="body2" color="text.secondary">
+                          {filteredNotes.length} of {activeSection.notes.length} lectures visible
+                          {activeSectionQuery.trim() ? ` for "${activeSectionQuery}"` : ""}
+                        </Typography>
+                      </Box>
+
+                      <Typography variant="subtitle2" color="text.secondary" sx={{ letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                        Workspace
+                      </Typography>
+                    </Stack>
+
+                    <Divider />
+
+                    {filteredNotes.length === 0 ? (
+                      <Stack alignItems="center" justifyContent="center" spacing={1.5} sx={{ minHeight: 280 }}>
+                        <Typography variant="h6">
+                          {activeSection.notes.length === 0 && !activeSectionQuery.trim() ? "No Lectures Yet" : "No Lectures Match"}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {activeSection.notes.length === 0 && !activeSectionQuery.trim()
+                            ? "Add a lecture note to start building this section."
+                            : "Adjust the section search in the right utility rail."}
+                        </Typography>
+                      </Stack>
+                    ) : (
+                      <Stack spacing={2}>
+                        {filteredNotes.map((note) => (
+                          <Box
+                            key={note.id}
+                            id={`module-note-${note.id}`}
+                            onClick={() => setActiveNoteId(note.id)}
+                            sx={{ scrollMarginTop: 104 }}
+                          >
+                            <Note
+                              note={note}
+                              onUpdate={updateNote}
+                              onDelete={deleteNote}
+                              onChanged={onNotesChanged}
+                              refresh={refresh}
+                            />
+                          </Box>
+                        ))}
+                      </Stack>
+                    )}
+                  </Stack>
+                ) : (
+                  <Stack alignItems="center" justifyContent="center" spacing={1.5} sx={{ minHeight: 420 }}>
+                    <Typography variant="h6">Select a Section</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Pick a section from the explorer to view its lectures.
+                    </Typography>
+                  </Stack>
+                )}
+              </Paper>
+
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 2,
+                  borderRadius: "6px",
+                  border: "1px solid rgba(255,255,255,0.07)",
+                  backgroundColor: "#141414",
+                  position: { xl: "sticky" },
+                  top: { xl: 88 },
+                }}
+              >
+                <Stack spacing={2}>
+                  <Box>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                      Section Files
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 0.75 }}>
+                      Search and open files linked to the active section.
+                    </Typography>
+                  </Box>
+
+                  {visibleSections.length === 0 ? (
+                    <Typography variant="body2" color="text.secondary">
+                      Adjust the section filter to inspect files.
+                    </Typography>
+                  ) : (
+                    activeSection ? (
+                      <Stack spacing={2}>
+                        <TextField
+                          fullWidth
+                          size="small"
+                          placeholder="Search this section…"
+                          value={activeSectionQuery}
+                          onChange={(event) => setActiveSectionQuery(event.target.value)}
+                          inputProps={{ "aria-label": "Search this section" }}
+                          InputProps={{
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <FaMagnifyingGlass size={13} style={{ color: "#6b6b6b" }} />
+                              </InputAdornment>
+                            ),
+                            endAdornment: activeSectionQuery ? (
+                              <InputAdornment position="end">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => setActiveSectionQuery("")}
+                                  aria-label="Clear section search"
+                                  sx={{ padding: "4px" }}
+                                >
+                                  <FaXmark size={12} />
+                                </IconButton>
+                              </InputAdornment>
+                            ) : null,
+                          }}
+                        />
+
+                        <Box
+                          component="button"
+                          onClick={toggleSectionPreview}
+                          aria-label="Toggle content preview"
+                          aria-pressed={activeSectionSnippets}
+                          sx={{
+                            alignSelf: "flex-start",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "6px",
+                            px: "10px",
+                            height: 32,
+                            cursor: "pointer",
+                            borderRadius: "6px",
+                            border: "1px solid",
+                            borderColor: activeSectionSnippets ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.07)",
+                            backgroundColor: activeSectionSnippets ? "rgba(255,255,255,0.06)" : "transparent",
+                            color: activeSectionSnippets ? "#ededed" : "#6b6b6b",
+                            fontSize: "0.75rem",
+                            fontWeight: 500,
+                            whiteSpace: "nowrap",
+                            transition: "background-color 150ms ease-out, border-color 150ms ease-out, color 150ms ease-out",
+                            "&:hover": {
+                              backgroundColor: "rgba(255,255,255,0.06)",
+                              borderColor: "rgba(255,255,255,0.12)",
+                              color: "#ededed",
+                            },
+                            "&:focus-visible": {
+                              outline: "2px solid #e0e0e0",
+                              outlineOffset: 2,
+                            },
+                            touchAction: "manipulation",
+                          }}
+                        >
+                          <FaBars size={11} />
+                          Preview {activeSectionSnippets ? "on" : "off"}
+                        </Box>
+
+                        <SectionFiles
+                          primaryTagName={moduleInfo.primary_tag.name}
+                          subtagName={activeSection.subtag.name}
+                          fileFilter={activeSectionQuery}
+                          showSnippets={activeSectionSnippets}
+                          sectionQuery={activeSectionQuery}
+                          showEmptyState
+                          emptyMessage="No section files match the current search."
+                        />
+                      </Stack>
+                    ) : (
+                      <Typography variant="body2" color="text.secondary">
+                        Select a section to browse its linked files.
+                      </Typography>
+                    )
+                  )}
+                </Stack>
+              </Paper>
+            </Box>
+          </Stack>
         )}
       </Box>
 
@@ -725,6 +664,11 @@ export default function ModulePanel({
         tagColor={moduleInfo?.primary_tag.color}
         onSaved={(note) => {
           addOrReplaceNote(note);
+          const nextSection = moduleInfo?.sections.find((section) => section.subtag.id === note.subtags[0]?.id);
+          if (nextSection) {
+            setActiveSectionId(nextSection.id);
+          }
+          setActiveNoteId(note.id);
           onNotesChanged?.();
         }}
         refresh={refresh}
@@ -740,6 +684,6 @@ export default function ModulePanel({
           onRefresh={() => openSearchFile(searchActiveFile.name)}
         />
       )}
-    </div>
+    </Box>
   );
 }

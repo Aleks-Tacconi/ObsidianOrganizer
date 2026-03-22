@@ -83,6 +83,8 @@ export default function Dashboard() {
       onTagsChanged={triggerRefresh}
       selectedTagId={selectedTag?.id ?? null}
       refreshKey={refresh}
+      contentMaxWidth={selectedTag ? "none" : "1100px"}
+      menuPlacement={selectedTag ? "inline" : "floating"}
     >
       {selectedTag && !loading ? (
         <ModulePanel moduleId={selectedTag} refresh={refresh} onNotesChanged={triggerRefresh} />

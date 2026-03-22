@@ -32,6 +32,8 @@ export default function SectionFiles({
   showSnippets,
   sectionQuery,
   compact = false,
+  showEmptyState = false,
+  emptyMessage = "No files found.",
 }: {
   primaryTagName: string;
   subtagName: string;
@@ -39,6 +41,8 @@ export default function SectionFiles({
   showSnippets?: boolean;
   sectionQuery?: string;
   compact?: boolean;
+  showEmptyState?: boolean;
+  emptyMessage?: string;
 }) {
   const [files, setFiles] = useState<string[]>([]);
   const [open, setOpen] = useState(false);
@@ -177,11 +181,19 @@ export default function SectionFiles({
   }
 
   if (files.length === 0) {
-    return null;
+    return showEmptyState ? (
+      <Typography variant="body2" color="text.secondary">
+        {emptyMessage}
+      </Typography>
+    ) : null;
   }
 
   if (displayFiles.length === 0) {
-    return null;
+    return showEmptyState ? (
+      <Typography variant="body2" color="text.secondary">
+        {emptyMessage}
+      </Typography>
+    ) : null;
   }
 
   return (
