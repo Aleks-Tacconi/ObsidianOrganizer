@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   Box,
   Divider,
@@ -398,72 +398,84 @@ export default function ModulePanel({
                               />
                             </ListItemButton>
 
-                            {sectionIsActive && sectionNotes.length > 0 && (
-                              <List
-                                disablePadding
-                                sx={{
-                                  mt: 0.75,
-                                  ml: 3.5,
-                                  pl: 1.25,
-                                  borderLeft: "1px solid rgba(255,255,255,0.05)",
-                                  display: "flex",
-                                  flexDirection: "column",
-                                  gap: 0.25,
-                                }}
-                              >
-                                {sectionNotes.map((note) => (
-                                  <ListItemButton
-                                    key={note.id}
-                                    selected={note.id === activeNoteId}
-                                    onClick={() => focusNote(note.id)}
+                            <AnimatePresence initial={false}>
+                              {sectionIsActive && sectionNotes.length > 0 && (
+                                <Box
+                                  component={motion.div}
+                                  key={`section-notes-${section.id}`}
+                                  initial={{ opacity: 0, height: 0, y: -4 }}
+                                  animate={{ opacity: 1, height: "auto", y: 0 }}
+                                  exit={{ opacity: 0, height: 0, y: -4 }}
+                                  transition={motionTransitions.base}
+                                  sx={{ overflow: "hidden" }}
+                                >
+                                  <List
+                                    disablePadding
                                     sx={{
-                                      minHeight: 34,
-                                      borderRadius: "6px",
-                                      px: 1.25,
-                                      py: 0.625,
-                                      position: "relative",
-                                      color: note.id === activeNoteId ? "text.primary" : "text.secondary",
-                                      transition: "background-color 150ms ease-out, color 150ms ease-out",
-                                      "&:hover": {
-                                        backgroundColor: "rgba(255,255,255,0.03)",
-                                        color: "text.primary",
-                                      },
-                                      "&::before": {
-                                        content: '""',
-                                        position: "absolute",
-                                        left: 0,
-                                        top: 7,
-                                        bottom: 7,
-                                        width: 2,
-                                        borderRadius: "999px",
-                                        backgroundColor: note.id === activeNoteId ? moduleInfo.primary_tag.color : "transparent",
-                                      },
-                                      "&.Mui-selected": {
-                                        backgroundColor: "rgba(255,255,255,0.04)",
-                                        color: "text.primary",
-                                      },
-                                      "&.Mui-selected:hover": {
-                                        backgroundColor: "rgba(255,255,255,0.05)",
-                                      },
+                                      mt: 0.75,
+                                      ml: 3.5,
+                                      pl: 1.25,
+                                      borderLeft: "1px solid rgba(255,255,255,0.05)",
+                                      display: "flex",
+                                      flexDirection: "column",
+                                      gap: 0.25,
                                     }}
                                   >
-                                    <ListItemIcon sx={{ minWidth: 22, color: "inherit" }}>
-                                      <FaRegFileLines size={12} />
-                                    </ListItemIcon>
-                                    <ListItemText
-                                      primary={note.name}
-                                      primaryTypographyProps={{
-                                        fontSize: "0.8125rem",
-                                        fontWeight: note.id === activeNoteId ? 500 : 400,
-                                        lineHeight: 1.35,
-                                        color: "inherit",
-                                        sx: { overflowWrap: "anywhere" },
-                                      }}
-                                    />
-                                  </ListItemButton>
-                                ))}
-                              </List>
-                            )}
+                                    {sectionNotes.map((note) => (
+                                      <ListItemButton
+                                        key={note.id}
+                                        selected={note.id === activeNoteId}
+                                        onClick={() => focusNote(note.id)}
+                                        sx={{
+                                          minHeight: 34,
+                                          borderRadius: "6px",
+                                          px: 1.25,
+                                          py: 0.625,
+                                          position: "relative",
+                                          color: note.id === activeNoteId ? "text.primary" : "text.secondary",
+                                          transition: "background-color 150ms ease-out, color 150ms ease-out",
+                                          "&:hover": {
+                                            backgroundColor: "rgba(255,255,255,0.03)",
+                                            color: "text.primary",
+                                          },
+                                          "&::before": {
+                                            content: '""',
+                                            position: "absolute",
+                                            left: 0,
+                                            top: 7,
+                                            bottom: 7,
+                                            width: 2,
+                                            borderRadius: "999px",
+                                            backgroundColor: note.id === activeNoteId ? moduleInfo.primary_tag.color : "transparent",
+                                          },
+                                          "&.Mui-selected": {
+                                            backgroundColor: "rgba(255,255,255,0.04)",
+                                            color: "text.primary",
+                                          },
+                                          "&.Mui-selected:hover": {
+                                            backgroundColor: "rgba(255,255,255,0.05)",
+                                          },
+                                        }}
+                                      >
+                                        <ListItemIcon sx={{ minWidth: 22, color: "inherit" }}>
+                                          <FaRegFileLines size={12} />
+                                        </ListItemIcon>
+                                        <ListItemText
+                                          primary={note.name}
+                                          primaryTypographyProps={{
+                                            fontSize: "0.8125rem",
+                                            fontWeight: note.id === activeNoteId ? 500 : 400,
+                                            lineHeight: 1.35,
+                                            color: "inherit",
+                                            sx: { overflowWrap: "anywhere" },
+                                          }}
+                                        />
+                                      </ListItemButton>
+                                    ))}
+                                  </List>
+                                </Box>
+                              )}
+                            </AnimatePresence>
                           </Box>
                         );
                       })}
@@ -490,65 +502,76 @@ export default function ModulePanel({
                     </Typography>
                   </Stack>
                 ) : activeSection ? (
-                  <Stack spacing={3}>
-                    <Stack
-                      direction={{ xs: "column", md: "row" }}
-                      justifyContent="space-between"
-                      alignItems={{ xs: "flex-start", md: "flex-start" }}
-                      spacing={1.5}
+                  <AnimatePresence mode="wait" initial={false}>
+                    <Box
+                      key={`workspace-${activeSection.id}`}
+                      component={motion.div}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={motionTransitions.base}
                     >
-                      <Box>
-                        <Stack direction="row" alignItems="center" spacing={1.25} sx={{ mb: 0.75 }}>
-                          <FaFolder size={14} style={{ color: moduleInfo.primary_tag.color }} />
-                          <Typography variant="h5" component="h2" sx={{ textWrap: "balance" }}>
-                            {activeSection.subtag.name}
+                      <Stack spacing={3}>
+                        <Stack
+                          direction={{ xs: "column", md: "row" }}
+                          justifyContent="space-between"
+                          alignItems={{ xs: "flex-start", md: "flex-start" }}
+                          spacing={1.5}
+                        >
+                          <Box>
+                            <Stack direction="row" alignItems="center" spacing={1.25} sx={{ mb: 0.75 }}>
+                              <FaFolder size={14} style={{ color: moduleInfo.primary_tag.color }} />
+                              <Typography variant="h5" component="h2" sx={{ textWrap: "balance" }}>
+                                {activeSection.subtag.name}
+                              </Typography>
+                            </Stack>
+                            <Typography variant="body2" color="text.secondary">
+                              {filteredNotes.length} of {activeSection.notes.length} lectures visible
+                              {activeSectionQuery.trim() ? ` for "${activeSectionQuery}"` : ""}
+                            </Typography>
+                          </Box>
+
+                          <Typography variant="subtitle2" color="text.secondary" sx={{ letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                            Workspace
                           </Typography>
                         </Stack>
-                        <Typography variant="body2" color="text.secondary">
-                          {filteredNotes.length} of {activeSection.notes.length} lectures visible
-                          {activeSectionQuery.trim() ? ` for "${activeSectionQuery}"` : ""}
-                        </Typography>
-                      </Box>
 
-                      <Typography variant="subtitle2" color="text.secondary" sx={{ letterSpacing: "0.12em", textTransform: "uppercase" }}>
-                        Workspace
-                      </Typography>
-                    </Stack>
+                        <Divider />
 
-                    <Divider />
-
-                    {filteredNotes.length === 0 ? (
-                      <Stack alignItems="center" justifyContent="center" spacing={1.5} sx={{ minHeight: 280 }}>
-                        <Typography variant="h6">
-                          {activeSection.notes.length === 0 && !activeSectionQuery.trim() ? "No Lectures Yet" : "No Lectures Match"}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          {activeSection.notes.length === 0 && !activeSectionQuery.trim()
-                            ? "Add a lecture note to start building this section."
-                            : "Adjust the section search in the right utility rail."}
-                        </Typography>
+                        {filteredNotes.length === 0 ? (
+                          <Stack alignItems="center" justifyContent="center" spacing={1.5} sx={{ minHeight: 280 }}>
+                            <Typography variant="h6">
+                              {activeSection.notes.length === 0 && !activeSectionQuery.trim() ? "No Lectures Yet" : "No Lectures Match"}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              {activeSection.notes.length === 0 && !activeSectionQuery.trim()
+                                ? "Add a lecture note to start building this section."
+                                : "Adjust the section search in the right utility rail."}
+                            </Typography>
+                          </Stack>
+                        ) : (
+                          <Stack spacing={2}>
+                            {filteredNotes.map((note) => (
+                              <Box
+                                key={note.id}
+                                id={`module-note-${note.id}`}
+                                onClick={() => setActiveNoteId(note.id)}
+                                sx={{ scrollMarginTop: 104 }}
+                              >
+                                <Note
+                                  note={note}
+                                  onUpdate={updateNote}
+                                  onDelete={deleteNote}
+                                  onChanged={onNotesChanged}
+                                  refresh={refresh}
+                                />
+                              </Box>
+                            ))}
+                          </Stack>
+                        )}
                       </Stack>
-                    ) : (
-                      <Stack spacing={2}>
-                        {filteredNotes.map((note) => (
-                          <Box
-                            key={note.id}
-                            id={`module-note-${note.id}`}
-                            onClick={() => setActiveNoteId(note.id)}
-                            sx={{ scrollMarginTop: 104 }}
-                          >
-                            <Note
-                              note={note}
-                              onUpdate={updateNote}
-                              onDelete={deleteNote}
-                              onChanged={onNotesChanged}
-                              refresh={refresh}
-                            />
-                          </Box>
-                        ))}
-                      </Stack>
-                    )}
-                  </Stack>
+                    </Box>
+                  </AnimatePresence>
                 ) : (
                   <Stack alignItems="center" justifyContent="center" spacing={1.5} sx={{ minHeight: 420 }}>
                     <Typography variant="h6">Select a Section</Typography>
@@ -586,83 +609,94 @@ export default function ModulePanel({
                     </Typography>
                   ) : (
                     activeSection ? (
-                      <Stack spacing={2}>
-                        <TextField
-                          fullWidth
-                          size="small"
-                          placeholder="Search this section…"
-                          value={activeSectionQuery}
-                          onChange={(event) => setActiveSectionQuery(event.target.value)}
-                          inputProps={{ "aria-label": "Search this section" }}
-                          InputProps={{
-                            startAdornment: (
-                              <InputAdornment position="start">
-                                <FaMagnifyingGlass size={13} style={{ color: "#6b6b6b" }} />
-                              </InputAdornment>
-                            ),
-                            endAdornment: activeSectionQuery ? (
-                              <InputAdornment position="end">
-                                <IconButton
-                                  size="small"
-                                  onClick={() => setActiveSectionQuery("")}
-                                  aria-label="Clear section search"
-                                  sx={{ padding: "4px" }}
-                                >
-                                  <FaXmark size={12} />
-                                </IconButton>
-                              </InputAdornment>
-                            ) : null,
-                          }}
-                        />
-
+                      <AnimatePresence mode="wait" initial={false}>
                         <Box
-                          component="button"
-                          onClick={toggleSectionPreview}
-                          aria-label="Toggle content preview"
-                          aria-pressed={activeSectionSnippets}
-                          sx={{
-                            alignSelf: "flex-start",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: "6px",
-                            px: "10px",
-                            height: 32,
-                            cursor: "pointer",
-                            borderRadius: "6px",
-                            border: "1px solid",
-                            borderColor: activeSectionSnippets ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.07)",
-                            backgroundColor: activeSectionSnippets ? "rgba(255,255,255,0.06)" : "transparent",
-                            color: activeSectionSnippets ? "#ededed" : "#6b6b6b",
-                            fontSize: "0.75rem",
-                            fontWeight: 500,
-                            whiteSpace: "nowrap",
-                            transition: "background-color 150ms ease-out, border-color 150ms ease-out, color 150ms ease-out",
-                            "&:hover": {
-                              backgroundColor: "rgba(255,255,255,0.06)",
-                              borderColor: "rgba(255,255,255,0.12)",
-                              color: "#ededed",
-                            },
-                            "&:focus-visible": {
-                              outline: "2px solid #e0e0e0",
-                              outlineOffset: 2,
-                            },
-                            touchAction: "manipulation",
-                          }}
+                          key={`section-files-${activeSection.id}`}
+                          component={motion.div}
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          transition={motionTransitions.base}
                         >
-                          <FaBars size={11} />
-                          Preview {activeSectionSnippets ? "on" : "off"}
-                        </Box>
+                          <Stack spacing={2}>
+                            <TextField
+                              fullWidth
+                              size="small"
+                              placeholder="Search this section…"
+                              value={activeSectionQuery}
+                              onChange={(event) => setActiveSectionQuery(event.target.value)}
+                              inputProps={{ "aria-label": "Search this section" }}
+                              InputProps={{
+                                startAdornment: (
+                                  <InputAdornment position="start">
+                                    <FaMagnifyingGlass size={13} style={{ color: "#6b6b6b" }} />
+                                  </InputAdornment>
+                                ),
+                                endAdornment: activeSectionQuery ? (
+                                  <InputAdornment position="end">
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => setActiveSectionQuery("")}
+                                      aria-label="Clear section search"
+                                      sx={{ padding: "4px" }}
+                                    >
+                                      <FaXmark size={12} />
+                                    </IconButton>
+                                  </InputAdornment>
+                                ) : null,
+                              }}
+                            />
 
-                        <SectionFiles
-                          primaryTagName={moduleInfo.primary_tag.name}
-                          subtagName={activeSection.subtag.name}
-                          fileFilter={activeSectionQuery}
-                          showSnippets={activeSectionSnippets}
-                          sectionQuery={activeSectionQuery}
-                          showEmptyState
-                          emptyMessage="No section files match the current search."
-                        />
-                      </Stack>
+                            <Box
+                              component="button"
+                              onClick={toggleSectionPreview}
+                              aria-label="Toggle content preview"
+                              aria-pressed={activeSectionSnippets}
+                              sx={{
+                                alignSelf: "flex-start",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: "6px",
+                                px: "10px",
+                                height: 32,
+                                cursor: "pointer",
+                                borderRadius: "6px",
+                                border: "1px solid",
+                                borderColor: activeSectionSnippets ? "rgba(255,255,255,0.18)" : "rgba(255,255,255,0.07)",
+                                backgroundColor: activeSectionSnippets ? "rgba(255,255,255,0.06)" : "transparent",
+                                color: activeSectionSnippets ? "#ededed" : "#6b6b6b",
+                                fontSize: "0.75rem",
+                                fontWeight: 500,
+                                whiteSpace: "nowrap",
+                                transition: "background-color 150ms ease-out, border-color 150ms ease-out, color 150ms ease-out",
+                                "&:hover": {
+                                  backgroundColor: "rgba(255,255,255,0.06)",
+                                  borderColor: "rgba(255,255,255,0.12)",
+                                  color: "#ededed",
+                                },
+                                "&:focus-visible": {
+                                  outline: "2px solid #e0e0e0",
+                                  outlineOffset: 2,
+                                },
+                                touchAction: "manipulation",
+                              }}
+                            >
+                              <FaBars size={11} />
+                              Preview {activeSectionSnippets ? "on" : "off"}
+                            </Box>
+
+                            <SectionFiles
+                              primaryTagName={moduleInfo.primary_tag.name}
+                              subtagName={activeSection.subtag.name}
+                              fileFilter={activeSectionQuery}
+                              showSnippets={activeSectionSnippets}
+                              sectionQuery={activeSectionQuery}
+                              showEmptyState
+                              emptyMessage="No section files match the current search."
+                            />
+                          </Stack>
+                        </Box>
+                      </AnimatePresence>
                     ) : (
                       <Typography variant="body2" color="text.secondary">
                         Select a section to browse its linked files.
