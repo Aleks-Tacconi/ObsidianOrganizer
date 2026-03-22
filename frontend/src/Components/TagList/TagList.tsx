@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
 import api from "../../Utils/api";
 
-import { FaPlus, FaBookOpen, FaRegFileLines, FaTableColumns } from "react-icons/fa6";
+import { FaPlus, FaBookOpen } from "react-icons/fa6";
 import type { PrimaryTag } from "../../Utils/types/api.schemas";
 
 import TagItem, { type SidebarTag } from "./Components/TagItem/TagItem";
@@ -33,8 +32,6 @@ export default function TagList({
   selectedTagId: number | null;
   refreshKey: number;
 }) {
-  const navigate = useNavigate();
-  const location = useLocation();
   const [tags, setTags] = useState<SidebarTag[]>([]);
   const [editingTag, setEditingTag] = useState<SidebarTag | null>(null);
   const [popupOpen, setPopupOpen] = useState(false);
@@ -131,9 +128,6 @@ export default function TagList({
     onChanged();
   };
 
-  const inRagPage = location.pathname === "/rag";
-  const inOrganisationTool = location.pathname === "/organization-tool";
-
   return (
     <div className="taglist-container" style={{ display: "flex", flexDirection: "column", height: "100%" }}>
       <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 2 }}>
@@ -179,49 +173,6 @@ export default function TagList({
         </List>
       )}
       </Box>
-
-      <Divider sx={{ mt: 1.5, mb: 1.5 }} />
-      <Tooltip title="Open Ask Vault page">
-        <IconButton
-          onClick={() => navigate("/rag")}
-          sx={{
-            width: "100%",
-            justifyContent: "flex-start",
-            borderRadius: "6px",
-            padding: "8px 10px",
-            backgroundColor: inRagPage ? "rgba(255,255,255,0.08)" : "transparent",
-            mb: 1,
-          }}
-          aria-label="Open Ask Vault page"
-        >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-            <FaRegFileLines size={14} style={{ color: inRagPage ? "#ededed" : "#6b6b6b" }} />
-            <Typography variant="body2" color={inRagPage ? "text.primary" : "text.secondary"}>
-              Ask Vault
-            </Typography>
-          </Box>
-        </IconButton>
-      </Tooltip>
-      <Tooltip title="Open organisation tool">
-        <IconButton
-          onClick={() => navigate("/organization-tool")}
-          sx={{
-            width: "100%",
-            justifyContent: "flex-start",
-            borderRadius: "6px",
-            padding: "8px 10px",
-            backgroundColor: inOrganisationTool ? "rgba(255,255,255,0.08)" : "transparent",
-          }}
-          aria-label="Open organisation tool"
-        >
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-            <FaTableColumns size={14} style={{ color: inOrganisationTool ? "#ededed" : "#6b6b6b" }} />
-            <Typography variant="body2" color={inOrganisationTool ? "text.primary" : "text.secondary"}>
-              Organisation tool
-            </Typography>
-          </Box>
-        </IconButton>
-      </Tooltip>
 
       {popupOpen && <TagPopup tag={editingTag} onClose={closePopup} onSave={saveTag} />}
 
