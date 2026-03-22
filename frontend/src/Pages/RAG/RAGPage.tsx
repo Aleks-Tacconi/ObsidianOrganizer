@@ -141,7 +141,6 @@ function IndexCard({
 
 export default function RAGPage() {
   const navigate = useNavigate();
-  const [selectedTagId, setSelectedTagId] = useState<number | null>(null);
 
   const [messages, setMessages] = useState<ChatMessageItem[]>([]);
   const [query, setQuery] = useState("");
@@ -180,7 +179,6 @@ export default function RAGPage() {
     if (!saved) return;
     try {
       const parsed: PrimaryTag = JSON.parse(saved);
-      setSelectedTagId(parsed.id);
       setScopeModule(parsed.name);
     } catch {
       localStorage.removeItem("selectedTag");
@@ -470,7 +468,7 @@ export default function RAGPage() {
 
   return (
     <SidebarLayout
-      selectedTagId={selectedTagId}
+      selectedTagId={null}
       onSelectTag={handleSelectTag}
       onTagsChanged={() => {}}
       refreshKey={0}
