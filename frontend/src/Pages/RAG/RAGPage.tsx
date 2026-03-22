@@ -184,6 +184,7 @@ export default function RAGPage() {
   const queryInputRef = useRef<HTMLTextAreaElement | null>(null);
   const mentionAnchorRef = useRef<HTMLDivElement | null>(null);
   const noteDialogRef = useRef<ObsidianFileDialogHandle>(null);
+  const hasMountedMessagesRef = useRef(false);
 
   // ── Bootstrap ──────────────────────────────────────────────────────────────
 
@@ -285,7 +286,16 @@ export default function RAGPage() {
   // ── Scroll to latest message ───────────────────────────────────────────────
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (!hasMountedMessagesRef.current) {
+      hasMountedMessagesRef.current = true;
+      return;
+    }
+
+    if (messages.length === 0) {
+      return;
+    }
+
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages]);
 
   // ── Handlers ───────────────────────────────────────────────────────────────
