@@ -1,4 +1,5 @@
 import { useState, type ReactNode } from "react";
+import { motion } from "framer-motion";
 import { Drawer, IconButton, Tooltip, Box } from "@mui/material";
 import { FaBars } from "react-icons/fa6";
 
@@ -27,13 +28,14 @@ export default function SidebarLayout({
   return (
     <Box sx={{ display: "flex", minHeight: "100vh" }}>
       <Tooltip title={open ? "Close sidebar" : "Open sidebar"}>
-        <IconButton
-          onClick={() => setOpen(!open)}
-          sx={{ position: "fixed", top: 12, left: 12, zIndex: 2000 }}
-          aria-label={open ? "Close sidebar" : "Open sidebar"}
-        >
-          <FaBars />
-        </IconButton>
+        <Box sx={{ position: "fixed", top: 12, left: 12, zIndex: 2000 }}>
+          <IconButton
+            onClick={() => setOpen(!open)}
+            aria-label={open ? "Close sidebar" : "Open sidebar"}
+          >
+            <FaBars />
+          </IconButton>
+        </Box>
       </Tooltip>
 
       <Drawer
@@ -65,7 +67,15 @@ export default function SidebarLayout({
           justifyContent: "center",
         }}
       >
-        <Box sx={{ width: "100%", maxWidth: "1100px", padding: "32px 32px 64px" }}>{children}</Box>
+        <Box
+          component={motion.div}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.2, ease: "easeOut" }}
+          sx={{ width: "100%", maxWidth: "1100px", padding: "32px 32px 64px" }}
+        >
+          {children}
+        </Box>
       </Box>
     </Box>
   );

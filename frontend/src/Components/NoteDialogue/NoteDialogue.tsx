@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import {
   Alert,
   Autocomplete,
@@ -21,6 +22,7 @@ import {
 import api from "../../Utils/api";
 import type { SubTag, NoteURL, Note as NoteType } from "../../Utils/types/api.schemas";
 import { FaPlus, FaTrash } from "react-icons/fa6";
+import { dialogContentVariants } from "../../Utils/motion";
 
 interface Props {
   open: boolean;
@@ -171,65 +173,68 @@ export default function NoteDialog({ open, onClose, primaryTagId, tagColor, note
 
   return (
     <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
-      <DialogTitle>{note ? "Edit Note" : "New Note"}</DialogTitle>
+      <Stack component={motion.div} variants={dialogContentVariants} initial="hidden" animate="visible">
+        <DialogTitle>{note ? "Edit Note" : "New Note"}</DialogTitle>
 
-      <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
-        {error && (
-          <Alert severity="error" onClose={() => setError(null)}>
-            {error}
-          </Alert>
-        )}
-
-        <TextField
-          label="Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          required
-          sx={{ marginTop: 1 }}
-        />
-
-        <TextField
-          label="Description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          multiline
-          rows={6}
-        />
-
-        <Autocomplete
-          multiple
-          options={subtags.filter((s) => s.parent === primaryTagId)}
-          getOptionLabel={(o) => o.name}
-          value={selectedSubtags}
-          onChange={(_, v) => setSelectedSubtags(v)}
-          renderTags={(value, getTagProps) =>
-            value.map((option, index) => (
-              <Chip
-                {...getTagProps({ index })}
-                key={option.id}
-                label={option.name}
-                size="small"
-                sx={{
-                  backgroundColor: "rgba(255,255,255,0.06)",
-                  color: "text.secondary",
-                  border: "1px solid rgba(255,255,255,0.08)",
-                  borderLeft: `2px solid ${tagColor ?? "#e0e0e0"}`,
-                }}
-              />
-            ))
-          }
-          renderInput={(params) => (
-            <TextField
-              {...params}
-              label="Categories"
-              required
-              error={subtouched && selectedSubtags.length === 0}
-              helperText={subtouched && selectedSubtags.length === 0 ? "At least one category is required" : ""}
-            />
+        <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
+          {error && (
+            <Alert severity="error" onClose={() => setError(null)}>
+              {error}
+            </Alert>
           )}
-        />
 
-        <Stack direction="row" spacing={1} alignItems="center">
+          <TextField
+            label="Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            required
+            fullWidth
+            sx={{ marginTop: 1 }}
+          />
+
+          <TextField
+            label="Description"
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            multiline
+            rows={6}
+            fullWidth
+          />
+
+          <Autocomplete
+            multiple
+            options={subtags.filter((s) => s.parent === primaryTagId)}
+            getOptionLabel={(o) => o.name}
+            value={selectedSubtags}
+            onChange={(_, v) => setSelectedSubtags(v)}
+            renderTags={(value, getTagProps) =>
+              value.map((option, index) => (
+                <Chip
+                  {...getTagProps({ index })}
+                  key={option.id}
+                  label={option.name}
+                  size="small"
+                  sx={{
+                    backgroundColor: "rgba(255,255,255,0.06)",
+                    color: "text.secondary",
+                    border: "1px solid rgba(255,255,255,0.08)",
+                    borderLeft: `2px solid ${tagColor ?? "#e0e0e0"}`,
+                  }}
+                />
+              ))
+            }
+            renderInput={(params) => (
+              <TextField
+                {...params}
+                label="Categories"
+                required
+                error={subtouched && selectedSubtags.length === 0}
+                helperText={subtouched && selectedSubtags.length === 0 ? "At least one category is required" : ""}
+              />
+            )}
+          />
+
+          <Stack direction="row" spacing={1} alignItems="center">
           <TextField
             label="Link label"
             value={urlAlias}
@@ -267,10 +272,10 @@ export default function NoteDialog({ open, onClose, primaryTagId, tagColor, note
               <FaPlus size={14} />
             </IconButton>
           </Tooltip>
-        </Stack>
+          </Stack>
 
-        {urls.length > 0 && (
-          <Stack spacing={1}>
+          {urls.length > 0 && (
+            <Stack spacing={1}>
             {urls.map((u, i) => (
               <Stack key={i} direction="row" spacing={1} alignItems="center">
                 <TextField
@@ -299,40 +304,41 @@ export default function NoteDialog({ open, onClose, primaryTagId, tagColor, note
                 </Tooltip>
               </Stack>
             ))}
-          </Stack>
-        )}
+            </Stack>
+          )}
 
-        <FormControlLabel
-          control={
-            <Checkbox checked={completed} onChange={(e) => setCompleted(e.target.checked)} />
-          }
-          label="Completed"
-        />
+          <FormControlLabel
+            control={
+              <Checkbox checked={completed} onChange={(e) => setCompleted(e.target.checked)} />
+            }
+            label="Completed"
+          />
 
-        {selectedSubtags.length === 0 && subtouched && (
-          <Typography variant="caption" color="error">
-            Select at least one category to enable saving.
-          </Typography>
-        )}
-      </DialogContent>
+          {selectedSubtags.length === 0 && subtouched && (
+            <Typography variant="caption" color="error">
+              Select at least one category to enable saving.
+            </Typography>
+          )}
+        </DialogContent>
 
-      <DialogActions>
-        <Button onClick={onClose} disabled={submitting}>
-          Cancel
-        </Button>
-        <Tooltip title={selectedSubtags.length === 0 ? "Select at least one category to save" : ""}>
-          <span>
-            <Button
-              variant="contained"
-              onClick={handleSubmit}
-              disabled={!canSubmit}
-              startIcon={submitting ? <CircularProgress size={14} color="inherit" /> : null}
-            >
-              {submitting ? "Saving…" : note ? "Save" : "Create"}
-            </Button>
-          </span>
-        </Tooltip>
-      </DialogActions>
+        <DialogActions>
+          <Button onClick={onClose} disabled={submitting}>
+            Cancel
+          </Button>
+          <Tooltip title={selectedSubtags.length === 0 ? "Select at least one category to save" : ""}>
+            <span>
+              <Button
+                variant="contained"
+                onClick={handleSubmit}
+                disabled={!canSubmit}
+                startIcon={submitting ? <CircularProgress size={14} color="inherit" /> : null}
+              >
+                {submitting ? "Saving…" : note ? "Save" : "Create"}
+              </Button>
+            </span>
+          </Tooltip>
+        </DialogActions>
+      </Stack>
     </Dialog>
   );
 }
