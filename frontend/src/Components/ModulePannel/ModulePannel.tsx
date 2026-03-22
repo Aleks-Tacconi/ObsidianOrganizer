@@ -30,9 +30,11 @@ import {
   FaMagnifyingGlass,
   FaPlus,
   FaRegFileLines,
+  FaTrashCan,
   FaXmark,
 } from "react-icons/fa6";
 
+import ConfirmDialogue from "../ConfirmDialogue/ConfirmDialogue";
 import Note from "../Note/Note";
 import NoteDialog from "../NoteDialogue/NoteDialogue";
 import PageHeaderCard from "../Layout/PageHeaderCard";
@@ -95,6 +97,9 @@ export default function ModulePanel({
   const [newCategoryName, setNewCategoryName] = useState("");
   const [categorySubmitting, setCategorySubmitting] = useState(false);
   const [categoryError, setCategoryError] = useState<string | null>(null);
+  const [moduleActionError, setModuleActionError] = useState<string | null>(null);
+  const [confirmCategoryDeleteOpen, setConfirmCategoryDeleteOpen] = useState(false);
+  const [deletingCategory, setDeletingCategory] = useState(false);
   const [pendingCategorySubtagId, setPendingCategorySubtagId] = useState<number | null>(null);
   const [searchFileOpen, setSearchFileOpen] = useState(false);
   const [searchActiveFile, setSearchActiveFile] = useState<{ name: string; content: string } | null>(null);
@@ -249,6 +254,23 @@ export default function ModulePanel({
     }
   };
 
+  const handleDeleteCategory = async () => {
+    if (!activeSection) return;
+
+    setDeletingCategory(true);
+    setModuleActionError(null);
+
+    try {
+      await api.del(`subtags/${activeSection.subtag.id}/`);
+      setActiveNoteId(null);
+      onNotesChanged?.();
+    } catch {
+      setModuleActionError("Failed to delete category. Please try again.");
+    } finally {
+      setDeletingCategory(false);
+    }
+  };
+
   const loading = moduleInfo === null;
 
   return (
@@ -265,6 +287,12 @@ export default function ModulePanel({
           </Stack>
         ) : (
           <Stack spacing={3} sx={{ width: "100%" }}>
+            {moduleActionError && (
+              <Alert severity="error" onClose={() => setModuleActionError(null)}>
+                {moduleActionError}
+              </Alert>
+            )}
+
             <Box
               component={motion.section}
               initial={{ opacity: 0, y: 10 }}
@@ -594,9 +622,30 @@ export default function ModulePanel({
                             </Typography>
                           </Box>
 
-                          <Typography variant="subtitle2" color="text.secondary" sx={{ letterSpacing: "0.12em", textTransform: "uppercase" }}>
-                            Workspace
-                          </Typography>
+                          <Stack direction="row" spacing={0.5} alignItems="center">
+                            <Typography variant="subtitle2" color="text.secondary" sx={{ letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                              Workspace
+                            </Typography>
+                            <Tooltip title="Delete category">
+                              <span>
+                                <IconButton
+                                  onClick={() => setConfirmCategoryDeleteOpen(true)}
+                                  aria-label="Delete category"
+                                  disabled={deletingCategory}
+                                  size="small"
+                                  sx={{
+                                    "&:hover": { backgroundColor: "rgba(255,255,255,0.04)" },
+                                    "&:focus-visible": {
+                                      outline: "2px solid #e0e0e0",
+                                      outlineOffset: 2,
+                                    },
+                                  }}
+                                >
+                                  {deletingCategory ? <CircularProgress size={15} color="inherit" /> : <FaTrashCan size={14} />}
+                                </IconButton>
+                              </span>
+                            </Tooltip>
+                          </Stack>
                         </Stack>
 
                         <Divider />
@@ -861,6 +910,18 @@ export default function ModulePanel({
           </Button>
         </DialogActions>
       </Dialog>
+
+      <ConfirmDialogue
+        open={confirmCategoryDeleteOpen}
+        onConfirm={() => {
+          setConfirmCategoryDeleteOpen(false);
+          void handleDeleteCategory();
+        }}
+        onDecline={() => setConfirmCategoryDeleteOpen(false)}
+        title={`Delete "${activeSection?.subtag.name ?? "category"}"`}
+        message="This category will be permanently deleted."
+        confirmLabel="Delete"
+      />
     </Box>
   );
 }
