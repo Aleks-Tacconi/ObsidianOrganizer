@@ -5,6 +5,7 @@ import {
   Autocomplete,
   Box,
   Button,
+  ButtonGroup,
   Checkbox,
   Chip,
   CircularProgress,
@@ -19,6 +20,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
+import ReactMarkdown from "react-markdown";
 
 import api from "../../Utils/api";
 import type { SubTag, NoteURL, Note as NoteType } from "../../Utils/types/api.schemas";
@@ -43,6 +45,7 @@ export default function NoteDialog({ open, onClose, primaryTagId, tagColor, note
   const [description, setDescription] = useState(note?.description ?? "");
   const [descriptionDraft, setDescriptionDraft] = useState(note?.description ?? "");
   const [descriptionEditorOpen, setDescriptionEditorOpen] = useState(false);
+  const [descriptionMode, setDescriptionMode] = useState<"edit" | "preview">("edit");
   const [completed, setCompleted] = useState(note?.completed ?? false);
   const [date, setDate] = useState(
     note ? new Date(note.date).toISOString().slice(0, 16) : new Date().toISOString().slice(0, 16),
@@ -65,6 +68,7 @@ export default function NoteDialog({ open, onClose, primaryTagId, tagColor, note
     setDescription("");
     setDescriptionDraft("");
     setDescriptionEditorOpen(false);
+    setDescriptionMode("edit");
     setCompleted(false);
     setDate(new Date().toISOString().slice(0, 16));
     setSelectedSubtags([]);
@@ -84,6 +88,7 @@ export default function NoteDialog({ open, onClose, primaryTagId, tagColor, note
       setDescription(note.description ?? "");
       setDescriptionDraft(note.description ?? "");
       setDescriptionEditorOpen(false);
+      setDescriptionMode("edit");
       setCompleted(note.completed ?? false);
       setDate(new Date(note.date).toISOString().slice(0, 16));
       setSelectedSubtags([...note.subtags]);
@@ -182,17 +187,20 @@ export default function NoteDialog({ open, onClose, primaryTagId, tagColor, note
 
   const openDescriptionEditor = () => {
     setDescriptionDraft(description);
+    setDescriptionMode("edit");
     setDescriptionEditorOpen(true);
   };
 
   const saveDescriptionEditor = () => {
     setDescription(descriptionDraft);
     setDescriptionEditorOpen(false);
+    setDescriptionMode("edit");
   };
 
   const cancelDescriptionEditor = () => {
     setDescriptionDraft(description);
     setDescriptionEditorOpen(false);
+    setDescriptionMode("edit");
   };
 
   const applyDescriptionFormat = (prefix: string) => {
@@ -263,32 +271,103 @@ export default function NoteDialog({ open, onClose, primaryTagId, tagColor, note
                     Bullet
                   </Button>
                 </Stack>
-                <Typography variant="caption" color="text.secondary">
-                  Markdown shortcuts for quick structure
-                </Typography>
+                <ButtonGroup size="small" variant="outlined" color="inherit" aria-label="Description mode toggle">
+                  <Button
+                    onClick={() => setDescriptionMode("edit")}
+                    variant={descriptionMode === "edit" ? "contained" : "outlined"}
+                    sx={{ textTransform: "none" }}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    onClick={() => setDescriptionMode("preview")}
+                    variant={descriptionMode === "preview" ? "contained" : "outlined"}
+                    sx={{ textTransform: "none" }}
+                  >
+                    Preview
+                  </Button>
+                </ButtonGroup>
               </Stack>
 
-              <TextField
-                label="Description"
-                value={descriptionDraft}
-                onChange={(e) => setDescriptionDraft(e.target.value)}
-                multiline
-                fullWidth
-                minRows={18}
-                inputRef={descriptionEditorRef}
-                sx={{
-                  flex: 1,
-                  minHeight: 0,
-                  "& .MuiInputBase-root": {
-                    height: "100%",
-                    alignItems: "stretch",
-                  },
-                  "& .MuiInputBase-inputMultiline": {
-                    height: "100% !important",
-                    overflowY: "auto !important",
-                  },
-                }}
-              />
+              {descriptionMode === "edit" ? (
+                <TextField
+                  label="Description"
+                  value={descriptionDraft}
+                  onChange={(e) => setDescriptionDraft(e.target.value)}
+                  multiline
+                  fullWidth
+                  minRows={18}
+                  inputRef={descriptionEditorRef}
+                  sx={{
+                    flex: 1,
+                    minHeight: 0,
+                    "& .MuiInputBase-root": {
+                      height: "100%",
+                      alignItems: "stretch",
+                    },
+                    "& .MuiInputBase-inputMultiline": {
+                      height: "100% !important",
+                      overflowY: "auto !important",
+                    },
+                  }}
+                />
+              ) : (
+                <Box
+                  sx={{
+                    flex: 1,
+                    minHeight: 0,
+                    overflowY: "auto",
+                    border: "1px solid rgba(255,255,255,0.07)",
+                    borderRadius: "6px",
+                    backgroundColor: "rgba(255,255,255,0.02)",
+                    p: 2,
+                  }}
+                >
+                  {descriptionDraft.trim() ? (
+                    <ReactMarkdown
+                      components={{
+                        h1: ({ children }) => (
+                          <Typography component="h2" sx={{ mb: 1.5, fontSize: "1.125rem", fontWeight: 600, lineHeight: 1.35 }}>
+                            {children}
+                          </Typography>
+                        ),
+                        h2: ({ children }) => (
+                          <Typography component="h3" sx={{ mb: 1.5, fontSize: "1rem", fontWeight: 600, lineHeight: 1.4 }}>
+                            {children}
+                          </Typography>
+                        ),
+                        h3: ({ children }) => (
+                          <Typography component="h4" sx={{ mb: 1, fontSize: "0.9375rem", fontWeight: 600, lineHeight: 1.45 }}>
+                            {children}
+                          </Typography>
+                        ),
+                        p: ({ children }) => (
+                          <Typography variant="body2" component="div" sx={{ mb: 1.5, lineHeight: 1.7 }}>
+                            {children}
+                          </Typography>
+                        ),
+                        ul: ({ children }) => (
+                          <ul style={{ paddingLeft: "1.4em", margin: "0 0 12px" }}>{children}</ul>
+                        ),
+                        ol: ({ children }) => (
+                          <ol style={{ paddingLeft: "1.4em", margin: "0 0 12px" }}>{children}</ol>
+                        ),
+                        li: ({ children }) => (
+                          <li style={{ marginBottom: "4px" }}>
+                            <Typography variant="body2" component="span">{children}</Typography>
+                          </li>
+                        ),
+                      }}
+                    >
+                      {descriptionDraft}
+                    </ReactMarkdown>
+                  ) : (
+                    <Typography variant="body2" color="text.secondary">
+                      Nothing to preview yet. Switch back to edit to start writing.
+                    </Typography>
+                  )}
+                </Box>
+              )}
             </Stack>
           ) : (
             <Stack spacing={3} sx={{ pt: 1.5 }}>

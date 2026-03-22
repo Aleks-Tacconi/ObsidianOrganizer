@@ -111,4 +111,27 @@ describe("NoteDialog description editor", () => {
       expect(screen.getByLabelText("Description")).toHaveValue("- Line one\n- Line two");
     });
   });
+
+  it("toggles between edit and preview modes in the description editor", async () => {
+    renderDialog();
+
+    fireEvent.click(screen.getByRole("button", { name: "Open description editor" }));
+
+    const textarea = await waitFor(() => screen.getByRole("textbox", { name: "Description" }));
+    fireEvent.change(textarea, { target: { value: "## Preview heading\n\nPreview body" } });
+
+    fireEvent.click(screen.getByRole("button", { name: "Preview" }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("textbox", { name: "Description" })).not.toBeInTheDocument();
+      expect(screen.getByText("Preview heading")).toBeInTheDocument();
+      expect(screen.getByText("Preview body")).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("textbox", { name: "Description" })).toHaveValue("## Preview heading\n\nPreview body");
+    });
+  });
 });
