@@ -18,8 +18,6 @@ import {
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import {
-  FaAngleDown,
-  FaAngleRight,
   FaBars,
   FaBookOpen,
   FaFolder,
@@ -368,32 +366,51 @@ export default function ModulePanel({
                                 borderRadius: "6px",
                                 alignItems: "center",
                                 px: 1.25,
-                                py: 1,
+                                py: 1.125,
+                                gap: 1,
+                                border: "1px solid transparent",
+                                backgroundColor: sectionIsActive ? alpha(moduleInfo.primary_tag.color, 0.08) : "transparent",
+                                transition: "background-color 150ms ease-out, border-color 150ms ease-out",
+                                "&:hover": {
+                                  backgroundColor: sectionIsActive ? alpha(moduleInfo.primary_tag.color, 0.1) : "rgba(255,255,255,0.03)",
+                                },
                                 "&.Mui-selected": {
-                                  backgroundColor: alpha(moduleInfo.primary_tag.color, 0.12),
-                                  border: `1px solid ${alpha(moduleInfo.primary_tag.color, 0.3)}`,
+                                  backgroundColor: alpha(moduleInfo.primary_tag.color, 0.08),
+                                  border: `1px solid ${alpha(moduleInfo.primary_tag.color, 0.22)}`,
                                 },
                                 "&.Mui-selected:hover": {
-                                  backgroundColor: alpha(moduleInfo.primary_tag.color, 0.16),
+                                  backgroundColor: alpha(moduleInfo.primary_tag.color, 0.1),
                                 },
                               }}
                             >
-                              <ListItemIcon sx={{ minWidth: 24, color: "text.secondary" }}>
-                                {sectionIsActive ? <FaAngleDown size={12} /> : <FaAngleRight size={12} />}
-                              </ListItemIcon>
                               <ListItemIcon sx={{ minWidth: 24, color: moduleInfo.primary_tag.color }}>
                                 <FaFolder size={13} />
                               </ListItemIcon>
                               <ListItemText
                                 primary={section.subtag.name}
                                 secondary={`${section.notes.length} lecture${section.notes.length === 1 ? "" : "s"}`}
-                                primaryTypographyProps={{ fontWeight: 600, fontSize: "0.95rem", color: "text.primary" }}
+                                primaryTypographyProps={{
+                                  fontWeight: sectionIsActive ? 600 : 500,
+                                  fontSize: "0.95rem",
+                                  color: "text.primary",
+                                }}
                                 secondaryTypographyProps={{ fontSize: "0.75rem", color: "text.secondary" }}
                               />
                             </ListItemButton>
 
                             {sectionIsActive && sectionNotes.length > 0 && (
-                              <List disablePadding sx={{ mt: 0.5, ml: 4.5, display: "flex", flexDirection: "column", gap: 0.25 }}>
+                              <List
+                                disablePadding
+                                sx={{
+                                  mt: 0.75,
+                                  ml: 3.5,
+                                  pl: 1.25,
+                                  borderLeft: "1px solid rgba(255,255,255,0.05)",
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: 0.25,
+                                }}
+                              >
                                 {sectionNotes.map((note) => (
                                   <ListItemButton
                                     key={note.id}
@@ -402,10 +419,30 @@ export default function ModulePanel({
                                     sx={{
                                       minHeight: 34,
                                       borderRadius: "6px",
-                                      px: 1,
+                                      px: 1.25,
                                       py: 0.625,
+                                      position: "relative",
                                       color: note.id === activeNoteId ? "text.primary" : "text.secondary",
+                                      transition: "background-color 150ms ease-out, color 150ms ease-out",
+                                      "&:hover": {
+                                        backgroundColor: "rgba(255,255,255,0.03)",
+                                        color: "text.primary",
+                                      },
+                                      "&::before": {
+                                        content: '""',
+                                        position: "absolute",
+                                        left: 0,
+                                        top: 7,
+                                        bottom: 7,
+                                        width: 2,
+                                        borderRadius: "999px",
+                                        backgroundColor: note.id === activeNoteId ? moduleInfo.primary_tag.color : "transparent",
+                                      },
                                       "&.Mui-selected": {
+                                        backgroundColor: "rgba(255,255,255,0.04)",
+                                        color: "text.primary",
+                                      },
+                                      "&.Mui-selected:hover": {
                                         backgroundColor: "rgba(255,255,255,0.05)",
                                       },
                                     }}
