@@ -84,7 +84,6 @@ export default function Dashboard() {
       selectedTagId={selectedTag?.id ?? null}
       refreshKey={refresh}
       contentMaxWidth={selectedTag ? "none" : "1100px"}
-      menuPlacement="inline"
     >
       {selectedTag && !loading ? (
         <ModulePanel moduleId={selectedTag} refresh={refresh} onNotesChanged={triggerRefresh} />
@@ -108,7 +107,7 @@ export default function Dashboard() {
               <FaTableColumns size={40} style={{ color: "#6b6b6b" }} />
             </Box>
             <Typography component={motion.p} variants={staggerItem} variant="body1" color="text.secondary">
-              Open the sidebar and select a module to get started.
+              Use the Modules menu in the top bar to get started.
             </Typography>
           </Box>
         )

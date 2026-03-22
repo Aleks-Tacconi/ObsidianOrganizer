@@ -32,6 +32,7 @@ import {
 
 import Note from "../Note/Note";
 import NoteDialog from "../NoteDialogue/NoteDialogue";
+import PageHeaderCard from "../Layout/PageHeaderCard";
 import ProgressBar from "./Components/ProgressBar";
 import SectionFiles from "./Components/SectionFiles";
 import Grades from "./Components/Grades";
@@ -212,41 +213,18 @@ export default function ModulePanel({
           </Stack>
         ) : (
           <Stack spacing={3} sx={{ width: "100%" }}>
-            <Paper
+            <Box
               component={motion.section}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={motionTransitions.dialog}
-              elevation={0}
-              sx={{
-                p: { xs: 2.5, md: 3 },
-                borderRadius: "6px",
-                border: "1px solid rgba(255,255,255,0.07)",
-                backgroundColor: "#141414",
-              }}
             >
-              <Stack spacing={3}>
-                <Stack
-                  direction={{ xs: "column", md: "row" }}
-                  justifyContent="space-between"
-                  alignItems={{ xs: "flex-start", md: "center" }}
-                  spacing={2}
-                >
-                  <Box sx={{ minWidth: 0 }}>
-                    <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 1 }}>
-                      <FaGraduationCap size={20} style={{ color: moduleInfo?.primary_tag.color }} />
-                      <Typography variant="h4" sx={{ textWrap: "balance" }}>
-                        {moduleInfo?.primary_tag.name}
-                      </Typography>
-                    </Stack>
-                    {moduleInfo?.description && (
-                      <Typography variant="body1" color="text.secondary" sx={{ maxWidth: 920 }}>
-                        {moduleInfo.description}
-                      </Typography>
-                    )}
-                  </Box>
-
-                  <Stack direction="row" spacing={1} alignItems="center">
+              <PageHeaderCard
+                icon={<FaGraduationCap size={20} style={{ color: moduleInfo?.primary_tag.color }} />}
+                title={moduleInfo?.primary_tag.name ?? ""}
+                description={moduleInfo?.description}
+                actions={(
+                  <Stack direction="row" spacing={1} alignItems="center" justifyContent={{ xs: "flex-start", md: "flex-end" }}>
                     <Tooltip title={lastNote ? `Open: ${lastNote}` : "No recently opened note"}>
                       <span>
                         <IconButton
@@ -269,34 +247,38 @@ export default function ModulePanel({
                       </span>
                     </Tooltip>
                   </Stack>
-                </Stack>
-
-                <Stack direction={{ xs: "column", md: "row" }} spacing={3}>
-                  <Box sx={{ minWidth: 180 }}>
-                    <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.75, letterSpacing: "0.12em", textTransform: "uppercase" }}>
-                      Overview
-                    </Typography>
-                    <Stack spacing={0.5}>
-                      <Typography variant="body2">{moduleInfo.sections.length} sections</Typography>
-                      <Typography variant="body2">{allNotes.length} lectures</Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {moduleInfo.grades.length} grade items
+                )}
+              >
+                <Stack
+                  spacing={3}
+                >
+                  <Stack direction={{ xs: "column", md: "row" }} spacing={3}>
+                    <Box sx={{ minWidth: 180 }}>
+                      <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.75, letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                        Overview
                       </Typography>
-                    </Stack>
-                  </Box>
+                      <Stack spacing={0.5}>
+                        <Typography variant="body2">{moduleInfo.sections.length} sections</Typography>
+                        <Typography variant="body2">{allNotes.length} lectures</Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          {moduleInfo.grades.length} grade items
+                        </Typography>
+                      </Stack>
+                    </Box>
 
-                  <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <ProgressBar Notes={allNotes} color={moduleInfo?.primary_tag.color} />
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <ProgressBar Notes={allNotes} color={moduleInfo?.primary_tag.color} />
+                    </Box>
+                  </Stack>
+
+                  <Divider />
+
+                  <Box>
+                    <Grades moduleInfo={moduleInfo} embedded />
                   </Box>
                 </Stack>
-
-                <Divider />
-
-                <Box>
-                  <Grades moduleInfo={moduleInfo} embedded />
-                </Box>
-              </Stack>
-            </Paper>
+              </PageHeaderCard>
+            </Box>
 
             <Box
               sx={{

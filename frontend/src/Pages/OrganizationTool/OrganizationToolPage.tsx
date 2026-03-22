@@ -35,7 +35,6 @@ export default function OrganizationToolPage() {
       onTagsChanged={() => {}}
       refreshKey={0}
       contentMaxWidth="none"
-      menuPlacement="inline"
     >
       <OrganisationPanel />
     </SidebarLayout>

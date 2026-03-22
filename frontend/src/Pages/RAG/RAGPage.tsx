@@ -13,8 +13,10 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import { FaRegFileLines } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
 
+import PageHeaderCard from "../../Components/Layout/PageHeaderCard";
 import SidebarLayout from "../../Components/Layout/SidebarLayout";
 import ChatMessage, { type ChatMessageItem } from "../../Components/RAG/ChatMessage";
 import ObsidianFileDialog, {
@@ -475,39 +477,13 @@ export default function RAGPage() {
       onSelectTag={handleSelectTag}
       onTagsChanged={() => {}}
       refreshKey={0}
-      menuPlacement="inline"
     >
       <Stack spacing={2} sx={{ maxWidth: "900px", mx: "auto" }}>
-        {/* Page header */}
-        <Box>
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            Ask Vault
-          </Typography>
-          <Typography variant="body2" sx={{ color: "#6b6b6b", mt: 0.5 }}>
-            Ask questions about your notes. Mention specific files inline with @filename.md.
-          </Typography>
-        </Box>
-
-        {/* Index + health card */}
-        <IndexCard
-          status={indexStatus}
-          errors={indexErrors}
-          healthy={healthy}
-          healthError={healthError}
-          indexing={indexing}
-          onStartIndex={handleStartIndexing}
-          onClearIndex={handleClearIndex}
-        />
-
-        {/* Scope filters */}
-        <Paper
-          elevation={0}
-          sx={{
-            p: 2,
-            border: "1px solid rgba(255,255,255,0.07)",
-            borderRadius: "6px",
-            backgroundColor: "#141414",
-          }}
+        <PageHeaderCard
+          icon={<FaRegFileLines size={18} style={{ color: "#6b6b6b" }} />}
+          title="Ask Vault"
+          titleVariant="h5"
+          description="Ask questions about your notes. Mention specific files inline with @filename.md."
         >
           <Stack direction={{ xs: "column", md: "row" }} spacing={1.5}>
             <TextField
@@ -538,15 +514,26 @@ export default function RAGPage() {
               disabled={!scopeModule}
               sx={{ minWidth: "200px" }}
             >
-                <MenuItem value="">All categories</MenuItem>
-                {categoryOptions.map((name) => (
-                  <MenuItem key={name} value={name}>
-                    {name}
-                  </MenuItem>
-                ))}
+              <MenuItem value="">All categories</MenuItem>
+              {categoryOptions.map((name) => (
+                <MenuItem key={name} value={name}>
+                  {name}
+                </MenuItem>
+              ))}
             </TextField>
           </Stack>
-        </Paper>
+        </PageHeaderCard>
+
+        {/* Index + health card */}
+        <IndexCard
+          status={indexStatus}
+          errors={indexErrors}
+          healthy={healthy}
+          healthError={healthError}
+          indexing={indexing}
+          onStartIndex={handleStartIndexing}
+          onClearIndex={handleClearIndex}
+        />
 
         {/* Chat area */}
         <Paper
