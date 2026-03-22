@@ -222,18 +222,28 @@ export default function NoteDialog({ open, onClose, primaryTagId, tagColor, note
       open={open}
       onClose={descriptionEditorOpen ? cancelDescriptionEditor : onClose}
       fullWidth
-      maxWidth={descriptionEditorOpen ? "md" : "sm"}
+      maxWidth="sm"
       PaperProps={{
         sx: {
-          minHeight: descriptionEditorOpen ? "78vh" : undefined,
-          transition: "min-height 180ms ease-out",
+          height: descriptionEditorOpen ? "78vh" : undefined,
+          maxHeight: descriptionEditorOpen ? "78vh" : undefined,
+          transition: "height 180ms ease-out",
         },
       }}
     >
-      <Stack component={motion.div} variants={dialogContentVariants} initial="hidden" animate="visible">
+      <Stack component={motion.div} variants={dialogContentVariants} initial="hidden" animate="visible" sx={{ height: "100%" }}>
         <DialogTitle>{descriptionEditorOpen ? "Edit Description" : note ? "Edit Note" : "New Note"}</DialogTitle>
 
-        <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1, minHeight: descriptionEditorOpen ? 0 : undefined }}>
+        <DialogContent
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 2,
+            mt: 1,
+            minHeight: 0,
+            flex: descriptionEditorOpen ? 1 : "0 1 auto",
+          }}
+        >
           <AnimatePresence mode="wait" initial={false}>
             {descriptionEditorOpen ? (
               <Stack
@@ -269,7 +279,18 @@ export default function NoteDialog({ open, onClose, primaryTagId, tagColor, note
                   fullWidth
                   minRows={18}
                   inputRef={descriptionEditorRef}
-                  sx={{ flex: 1, minHeight: 0, "& .MuiInputBase-root": { height: "100%", alignItems: "stretch" }, "& textarea": { height: "100% !important", overflowY: "auto" } }}
+                  sx={{
+                    flex: 1,
+                    minHeight: 0,
+                    "& .MuiInputBase-root": {
+                      height: "100%",
+                      alignItems: "stretch",
+                    },
+                    "& .MuiInputBase-inputMultiline": {
+                      height: "100% !important",
+                      overflowY: "auto !important",
+                    },
+                  }}
                 />
               </Stack>
             ) : (
@@ -301,50 +322,19 @@ export default function NoteDialog({ open, onClose, primaryTagId, tagColor, note
                   <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
                     Description
                   </Typography>
-                  <Box
-                    component="button"
+                  <Button
                     type="button"
                     onClick={openDescriptionEditor}
                     aria-label="Open description editor"
+                    variant="outlined"
+                    color="inherit"
                     sx={{
-                      width: "100%",
-                      borderRadius: "6px",
-                      border: "1px solid rgba(255,255,255,0.12)",
-                      backgroundColor: "transparent",
-                      color: "text.primary",
-                      cursor: "pointer",
-                      p: 2,
-                      textAlign: "left",
-                      transition: "background-color 150ms ease-out, border-color 150ms ease-out",
-                      "&:hover": {
-                        backgroundColor: "rgba(255,255,255,0.03)",
-                        borderColor: "rgba(255,255,255,0.18)",
-                      },
-                      "&:focus-visible": {
-                        outline: "2px solid #e0e0e0",
-                        outlineOffset: 2,
-                      },
+                      alignSelf: "flex-start",
+                      textTransform: "none",
                     }}
                   >
-                    <Stack spacing={1}>
-                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                        {description.trim() ? "Edit description" : "Add description"}
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{
-                          display: "-webkit-box",
-                          WebkitLineClamp: 4,
-                          WebkitBoxOrient: "vertical",
-                          overflow: "hidden",
-                          whiteSpace: "pre-wrap",
-                        }}
-                      >
-                        {description.trim() || "Open the full editor to write and format the note description."}
-                      </Typography>
-                    </Stack>
-                  </Box>
+                    {description.trim() ? "Edit description" : "Add description"}
+                  </Button>
                 </Box>
 
                 <Autocomplete

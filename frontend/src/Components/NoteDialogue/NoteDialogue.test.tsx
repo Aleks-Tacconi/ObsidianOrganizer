@@ -67,7 +67,13 @@ describe("NoteDialog description editor", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save description" }));
 
     await waitFor(() => {
-      expect(screen.getByText("Updated draft")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Open description editor" })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Open description editor" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("textbox", { name: "Description" })).toHaveValue("Updated draft");
     });
   });
 
@@ -80,9 +86,14 @@ describe("NoteDialog description editor", () => {
     fireEvent.click(screen.getByRole("button", { name: /^Cancel$/i }));
 
     await waitFor(() => {
-      expect(screen.getByText("Original description")).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Open description editor" })).toBeInTheDocument();
     });
-    expect(screen.queryByText("Discarded draft")).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Open description editor" }));
+
+    await waitFor(() => {
+      expect(screen.getByRole("textbox", { name: "Description" })).toHaveValue("Original description");
+    });
   });
 
   it("applies markdown helper formatting inside the editor", async () => {
