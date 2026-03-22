@@ -319,7 +319,14 @@ export default forwardRef(function ObsidianFileDialog(
                     sx={{
                       display: "flex",
                       alignItems: "center",
-                      px: 1,
+                      mx: 1,
+                      px: 0.5,
+                      borderRadius: "6px",
+                      backgroundColor: isActive ? "rgba(255,255,255,0.06)" : "transparent",
+                      transition: "background-color 120ms ease-out",
+                      "&:hover": {
+                        backgroundColor: "rgba(255,255,255,0.05)",
+                      },
                       "&:hover .unpin-btn": { opacity: 1 },
                     }}
                   >
@@ -330,8 +337,9 @@ export default forwardRef(function ObsidianFileDialog(
                         borderRadius: "6px",
                         py: "5px",
                         px: 1,
-                        backgroundColor: isActive ? "rgba(255,255,255,0.06)" : "transparent",
-                        "&:hover": { backgroundColor: "rgba(255,255,255,0.05)" },
+                        minWidth: 0,
+                        backgroundColor: "transparent",
+                        "&:hover": { backgroundColor: "transparent" },
                       }}
                     >
                       <Typography
@@ -356,10 +364,10 @@ export default forwardRef(function ObsidianFileDialog(
                         aria-label={`Unpin ${name}`}
                         sx={{
                           flexShrink: 0,
-                          ml: 0.5,
+                          ml: 0.25,
                           p: "4px",
                           color: "#6b6b6b",
-                          opacity: 0,
+                          opacity: isActive ? 1 : 0,
                           transition: "opacity 120ms ease-out",
                           "&:hover": { color: "#ededed" },
                         }}
