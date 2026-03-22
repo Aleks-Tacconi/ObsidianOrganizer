@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   Alert,
   Autocomplete,
@@ -23,7 +23,7 @@ import {
 import api from "../../Utils/api";
 import type { SubTag, NoteURL, Note as NoteType } from "../../Utils/types/api.schemas";
 import { FaHeading, FaListUl, FaPlus, FaTrash } from "react-icons/fa6";
-import { dialogContentVariants, motionTransitions } from "../../Utils/motion";
+import { dialogContentVariants } from "../../Utils/motion";
 import { applyLinePrefix } from "./descriptionEditor";
 
 interface Props {
@@ -225,6 +225,8 @@ export default function NoteDialog({ open, onClose, primaryTagId, tagColor, note
       maxWidth="sm"
       PaperProps={{
         sx: {
+          display: "flex",
+          flexDirection: "column",
           height: descriptionEditorOpen ? "78vh" : undefined,
           maxHeight: descriptionEditorOpen ? "78vh" : undefined,
           transition: "height 180ms ease-out",
@@ -232,217 +234,258 @@ export default function NoteDialog({ open, onClose, primaryTagId, tagColor, note
       }}
     >
       <Stack component={motion.div} variants={dialogContentVariants} initial="hidden" animate="visible" sx={{ height: "100%" }}>
-        <DialogTitle>{descriptionEditorOpen ? "Edit Description" : note ? "Edit Note" : "New Note"}</DialogTitle>
+        <DialogTitle sx={{ pb: 1 }}>{descriptionEditorOpen ? "Edit Description" : note ? "Edit Note" : "New Note"}</DialogTitle>
 
         <DialogContent
           sx={{
             display: "flex",
             flexDirection: "column",
-            gap: 2,
+            gap: 3,
             mt: 1,
             minHeight: 0,
             flex: descriptionEditorOpen ? 1 : "0 1 auto",
           }}
         >
-          <AnimatePresence mode="wait" initial={false}>
-            {descriptionEditorOpen ? (
-              <Stack
-                key="description-editor"
-                component={motion.div}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={motionTransitions.base}
-                spacing={2}
-                sx={{ flex: 1, minHeight: 0 }}
-              >
+          {descriptionEditorOpen ? (
+            <Stack spacing={3} sx={{ flex: 1, minHeight: 0 }}>
+              <Stack direction={{ xs: "column", sm: "row" }} spacing={1} justifyContent="space-between" alignItems={{ xs: "flex-start", sm: "center" }}>
                 <Stack direction="row" spacing={1} flexWrap="wrap">
-                  <Button variant="outlined" color="inherit" onClick={() => applyDescriptionFormat("# ")}
+                  <Button size="small" variant="outlined" color="inherit" onClick={() => applyDescriptionFormat("# ")}
                     sx={{ textTransform: "none" }} startIcon={<FaHeading size={12} />}>
                     H1
                   </Button>
-                  <Button variant="outlined" color="inherit" onClick={() => applyDescriptionFormat("## ")}
+                  <Button size="small" variant="outlined" color="inherit" onClick={() => applyDescriptionFormat("## ")}
                     sx={{ textTransform: "none" }} startIcon={<FaHeading size={12} />}>
                     H2
                   </Button>
-                  <Button variant="outlined" color="inherit" onClick={() => applyDescriptionFormat("- ")}
+                  <Button size="small" variant="outlined" color="inherit" onClick={() => applyDescriptionFormat("- ")}
                     sx={{ textTransform: "none" }} startIcon={<FaListUl size={12} />}>
                     Bullet
                   </Button>
                 </Stack>
-
-                <TextField
-                  label="Description"
-                  value={descriptionDraft}
-                  onChange={(e) => setDescriptionDraft(e.target.value)}
-                  multiline
-                  fullWidth
-                  minRows={18}
-                  inputRef={descriptionEditorRef}
-                  sx={{
-                    flex: 1,
-                    minHeight: 0,
-                    "& .MuiInputBase-root": {
-                      height: "100%",
-                      alignItems: "stretch",
-                    },
-                    "& .MuiInputBase-inputMultiline": {
-                      height: "100% !important",
-                      overflowY: "auto !important",
-                    },
-                  }}
-                />
+                <Typography variant="caption" color="text.secondary">
+                  Markdown shortcuts for quick structure
+                </Typography>
               </Stack>
-            ) : (
-              <Stack
-                key="note-form"
-                component={motion.div}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -10 }}
-                transition={motionTransitions.base}
-                spacing={2}
+
+              <TextField
+                label="Description"
+                value={descriptionDraft}
+                onChange={(e) => setDescriptionDraft(e.target.value)}
+                multiline
+                fullWidth
+                minRows={18}
+                inputRef={descriptionEditorRef}
+                sx={{
+                  flex: 1,
+                  minHeight: 0,
+                  "& .MuiInputBase-root": {
+                    height: "100%",
+                    alignItems: "stretch",
+                  },
+                  "& .MuiInputBase-inputMultiline": {
+                    height: "100% !important",
+                    overflowY: "auto !important",
+                  },
+                }}
+              />
+            </Stack>
+          ) : (
+            <Stack spacing={3}>
+              {error && (
+                <Alert severity="error" onClose={() => setError(null)}>
+                  {error}
+                </Alert>
+              )}
+
+              <TextField
+                label="Name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                fullWidth
+                size="small"
+              />
+
+              <Box
+                sx={{
+                  border: "1px solid rgba(255,255,255,0.07)",
+                  borderRadius: "6px",
+                  backgroundColor: "rgba(255,255,255,0.02)",
+                  p: 2,
+                }}
               >
-                {error && (
-                  <Alert severity="error" onClose={() => setError(null)}>
-                    {error}
-                  </Alert>
-                )}
-
-                <TextField
-                  label="Name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  required
-                  fullWidth
-                  sx={{ marginTop: 1 }}
-                />
-
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
-                    Description
-                  </Typography>
+                <Stack direction={{ xs: "column", sm: "row" }} spacing={2} justifyContent="space-between" alignItems={{ xs: "flex-start", sm: "center" }}>
+                  <Box>
+                    <Typography variant="subtitle2" color="text.primary" sx={{ mb: 0.5 }}>
+                      Description
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Open the full markdown editor to write longer notes and apply formatting.
+                    </Typography>
+                  </Box>
                   <Button
                     type="button"
                     onClick={openDescriptionEditor}
                     aria-label="Open description editor"
                     variant="outlined"
                     color="inherit"
-                    sx={{
-                      alignSelf: "flex-start",
-                      textTransform: "none",
-                    }}
+                    sx={{ textTransform: "none", flexShrink: 0 }}
                   >
                     {description.trim() ? "Edit description" : "Add description"}
                   </Button>
-                </Box>
-
-                <Autocomplete
-                  multiple
-                  options={subtags.filter((s) => s.parent === primaryTagId)}
-                  getOptionLabel={(o) => o.name}
-                  value={selectedSubtags}
-                  onChange={(_, v) => setSelectedSubtags(v)}
-                  renderTags={(value, getTagProps) =>
-                    value.map((option, index) => (
-                      <Chip
-                        {...getTagProps({ index })}
-                        key={option.id}
-                        label={option.name}
-                        size="small"
-                        sx={{
-                          backgroundColor: "rgba(255,255,255,0.06)",
-                          color: "text.secondary",
-                          border: "1px solid rgba(255,255,255,0.08)",
-                          borderLeft: `2px solid ${tagColor ?? "#e0e0e0"}`,
-                        }}
-                      />
-                    ))
-                  }
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      label="Categories"
-                      required
-                      error={subtouched && selectedSubtags.length === 0}
-                      helperText={subtouched && selectedSubtags.length === 0 ? "At least one category is required" : ""}
-                    />
-                  )}
-                />
-
-                <Stack direction="row" spacing={1} alignItems="center">
-                  <TextField
-                    label="Link label"
-                    value={urlAlias}
-                    onChange={(e) => { setUrlAlias(e.target.value); setUrlError(false); }}
-                    fullWidth
-                    error={urlError && !urlAlias.trim()}
-                    helperText={urlError && !urlAlias.trim() ? "Required" : ""}
-                  />
-                  <TextField
-                    label="URL"
-                    value={urlValue}
-                    onChange={(e) => { setUrlValue(e.target.value); setUrlError(false); }}
-                    fullWidth
-                    error={urlError && !urlValue.trim()}
-                    helperText={urlError && !urlValue.trim() ? "Required" : ""}
-                  />
-                  <Tooltip title="Add link">
-                    <IconButton
-                      onClick={handleAddUrl}
-                      aria-label="Add link"
-                      sx={{
-                        width: 40,
-                        height: 40,
-                        borderRadius: "6px",
-                        border: "1px solid rgba(255,255,255,0.12)",
-                        color: "text.secondary",
-                        flexShrink: 0,
-                        "&:hover": {
-                          borderColor: "rgba(255,255,255,0.2)",
-                          backgroundColor: "rgba(255,255,255,0.04)",
-                          color: "text.primary",
-                        },
-                      }}
-                    >
-                      <FaPlus size={14} />
-                    </IconButton>
-                  </Tooltip>
                 </Stack>
+              </Box>
 
-                {urls.length > 0 && (
-                  <Stack spacing={1}>
-                    {urls.map((u, i) => (
-                      <Stack key={i} direction="row" spacing={1} alignItems="center">
-                        <TextField
-                          label="Label"
-                          value={u.alias}
-                          onChange={(e) => updateUrl(i, "alias", e.target.value)}
-                          fullWidth
-                          size="small"
-                        />
-                        <TextField
-                          label="URL"
-                          value={u.url}
-                          onChange={(e) => updateUrl(i, "url", e.target.value)}
-                          fullWidth
-                          size="small"
-                        />
-                        <Tooltip title="Remove link">
-                          <IconButton
-                            onClick={() => removeUrl(i)}
-                            aria-label="Remove link"
-                            size="small"
-                            sx={{ padding: "8px" }}
-                          >
-                            <FaTrash size={14} />
-                          </IconButton>
-                        </Tooltip>
-                      </Stack>
-                    ))}
-                  </Stack>
+              <Autocomplete
+                multiple
+                options={subtags.filter((s) => s.parent === primaryTagId)}
+                getOptionLabel={(o) => o.name}
+                value={selectedSubtags}
+                onChange={(_, v) => setSelectedSubtags(v)}
+                renderTags={(value, getTagProps) =>
+                  value.map((option, index) => (
+                    <Chip
+                      {...getTagProps({ index })}
+                      key={option.id}
+                      label={option.name}
+                      size="small"
+                      sx={{
+                        backgroundColor: "rgba(255,255,255,0.06)",
+                        color: "text.secondary",
+                        border: "1px solid rgba(255,255,255,0.08)",
+                        borderLeft: `2px solid ${tagColor ?? "#e0e0e0"}`,
+                      }}
+                    />
+                  ))
+                }
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Categories"
+                    required
+                    size="small"
+                    error={subtouched && selectedSubtags.length === 0}
+                    helperText={subtouched && selectedSubtags.length === 0 ? "At least one category is required" : ""}
+                  />
                 )}
+              />
 
+              <Box
+                sx={{
+                  border: "1px solid rgba(255,255,255,0.07)",
+                  borderRadius: "6px",
+                  p: 2,
+                }}
+              >
+                <Stack spacing={2}>
+                  <Box>
+                    <Typography variant="subtitle2" color="text.primary" sx={{ mb: 0.5 }}>
+                      Resources
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Add links for recordings, slides, or supporting references.
+                    </Typography>
+                  </Box>
+
+                  <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems="flex-start">
+                    <TextField
+                      label="Link label"
+                      value={urlAlias}
+                      onChange={(e) => { setUrlAlias(e.target.value); setUrlError(false); }}
+                      fullWidth
+                      size="small"
+                      error={urlError && !urlAlias.trim()}
+                      helperText={urlError && !urlAlias.trim() ? "Required" : ""}
+                    />
+                    <TextField
+                      label="URL"
+                      value={urlValue}
+                      onChange={(e) => { setUrlValue(e.target.value); setUrlError(false); }}
+                      fullWidth
+                      size="small"
+                      error={urlError && !urlValue.trim()}
+                      helperText={urlError && !urlValue.trim() ? "Required" : ""}
+                    />
+                    <Tooltip title="Add link">
+                      <IconButton
+                        onClick={handleAddUrl}
+                        aria-label="Add link"
+                        sx={{
+                          width: 40,
+                          height: 40,
+                          borderRadius: "6px",
+                          border: "1px solid rgba(255,255,255,0.12)",
+                          color: "text.secondary",
+                          flexShrink: 0,
+                          mt: { xs: 0, sm: 0.5 },
+                          "&:hover": {
+                            borderColor: "rgba(255,255,255,0.2)",
+                            backgroundColor: "rgba(255,255,255,0.04)",
+                            color: "text.primary",
+                          },
+                        }}
+                      >
+                        <FaPlus size={14} />
+                      </IconButton>
+                    </Tooltip>
+                  </Stack>
+
+                  {urls.length > 0 && (
+                    <Stack spacing={1}>
+                      {urls.map((u, i) => (
+                        <Stack
+                          key={i}
+                          direction={{ xs: "column", sm: "row" }}
+                          spacing={1}
+                          alignItems={{ xs: "stretch", sm: "center" }}
+                          sx={{
+                            p: 1.5,
+                            borderRadius: "6px",
+                            backgroundColor: "rgba(255,255,255,0.03)",
+                            border: "1px solid rgba(255,255,255,0.05)",
+                          }}
+                        >
+                          <TextField
+                            label="Label"
+                            value={u.alias}
+                            onChange={(e) => updateUrl(i, "alias", e.target.value)}
+                            fullWidth
+                            size="small"
+                          />
+                          <TextField
+                            label="URL"
+                            value={u.url}
+                            onChange={(e) => updateUrl(i, "url", e.target.value)}
+                            fullWidth
+                            size="small"
+                          />
+                          <Tooltip title="Remove link">
+                            <IconButton
+                              onClick={() => removeUrl(i)}
+                              aria-label="Remove link"
+                              size="small"
+                              sx={{ alignSelf: { xs: "flex-end", sm: "center" }, padding: "8px" }}
+                            >
+                              <FaTrash size={14} />
+                            </IconButton>
+                          </Tooltip>
+                        </Stack>
+                      ))}
+                    </Stack>
+                  )}
+                </Stack>
+              </Box>
+
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: 2,
+                  flexWrap: "wrap",
+                }}
+              >
                 <FormControlLabel
                   control={
                     <Checkbox checked={completed} onChange={(e) => setCompleted(e.target.checked)} />
@@ -455,12 +498,12 @@ export default function NoteDialog({ open, onClose, primaryTagId, tagColor, note
                     Select at least one category to enable saving.
                   </Typography>
                 )}
-              </Stack>
-            )}
-          </AnimatePresence>
+              </Box>
+            </Stack>
+          )}
         </DialogContent>
 
-        <DialogActions>
+        <DialogActions sx={{ px: 3, pb: 3, pt: 1 }}>
           {descriptionEditorOpen ? (
             <>
               <Button onClick={cancelDescriptionEditor}>
