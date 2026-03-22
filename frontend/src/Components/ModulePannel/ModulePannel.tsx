@@ -1,8 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  Alert,
   Box,
+  Button,
+  CircularProgress,
   Divider,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   IconButton,
   InputAdornment,
   List,
@@ -84,6 +91,11 @@ export default function ModulePanel({
   const [sectionQueries, setSectionQueries] = useState<Record<number, string>>({});
   const [sectionSnippets, setSectionSnippets] = useState<Record<number, boolean>>({});
   const [open, setOpen] = useState(false);
+  const [categoryDialogOpen, setCategoryDialogOpen] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+  const [categorySubmitting, setCategorySubmitting] = useState(false);
+  const [categoryError, setCategoryError] = useState<string | null>(null);
+  const [pendingCategorySubtagId, setPendingCategorySubtagId] = useState<number | null>(null);
   const [searchFileOpen, setSearchFileOpen] = useState(false);
   const [searchActiveFile, setSearchActiveFile] = useState<{ name: string; content: string } | null>(null);
   const [lastNote, setLastNote] = useState<string | null>(() => localStorage.getItem("obsidian-last-note"));
@@ -132,6 +144,16 @@ export default function ModulePanel({
       setActiveSectionId(visibleSections[0].id);
     }
   }, [activeSectionId, normalizedTreeQuery, visibleSections]);
+
+  useEffect(() => {
+    if (pendingCategorySubtagId === null || allSections.length === 0) return;
+
+    const matchingSection = allSections.find((section) => section.subtag.id === pendingCategorySubtagId);
+    if (!matchingSection) return;
+
+    setActiveSectionId(matchingSection.id);
+    setPendingCategorySubtagId(null);
+  }, [allSections, pendingCategorySubtagId]);
 
   const activeSection = allSections.find((section) => section.id === activeSectionId) ?? null;
   const activeSectionQuery = activeSection ? sectionQueries[activeSection.id] ?? "" : "";
@@ -193,6 +215,40 @@ export default function ModulePanel({
     });
   };
 
+  const handleCreateCategory = async () => {
+    const trimmed = newCategoryName.trim();
+    if (!trimmed) {
+      setCategoryError("Category name is required.");
+      return;
+    }
+
+    if (moduleInfo?.sections.some((section) => section.subtag.name.toLowerCase() === trimmed.toLowerCase())) {
+      setCategoryError("A category with that name already exists in this module.");
+      return;
+    }
+
+    setCategorySubmitting(true);
+    setCategoryError(null);
+
+    try {
+      const response = await api.post<{ id: number; name: string; parent: number }>("subtags/", {
+        name: trimmed,
+        parent: moduleId.id,
+      });
+
+      if (response?.data) {
+        setPendingCategorySubtagId(response.data.id);
+        setNewCategoryName("");
+        setCategoryDialogOpen(false);
+        onNotesChanged?.();
+      }
+    } catch {
+      setCategoryError("Failed to create category. Please try again.");
+    } finally {
+      setCategorySubmitting(false);
+    }
+  };
+
   const loading = moduleInfo === null;
 
   return (
@@ -242,6 +298,18 @@ export default function ModulePanel({
                         </IconButton>
                       </span>
                     </Tooltip>
+                    <Button
+                      variant="outlined"
+                      color="inherit"
+                      onClick={() => {
+                        setCategoryError(null);
+                        setNewCategoryName("");
+                        setCategoryDialogOpen(true);
+                      }}
+                      sx={{ textTransform: "none" }}
+                    >
+                      Add category
+                    </Button>
                   </Stack>
                 )}
               >
@@ -732,6 +800,61 @@ export default function ModulePanel({
           onRefresh={() => openSearchFile(searchActiveFile.name)}
         />
       )}
+
+      <Dialog
+        open={categoryDialogOpen}
+        onClose={() => {
+          if (categorySubmitting) return;
+          setCategoryDialogOpen(false);
+          setCategoryError(null);
+        }}
+        fullWidth
+        maxWidth="xs"
+      >
+        <DialogTitle>Add Category</DialogTitle>
+        <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
+          {categoryError && (
+            <Alert severity="error" onClose={() => setCategoryError(null)}>
+              {categoryError}
+            </Alert>
+          )}
+          <TextField
+            label="Category name"
+            value={newCategoryName}
+            onChange={(event) => {
+              setNewCategoryName(event.target.value);
+              if (categoryError) setCategoryError(null);
+            }}
+            fullWidth
+            autoFocus
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                void handleCreateCategory();
+              }
+            }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setCategoryDialogOpen(false);
+              setCategoryError(null);
+            }}
+            disabled={categorySubmitting}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => void handleCreateCategory()}
+            disabled={categorySubmitting || !newCategoryName.trim()}
+            startIcon={categorySubmitting ? <CircularProgress size={14} color="inherit" /> : null}
+          >
+            {categorySubmitting ? "Adding..." : "Add category"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
