@@ -291,7 +291,7 @@ export default function NoteDialog({ open, onClose, primaryTagId, tagColor, note
               />
             </Stack>
           ) : (
-            <Stack spacing={3} sx={{ pt: 0.5 }}>
+            <Stack spacing={3} sx={{ pt: 1 }}>
               {error && (
                 <Alert severity="error" onClose={() => setError(null)}>
                   {error}
@@ -305,6 +305,7 @@ export default function NoteDialog({ open, onClose, primaryTagId, tagColor, note
                 required
                 fullWidth
                 size="small"
+                sx={{ mt: 0.5 }}
               />
 
               <Box
@@ -337,39 +338,44 @@ export default function NoteDialog({ open, onClose, primaryTagId, tagColor, note
                 </Stack>
               </Box>
 
-              <Autocomplete
-                multiple
-                options={subtags.filter((s) => s.parent === primaryTagId)}
-                getOptionLabel={(o) => o.name}
-                value={selectedSubtags}
-                onChange={(_, v) => setSelectedSubtags(v)}
-                renderTags={(value, getTagProps) =>
-                  value.map((option, index) => (
-                    <Chip
-                      {...getTagProps({ index })}
-                      key={option.id}
-                      label={option.name}
+              <Box>
+                <Typography variant="subtitle2" color="text.primary" sx={{ mb: 1, letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                  Categories
+                </Typography>
+                <Autocomplete
+                  multiple
+                  options={subtags.filter((s) => s.parent === primaryTagId)}
+                  getOptionLabel={(o) => o.name}
+                  value={selectedSubtags}
+                  onChange={(_, v) => setSelectedSubtags(v)}
+                  renderTags={(value, getTagProps) =>
+                    value.map((option, index) => (
+                      <Chip
+                        {...getTagProps({ index })}
+                        key={option.id}
+                        label={option.name}
+                        size="small"
+                        sx={{
+                          backgroundColor: "rgba(255,255,255,0.06)",
+                          color: "text.secondary",
+                          border: "1px solid rgba(255,255,255,0.08)",
+                          borderLeft: `2px solid ${tagColor ?? "#e0e0e0"}`,
+                        }}
+                      />
+                    ))
+                  }
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      required
                       size="small"
-                      sx={{
-                        backgroundColor: "rgba(255,255,255,0.06)",
-                        color: "text.secondary",
-                        border: "1px solid rgba(255,255,255,0.08)",
-                        borderLeft: `2px solid ${tagColor ?? "#e0e0e0"}`,
-                      }}
+                      placeholder="Select categories"
+                      error={subtouched && selectedSubtags.length === 0}
+                      helperText={subtouched && selectedSubtags.length === 0 ? "At least one category is required" : ""}
                     />
-                  ))
-                }
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Categories"
-                    required
-                    size="small"
-                    error={subtouched && selectedSubtags.length === 0}
-                    helperText={subtouched && selectedSubtags.length === 0 ? "At least one category is required" : ""}
-                  />
-                )}
-              />
+                  )}
+                />
+              </Box>
 
               <Stack spacing={2}>
                 <Box>
@@ -469,27 +475,32 @@ export default function NoteDialog({ open, onClose, primaryTagId, tagColor, note
                 )}
               </Stack>
 
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: 2,
-                  flexWrap: "wrap",
-                }}
-              >
-                <FormControlLabel
-                  control={
-                    <Checkbox checked={completed} onChange={(e) => setCompleted(e.target.checked)} />
-                  }
-                  label="Completed"
-                />
+              <Box>
+                <Typography variant="subtitle2" color="text.primary" sx={{ mb: 1, letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                  Status
+                </Typography>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    gap: 2,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <FormControlLabel
+                    control={
+                      <Checkbox checked={completed} onChange={(e) => setCompleted(e.target.checked)} />
+                    }
+                    label="Completed"
+                  />
 
-                {selectedSubtags.length === 0 && subtouched && (
-                  <Typography variant="caption" color="error">
-                    Select at least one category to enable saving.
-                  </Typography>
-                )}
+                  {selectedSubtags.length === 0 && subtouched && (
+                    <Typography variant="caption" color="error">
+                      Select at least one category to enable saving.
+                    </Typography>
+                  )}
+                </Box>
               </Box>
             </Stack>
           )}
