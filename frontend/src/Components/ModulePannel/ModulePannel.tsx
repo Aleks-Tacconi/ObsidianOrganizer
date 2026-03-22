@@ -20,7 +20,6 @@ import {
   FaBars,
   FaBookOpen,
   FaFolder,
-  FaGraduationCap,
   FaMagnifyingGlass,
   FaPlus,
   FaRegFileLines,
@@ -217,7 +216,7 @@ export default function ModulePanel({
               transition={motionTransitions.dialog}
             >
               <PageHeaderCard
-                icon={<FaGraduationCap size={20} style={{ color: moduleInfo?.primary_tag.color }} />}
+                icon={null}
                 title={moduleInfo?.primary_tag.name ?? ""}
                 description={moduleInfo?.description}
                 actions={(
@@ -251,9 +250,12 @@ export default function ModulePanel({
                 >
                   <Stack direction={{ xs: "column", md: "row" }} spacing={3}>
                     <Box sx={{ minWidth: 180 }}>
-                      <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 0.75, letterSpacing: "0.12em", textTransform: "uppercase" }}>
-                        Overview
-                      </Typography>
+                      <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.75 }}>
+                        <FaBookOpen size={14} style={{ color: moduleInfo?.primary_tag.color }} />
+                        <Typography variant="subtitle2" color="text.secondary" sx={{ letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                          Overview
+                        </Typography>
+                      </Stack>
                       <Stack spacing={0.5}>
                         <Typography variant="body2">{moduleInfo.sections.length} sections</Typography>
                         <Typography variant="body2">{allNotes.length} lectures</Typography>
@@ -379,9 +381,6 @@ export default function ModulePanel({
                                 },
                               }}
                             >
-                              <ListItemIcon sx={{ minWidth: 24, color: moduleInfo.primary_tag.color }}>
-                                <FaFolder size={13} />
-                              </ListItemIcon>
                               <ListItemText
                                 primary={section.subtag.name}
                                 secondary={`${section.notes.length} lecture${section.notes.length === 1 ? "" : "s"}`}
@@ -409,7 +408,7 @@ export default function ModulePanel({
                                     disablePadding
                                     sx={{
                                       mt: 0.75,
-                                      ml: 3.5,
+                                      ml: 1.5,
                                       pl: 1.25,
                                       borderLeft: "1px solid rgba(255,255,255,0.05)",
                                       display: "flex",
