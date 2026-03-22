@@ -622,8 +622,12 @@ export default function ModulePanel({
                             </Typography>
                           </Box>
 
-                          <Stack direction="row" spacing={0.5} alignItems="center">
-                            <Typography variant="subtitle2" color="text.secondary" sx={{ letterSpacing: "0.12em", textTransform: "uppercase" }}>
+                          <Stack direction="row" spacing={1} alignItems="center" sx={{ minHeight: 32 }}>
+                            <Typography
+                              variant="subtitle2"
+                              color="text.secondary"
+                              sx={{ letterSpacing: "0.12em", textTransform: "uppercase", lineHeight: 1 }}
+                            >
                               Workspace
                             </Typography>
                             <Tooltip title="Delete category">
@@ -634,6 +638,9 @@ export default function ModulePanel({
                                   disabled={deletingCategory}
                                   size="small"
                                   sx={{
+                                    width: 32,
+                                    height: 32,
+                                    p: 0,
                                     "&:hover": { backgroundColor: "rgba(255,255,255,0.04)" },
                                     "&:focus-visible": {
                                       outline: "2px solid #e0e0e0",
