@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   Alert,
   Autocomplete,
+  Box,
   Button,
   Checkbox,
   Chip,
@@ -21,8 +22,9 @@ import {
 
 import api from "../../Utils/api";
 import type { SubTag, NoteURL, Note as NoteType } from "../../Utils/types/api.schemas";
-import { FaPlus, FaTrash } from "react-icons/fa6";
-import { dialogContentVariants } from "../../Utils/motion";
+import { FaHeading, FaListUl, FaPlus, FaTrash } from "react-icons/fa6";
+import { dialogContentVariants, motionTransitions } from "../../Utils/motion";
+import { applyLinePrefix } from "./descriptionEditor";
 
 interface Props {
   open: boolean;
@@ -39,6 +41,8 @@ type LocalURL = { alias: string; url: string; id?: number };
 export default function NoteDialog({ open, onClose, primaryTagId, tagColor, note, onSaved, refresh }: Props) {
   const [name, setName] = useState(note?.name ?? "");
   const [description, setDescription] = useState(note?.description ?? "");
+  const [descriptionDraft, setDescriptionDraft] = useState(note?.description ?? "");
+  const [descriptionEditorOpen, setDescriptionEditorOpen] = useState(false);
   const [completed, setCompleted] = useState(note?.completed ?? false);
   const [date, setDate] = useState(
     note ? new Date(note.date).toISOString().slice(0, 16) : new Date().toISOString().slice(0, 16),
@@ -54,10 +58,13 @@ export default function NoteDialog({ open, onClose, primaryTagId, tagColor, note
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [subtouched, setSubtouched] = useState(false);
+  const descriptionEditorRef = useRef<HTMLTextAreaElement | null>(null);
 
   const resetForm = () => {
     setName("");
     setDescription("");
+    setDescriptionDraft("");
+    setDescriptionEditorOpen(false);
     setCompleted(false);
     setDate(new Date().toISOString().slice(0, 16));
     setSelectedSubtags([]);
@@ -75,6 +82,8 @@ export default function NoteDialog({ open, onClose, primaryTagId, tagColor, note
     } else {
       setName(note.name);
       setDescription(note.description ?? "");
+      setDescriptionDraft(note.description ?? "");
+      setDescriptionEditorOpen(false);
       setCompleted(note.completed ?? false);
       setDate(new Date(note.date).toISOString().slice(0, 16));
       setSelectedSubtags([...note.subtags]);
@@ -171,172 +180,325 @@ export default function NoteDialog({ open, onClose, primaryTagId, tagColor, note
 
   const canSubmit = selectedSubtags.length > 0 && name.trim().length > 0 && !submitting;
 
+  const openDescriptionEditor = () => {
+    setDescriptionDraft(description);
+    setDescriptionEditorOpen(true);
+  };
+
+  const saveDescriptionEditor = () => {
+    setDescription(descriptionDraft);
+    setDescriptionEditorOpen(false);
+  };
+
+  const cancelDescriptionEditor = () => {
+    setDescriptionDraft(description);
+    setDescriptionEditorOpen(false);
+  };
+
+  const applyDescriptionFormat = (prefix: string) => {
+    const input = descriptionEditorRef.current;
+    if (!input) {
+      setDescriptionDraft((current) => `${prefix}${current}`);
+      return;
+    }
+
+    const next = applyLinePrefix(
+      descriptionDraft,
+      input.selectionStart ?? 0,
+      input.selectionEnd ?? 0,
+      prefix,
+    );
+
+    setDescriptionDraft(next.value);
+
+    window.requestAnimationFrame(() => {
+      descriptionEditorRef.current?.focus();
+      descriptionEditorRef.current?.setSelectionRange(next.selectionStart, next.selectionEnd);
+    });
+  };
+
   return (
-    <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+    <Dialog
+      open={open}
+      onClose={descriptionEditorOpen ? cancelDescriptionEditor : onClose}
+      fullWidth
+      maxWidth={descriptionEditorOpen ? "md" : "sm"}
+      PaperProps={{
+        sx: {
+          minHeight: descriptionEditorOpen ? "78vh" : undefined,
+          transition: "min-height 180ms ease-out",
+        },
+      }}
+    >
       <Stack component={motion.div} variants={dialogContentVariants} initial="hidden" animate="visible">
-        <DialogTitle>{note ? "Edit Note" : "New Note"}</DialogTitle>
+        <DialogTitle>{descriptionEditorOpen ? "Edit Description" : note ? "Edit Note" : "New Note"}</DialogTitle>
 
-        <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
-          {error && (
-            <Alert severity="error" onClose={() => setError(null)}>
-              {error}
-            </Alert>
-          )}
+        <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1, minHeight: descriptionEditorOpen ? 0 : undefined }}>
+          <AnimatePresence mode="wait" initial={false}>
+            {descriptionEditorOpen ? (
+              <Stack
+                key="description-editor"
+                component={motion.div}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={motionTransitions.base}
+                spacing={2}
+                sx={{ flex: 1, minHeight: 0 }}
+              >
+                <Stack direction="row" spacing={1} flexWrap="wrap">
+                  <Button variant="outlined" color="inherit" onClick={() => applyDescriptionFormat("# ")}
+                    sx={{ textTransform: "none" }} startIcon={<FaHeading size={12} />}>
+                    H1
+                  </Button>
+                  <Button variant="outlined" color="inherit" onClick={() => applyDescriptionFormat("## ")}
+                    sx={{ textTransform: "none" }} startIcon={<FaHeading size={12} />}>
+                    H2
+                  </Button>
+                  <Button variant="outlined" color="inherit" onClick={() => applyDescriptionFormat("- ")}
+                    sx={{ textTransform: "none" }} startIcon={<FaListUl size={12} />}>
+                    Bullet
+                  </Button>
+                </Stack>
 
-          <TextField
-            label="Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            fullWidth
-            sx={{ marginTop: 1 }}
-          />
-
-          <TextField
-            label="Description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            multiline
-            rows={6}
-            fullWidth
-          />
-
-          <Autocomplete
-            multiple
-            options={subtags.filter((s) => s.parent === primaryTagId)}
-            getOptionLabel={(o) => o.name}
-            value={selectedSubtags}
-            onChange={(_, v) => setSelectedSubtags(v)}
-            renderTags={(value, getTagProps) =>
-              value.map((option, index) => (
-                <Chip
-                  {...getTagProps({ index })}
-                  key={option.id}
-                  label={option.name}
-                  size="small"
-                  sx={{
-                    backgroundColor: "rgba(255,255,255,0.06)",
-                    color: "text.secondary",
-                    border: "1px solid rgba(255,255,255,0.08)",
-                    borderLeft: `2px solid ${tagColor ?? "#e0e0e0"}`,
-                  }}
-                />
-              ))
-            }
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label="Categories"
-                required
-                error={subtouched && selectedSubtags.length === 0}
-                helperText={subtouched && selectedSubtags.length === 0 ? "At least one category is required" : ""}
-              />
-            )}
-          />
-
-          <Stack direction="row" spacing={1} alignItems="center">
-          <TextField
-            label="Link label"
-            value={urlAlias}
-            onChange={(e) => { setUrlAlias(e.target.value); setUrlError(false); }}
-            fullWidth
-            error={urlError && !urlAlias.trim()}
-            helperText={urlError && !urlAlias.trim() ? "Required" : ""}
-          />
-          <TextField
-            label="URL"
-            value={urlValue}
-            onChange={(e) => { setUrlValue(e.target.value); setUrlError(false); }}
-            fullWidth
-            error={urlError && !urlValue.trim()}
-            helperText={urlError && !urlValue.trim() ? "Required" : ""}
-          />
-          <Tooltip title="Add link">
-            <IconButton
-              onClick={handleAddUrl}
-              aria-label="Add link"
-              sx={{
-                width: 40,
-                height: 40,
-                borderRadius: "6px",
-                border: "1px solid rgba(255,255,255,0.12)",
-                color: "text.secondary",
-                flexShrink: 0,
-                "&:hover": {
-                  borderColor: "rgba(255,255,255,0.2)",
-                  backgroundColor: "rgba(255,255,255,0.04)",
-                  color: "text.primary",
-                },
-              }}
-            >
-              <FaPlus size={14} />
-            </IconButton>
-          </Tooltip>
-          </Stack>
-
-          {urls.length > 0 && (
-            <Stack spacing={1}>
-            {urls.map((u, i) => (
-              <Stack key={i} direction="row" spacing={1} alignItems="center">
                 <TextField
-                  label="Label"
-                  value={u.alias}
-                  onChange={(e) => updateUrl(i, "alias", e.target.value)}
+                  label="Description"
+                  value={descriptionDraft}
+                  onChange={(e) => setDescriptionDraft(e.target.value)}
+                  multiline
                   fullWidth
-                  size="small"
+                  minRows={18}
+                  inputRef={descriptionEditorRef}
+                  sx={{ flex: 1, minHeight: 0, "& .MuiInputBase-root": { height: "100%", alignItems: "stretch" }, "& textarea": { height: "100% !important", overflowY: "auto" } }}
                 />
-                <TextField
-                  label="URL"
-                  value={u.url}
-                  onChange={(e) => updateUrl(i, "url", e.target.value)}
-                  fullWidth
-                  size="small"
-                />
-                <Tooltip title="Remove link">
-                  <IconButton
-                    onClick={() => removeUrl(i)}
-                    aria-label="Remove link"
-                    size="small"
-                    sx={{ padding: "8px" }}
-                  >
-                    <FaTrash size={14} />
-                  </IconButton>
-                </Tooltip>
               </Stack>
-            ))}
-            </Stack>
-          )}
+            ) : (
+              <Stack
+                key="note-form"
+                component={motion.div}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={motionTransitions.base}
+                spacing={2}
+              >
+                {error && (
+                  <Alert severity="error" onClose={() => setError(null)}>
+                    {error}
+                  </Alert>
+                )}
 
-          <FormControlLabel
-            control={
-              <Checkbox checked={completed} onChange={(e) => setCompleted(e.target.checked)} />
-            }
-            label="Completed"
-          />
+                <TextField
+                  label="Name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  fullWidth
+                  sx={{ marginTop: 1 }}
+                />
 
-          {selectedSubtags.length === 0 && subtouched && (
-            <Typography variant="caption" color="error">
-              Select at least one category to enable saving.
-            </Typography>
-          )}
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
+                    Description
+                  </Typography>
+                  <Box
+                    component="button"
+                    type="button"
+                    onClick={openDescriptionEditor}
+                    aria-label="Open description editor"
+                    sx={{
+                      width: "100%",
+                      borderRadius: "6px",
+                      border: "1px solid rgba(255,255,255,0.12)",
+                      backgroundColor: "transparent",
+                      color: "text.primary",
+                      cursor: "pointer",
+                      p: 2,
+                      textAlign: "left",
+                      transition: "background-color 150ms ease-out, border-color 150ms ease-out",
+                      "&:hover": {
+                        backgroundColor: "rgba(255,255,255,0.03)",
+                        borderColor: "rgba(255,255,255,0.18)",
+                      },
+                      "&:focus-visible": {
+                        outline: "2px solid #e0e0e0",
+                        outlineOffset: 2,
+                      },
+                    }}
+                  >
+                    <Stack spacing={1}>
+                      <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                        {description.trim() ? "Edit description" : "Add description"}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{
+                          display: "-webkit-box",
+                          WebkitLineClamp: 4,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                          whiteSpace: "pre-wrap",
+                        }}
+                      >
+                        {description.trim() || "Open the full editor to write and format the note description."}
+                      </Typography>
+                    </Stack>
+                  </Box>
+                </Box>
+
+                <Autocomplete
+                  multiple
+                  options={subtags.filter((s) => s.parent === primaryTagId)}
+                  getOptionLabel={(o) => o.name}
+                  value={selectedSubtags}
+                  onChange={(_, v) => setSelectedSubtags(v)}
+                  renderTags={(value, getTagProps) =>
+                    value.map((option, index) => (
+                      <Chip
+                        {...getTagProps({ index })}
+                        key={option.id}
+                        label={option.name}
+                        size="small"
+                        sx={{
+                          backgroundColor: "rgba(255,255,255,0.06)",
+                          color: "text.secondary",
+                          border: "1px solid rgba(255,255,255,0.08)",
+                          borderLeft: `2px solid ${tagColor ?? "#e0e0e0"}`,
+                        }}
+                      />
+                    ))
+                  }
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Categories"
+                      required
+                      error={subtouched && selectedSubtags.length === 0}
+                      helperText={subtouched && selectedSubtags.length === 0 ? "At least one category is required" : ""}
+                    />
+                  )}
+                />
+
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <TextField
+                    label="Link label"
+                    value={urlAlias}
+                    onChange={(e) => { setUrlAlias(e.target.value); setUrlError(false); }}
+                    fullWidth
+                    error={urlError && !urlAlias.trim()}
+                    helperText={urlError && !urlAlias.trim() ? "Required" : ""}
+                  />
+                  <TextField
+                    label="URL"
+                    value={urlValue}
+                    onChange={(e) => { setUrlValue(e.target.value); setUrlError(false); }}
+                    fullWidth
+                    error={urlError && !urlValue.trim()}
+                    helperText={urlError && !urlValue.trim() ? "Required" : ""}
+                  />
+                  <Tooltip title="Add link">
+                    <IconButton
+                      onClick={handleAddUrl}
+                      aria-label="Add link"
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: "6px",
+                        border: "1px solid rgba(255,255,255,0.12)",
+                        color: "text.secondary",
+                        flexShrink: 0,
+                        "&:hover": {
+                          borderColor: "rgba(255,255,255,0.2)",
+                          backgroundColor: "rgba(255,255,255,0.04)",
+                          color: "text.primary",
+                        },
+                      }}
+                    >
+                      <FaPlus size={14} />
+                    </IconButton>
+                  </Tooltip>
+                </Stack>
+
+                {urls.length > 0 && (
+                  <Stack spacing={1}>
+                    {urls.map((u, i) => (
+                      <Stack key={i} direction="row" spacing={1} alignItems="center">
+                        <TextField
+                          label="Label"
+                          value={u.alias}
+                          onChange={(e) => updateUrl(i, "alias", e.target.value)}
+                          fullWidth
+                          size="small"
+                        />
+                        <TextField
+                          label="URL"
+                          value={u.url}
+                          onChange={(e) => updateUrl(i, "url", e.target.value)}
+                          fullWidth
+                          size="small"
+                        />
+                        <Tooltip title="Remove link">
+                          <IconButton
+                            onClick={() => removeUrl(i)}
+                            aria-label="Remove link"
+                            size="small"
+                            sx={{ padding: "8px" }}
+                          >
+                            <FaTrash size={14} />
+                          </IconButton>
+                        </Tooltip>
+                      </Stack>
+                    ))}
+                  </Stack>
+                )}
+
+                <FormControlLabel
+                  control={
+                    <Checkbox checked={completed} onChange={(e) => setCompleted(e.target.checked)} />
+                  }
+                  label="Completed"
+                />
+
+                {selectedSubtags.length === 0 && subtouched && (
+                  <Typography variant="caption" color="error">
+                    Select at least one category to enable saving.
+                  </Typography>
+                )}
+              </Stack>
+            )}
+          </AnimatePresence>
         </DialogContent>
 
         <DialogActions>
-          <Button onClick={onClose} disabled={submitting}>
-            Cancel
-          </Button>
-          <Tooltip title={selectedSubtags.length === 0 ? "Select at least one category to save" : ""}>
-            <span>
-              <Button
-                variant="contained"
-                onClick={handleSubmit}
-                disabled={!canSubmit}
-                startIcon={submitting ? <CircularProgress size={14} color="inherit" /> : null}
-              >
-                {submitting ? "Saving…" : note ? "Save" : "Create"}
+          {descriptionEditorOpen ? (
+            <>
+              <Button onClick={cancelDescriptionEditor}>
+                Cancel
               </Button>
-            </span>
-          </Tooltip>
+              <Button variant="contained" onClick={saveDescriptionEditor}>
+                Save description
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button onClick={onClose} disabled={submitting}>
+                Cancel
+              </Button>
+              <Tooltip title={selectedSubtags.length === 0 ? "Select at least one category to save" : ""}>
+                <span>
+                  <Button
+                    variant="contained"
+                    onClick={handleSubmit}
+                    disabled={!canSubmit}
+                    startIcon={submitting ? <CircularProgress size={14} color="inherit" /> : null}
+                  >
+                    {submitting ? "Saving…" : note ? "Save" : "Create"}
+                  </Button>
+                </span>
+              </Tooltip>
+            </>
+          )}
         </DialogActions>
       </Stack>
     </Dialog>
