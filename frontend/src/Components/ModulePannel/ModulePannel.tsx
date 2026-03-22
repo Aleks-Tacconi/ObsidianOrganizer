@@ -346,8 +346,8 @@ export default function ModulePanel({
                 >
                   <Stack direction={{ xs: "column", md: "row" }} spacing={3}>
                     <Box sx={{ minWidth: 180 }}>
-                      <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.75 }}>
-                        <FaBookOpen size={14} style={{ color: moduleInfo?.primary_tag.color }} />
+                      <Stack direction="row" alignItems="center" spacing={1.5} sx={{ mb: 0.75 }}>
+                        <FaBookOpen size={15} style={{ color: moduleInfo?.primary_tag.color }} />
                         <Typography variant="subtitle2" color="text.secondary" sx={{ letterSpacing: "0.12em", textTransform: "uppercase" }}>
                           Overview
                         </Typography>
