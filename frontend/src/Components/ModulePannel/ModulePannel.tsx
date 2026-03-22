@@ -818,22 +818,28 @@ export default function ModulePanel({
               {categoryError}
             </Alert>
           )}
-          <TextField
-            label="Category name"
-            value={newCategoryName}
-            onChange={(event) => {
-              setNewCategoryName(event.target.value);
-              if (categoryError) setCategoryError(null);
-            }}
-            fullWidth
-            autoFocus
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                void handleCreateCategory();
-              }
-            }}
-          />
+          <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+            <Typography variant="subtitle2" color="text.primary" sx={{ letterSpacing: "0.12em", textTransform: "uppercase" }}>
+              Category name
+            </Typography>
+            <TextField
+              value={newCategoryName}
+              onChange={(event) => {
+                setNewCategoryName(event.target.value);
+                if (categoryError) setCategoryError(null);
+              }}
+              placeholder="Enter category name"
+              fullWidth
+              autoFocus
+              size="small"
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  void handleCreateCategory();
+                }
+              }}
+            />
+          </Box>
         </DialogContent>
         <DialogActions>
           <Button

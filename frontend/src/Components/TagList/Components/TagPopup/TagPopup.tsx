@@ -58,14 +58,20 @@ export default function TagPopup({ tag, onClose, onSave }: Props) {
         )}
 
         <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-          <TextField
-            label="Module Name"
-            variant="outlined"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            sx={{ flex: 1 }}
-            required
-          />
+          <div style={{ display: "flex", flexDirection: "column", gap: "8px", flex: 1 }}>
+            <Typography variant="subtitle2" color="text.primary" sx={{ letterSpacing: "0.12em", textTransform: "uppercase" }}>
+              Module name
+            </Typography>
+            <TextField
+              variant="outlined"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Enter module name"
+              sx={{ flex: 1 }}
+              required
+              size="small"
+            />
+          </div>
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
             <Typography variant="caption" color="text.secondary">
               Color
@@ -95,9 +101,6 @@ export default function TagPopup({ tag, onClose, onSave }: Props) {
             />
           </div>
         </div>
-        <Typography variant="body2" color="text.secondary">
-          Categories are managed inside the module workspace.
-        </Typography>
       </DialogContent>
 
       <DialogActions>
