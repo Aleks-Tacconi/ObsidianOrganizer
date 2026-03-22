@@ -207,9 +207,14 @@ export default forwardRef(function ObsidianFileDialog(
       fullWidth
     >
       {/* Header */}
-      <DialogTitle sx={{ pb: 1, flexShrink: 0 }}>
-        <Box display="flex" alignItems="center" justifyContent="space-between">
-          <Box display="flex" alignItems="center" gap={1}>
+      <DialogTitle sx={{ p: 0, flexShrink: 0 }}>
+        <Box
+          display="flex"
+          alignItems="center"
+          justifyContent="space-between"
+          sx={{ minHeight: 60, px: 2, py: 1.5 }}
+        >
+          <Box display="flex" alignItems="center" gap={1} sx={{ minHeight: 32 }}>
             <Tooltip title="Back">
               <span>
                 <IconButton size="small" onClick={goBack} disabled={!hasBack} aria-label="Back">
@@ -229,14 +234,14 @@ export default forwardRef(function ObsidianFileDialog(
             </Typography>
           </Box>
 
-          <Box display="flex" alignItems="center" gap={0.5}>
+          <Box display="flex" alignItems="center" gap={0.5} sx={{ minHeight: 32 }}>
             <Tooltip title="Open in Obsidian">
               <IconButton
                 size="small"
                 component="a"
                 href={`obsidian://open?vault=${encodeURIComponent("SecondBrain")}&file=${encodeURIComponent(currentName)}`}
                 aria-label="Open in Obsidian"
-                sx={{ color: "#6b6b6b", "&:hover": { color: "#ededed" } }}
+                sx={{ color: "#6b6b6b", "&:hover": { color: "#ededed" }, width: 32, height: 32 }}
               >
                 <FaUpRightFromSquare size={13} />
               </IconButton>
@@ -246,18 +251,18 @@ export default forwardRef(function ObsidianFileDialog(
                 size="small"
                 onClick={togglePin}
                 aria-label={isPinned ? "Unpin note" : "Pin note"}
-                sx={{ color: isPinned ? "#ededed" : "#6b6b6b" }}
+                sx={{ color: isPinned ? "#ededed" : "#6b6b6b", width: 32, height: 32 }}
               >
                 <FaThumbtack size={14} />
               </IconButton>
             </Tooltip>
             <Tooltip title="Refresh">
-              <IconButton size="small" onClick={onRefresh} aria-label="Refresh file">
+              <IconButton size="small" onClick={onRefresh} aria-label="Refresh file" sx={{ width: 32, height: 32 }}>
                 <FaRotate size={14} />
               </IconButton>
             </Tooltip>
             <Tooltip title="Close">
-              <IconButton size="small" onClick={onClose} aria-label="Close">
+              <IconButton size="small" onClick={onClose} aria-label="Close" sx={{ width: 32, height: 32 }}>
                 <FaXmark size={14} />
               </IconButton>
             </Tooltip>
