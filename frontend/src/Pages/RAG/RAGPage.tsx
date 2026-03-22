@@ -477,8 +477,9 @@ export default function RAGPage() {
       onSelectTag={handleSelectTag}
       onTagsChanged={() => {}}
       refreshKey={0}
+      contentMaxWidth="none"
     >
-      <Stack spacing={2} sx={{ maxWidth: "900px", mx: "auto" }}>
+      <Stack spacing={2} sx={{ width: "100%" }}>
         <PageHeaderCard
           icon={<FaRegFileLines size={18} style={{ color: "#6b6b6b" }} />}
           title="Ask Vault"

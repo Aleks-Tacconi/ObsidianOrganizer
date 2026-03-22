@@ -135,7 +135,7 @@ export default function SidebarLayout({
               </Box>
             </Tooltip>
 
-            <Stack direction="row" spacing={0.5} alignItems="center">
+            <Stack direction="row" spacing={1.25} alignItems="center">
               {topBarLink({
                 label: "Ask Vault",
                 icon: <FaRegFileLines size={14} />,
