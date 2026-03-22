@@ -260,7 +260,7 @@ export default function ModulePanel({
                         <Typography variant="body2">{moduleInfo.sections.length} sections</Typography>
                         <Typography variant="body2">{allNotes.length} lectures</Typography>
                         <Typography variant="body2" color="text.secondary">
-                          {moduleInfo.grades.length} grade items
+                          {moduleInfo.grades.length} grades
                         </Typography>
                       </Stack>
                     </Box>
