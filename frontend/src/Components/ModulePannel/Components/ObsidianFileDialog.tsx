@@ -234,16 +234,22 @@ export default forwardRef(function ObsidianFileDialog(
             </Typography>
           </Box>
 
-          <Box display="flex" alignItems="center" gap={0.5} sx={{ minHeight: 32 }}>
+          <Box display="flex" alignItems="center" gap={0.75} sx={{ minHeight: 36 }}>
             <Tooltip title="Open in Obsidian">
               <IconButton
                 size="small"
                 component="a"
                 href={`obsidian://open?vault=${encodeURIComponent("SecondBrain")}&file=${encodeURIComponent(currentName)}`}
                 aria-label="Open in Obsidian"
-                sx={{ color: "#6b6b6b", "&:hover": { color: "#ededed" }, width: 32, height: 32 }}
+                sx={{
+                  color: "#6b6b6b",
+                  width: 36,
+                  height: 36,
+                  p: 0,
+                  "&:hover": { color: "#ededed", backgroundColor: "rgba(255,255,255,0.04)" },
+                }}
               >
-                <FaUpRightFromSquare size={13} />
+                <FaUpRightFromSquare size={15} />
               </IconButton>
             </Tooltip>
             <Tooltip title={isPinned ? "Unpin note" : "Pin note"}>
@@ -251,19 +257,47 @@ export default forwardRef(function ObsidianFileDialog(
                 size="small"
                 onClick={togglePin}
                 aria-label={isPinned ? "Unpin note" : "Pin note"}
-                sx={{ color: isPinned ? "#ededed" : "#6b6b6b", width: 32, height: 32 }}
+                sx={{
+                  color: isPinned ? "#ededed" : "#6b6b6b",
+                  width: 36,
+                  height: 36,
+                  p: 0,
+                  "&:hover": { backgroundColor: "rgba(255,255,255,0.04)" },
+                }}
               >
-                <FaThumbtack size={14} />
+                <FaThumbtack size={15} />
               </IconButton>
             </Tooltip>
             <Tooltip title="Refresh">
-              <IconButton size="small" onClick={onRefresh} aria-label="Refresh file" sx={{ width: 32, height: 32 }}>
-                <FaRotate size={14} />
+              <IconButton
+                size="small"
+                onClick={onRefresh}
+                aria-label="Refresh file"
+                sx={{
+                  width: 36,
+                  height: 36,
+                  p: 0,
+                  color: "#6b6b6b",
+                  "&:hover": { color: "#ededed", backgroundColor: "rgba(255,255,255,0.04)" },
+                }}
+              >
+                <FaRotate size={15} />
               </IconButton>
             </Tooltip>
             <Tooltip title="Close">
-              <IconButton size="small" onClick={onClose} aria-label="Close" sx={{ width: 32, height: 32 }}>
-                <FaXmark size={14} />
+              <IconButton
+                size="small"
+                onClick={onClose}
+                aria-label="Close"
+                sx={{
+                  width: 36,
+                  height: 36,
+                  p: 0,
+                  color: "#6b6b6b",
+                  "&:hover": { color: "#ededed", backgroundColor: "rgba(255,255,255,0.04)" },
+                }}
+              >
+                <FaXmark size={16} />
               </IconButton>
             </Tooltip>
           </Box>
