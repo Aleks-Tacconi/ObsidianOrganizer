@@ -1,4 +1,7 @@
+import { motion } from "framer-motion";
 import { Dialog, DialogTitle, DialogContent, Button, Typography } from "@mui/material";
+
+import { dialogContentVariants } from "../../Utils/motion";
 
 type ConfirmDialogueProps = {
   open: boolean;
@@ -35,16 +38,20 @@ export default function ConfirmDialogue({
         },
       }}
     >
-      <DialogTitle>{title}</DialogTitle>
-      <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
-        <Typography>{message}</Typography>
-        <div style={{ display: "flex", flexDirection: "row", justifyContent: "flex-end", gap: 8 }}>
-          <Button onClick={onDecline}>{declineLabel}</Button>
-          <Button variant="outlined" color="error" onClick={onConfirm} autoFocus>
-            {confirmLabel}
-          </Button>
-        </div>
-      </DialogContent>
+      <motion.div variants={dialogContentVariants} initial="hidden" animate="visible">
+          <DialogTitle>{title}</DialogTitle>
+        <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+            <Typography>{message}</Typography>
+            <div style={{ display: "flex", flexDirection: "row", justifyContent: "flex-end", gap: 8 }}>
+              <Button onClick={onDecline}>{declineLabel}</Button>
+              <Button variant="outlined" color="error" onClick={onConfirm} autoFocus>
+                {confirmLabel}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </motion.div>
     </Dialog>
   );
 }

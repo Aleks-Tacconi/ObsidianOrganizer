@@ -207,9 +207,14 @@ export default forwardRef(function ObsidianFileDialog(
       fullWidth
     >
       {/* Header */}
-      <DialogTitle sx={{ pb: 1, flexShrink: 0 }}>
-        <Box display="flex" alignItems="center" justifyContent="space-between">
-          <Box display="flex" alignItems="center" gap={1}>
+      <DialogTitle sx={{ p: 0, flexShrink: 0 }}>
+        <Box
+          display="flex"
+          alignItems="center"
+          justifyContent="space-between"
+          sx={{ minHeight: 60, px: 2, py: 1.5 }}
+        >
+          <Box display="flex" alignItems="center" gap={1} sx={{ minHeight: 32 }}>
             <Tooltip title="Back">
               <span>
                 <IconButton size="small" onClick={goBack} disabled={!hasBack} aria-label="Back">
@@ -229,16 +234,22 @@ export default forwardRef(function ObsidianFileDialog(
             </Typography>
           </Box>
 
-          <Box display="flex" alignItems="center" gap={0.5}>
+          <Box display="flex" alignItems="center" gap={0.75} sx={{ minHeight: 36 }}>
             <Tooltip title="Open in Obsidian">
               <IconButton
                 size="small"
                 component="a"
                 href={`obsidian://open?vault=${encodeURIComponent("SecondBrain")}&file=${encodeURIComponent(currentName)}`}
                 aria-label="Open in Obsidian"
-                sx={{ color: "#6b6b6b", "&:hover": { color: "#ededed" } }}
+                sx={{
+                  color: "#6b6b6b",
+                  width: 36,
+                  height: 36,
+                  p: 0,
+                  "&:hover": { color: "#ededed", backgroundColor: "rgba(255,255,255,0.04)" },
+                }}
               >
-                <FaUpRightFromSquare size={13} />
+                <FaUpRightFromSquare size={15} />
               </IconButton>
             </Tooltip>
             <Tooltip title={isPinned ? "Unpin note" : "Pin note"}>
@@ -246,19 +257,47 @@ export default forwardRef(function ObsidianFileDialog(
                 size="small"
                 onClick={togglePin}
                 aria-label={isPinned ? "Unpin note" : "Pin note"}
-                sx={{ color: isPinned ? "#ededed" : "#6b6b6b" }}
+                sx={{
+                  color: isPinned ? "#ededed" : "#6b6b6b",
+                  width: 36,
+                  height: 36,
+                  p: 0,
+                  "&:hover": { backgroundColor: "rgba(255,255,255,0.04)" },
+                }}
               >
-                <FaThumbtack size={14} />
+                <FaThumbtack size={15} />
               </IconButton>
             </Tooltip>
             <Tooltip title="Refresh">
-              <IconButton size="small" onClick={onRefresh} aria-label="Refresh file">
-                <FaRotate size={14} />
+              <IconButton
+                size="small"
+                onClick={onRefresh}
+                aria-label="Refresh file"
+                sx={{
+                  width: 36,
+                  height: 36,
+                  p: 0,
+                  color: "#6b6b6b",
+                  "&:hover": { color: "#ededed", backgroundColor: "rgba(255,255,255,0.04)" },
+                }}
+              >
+                <FaRotate size={15} />
               </IconButton>
             </Tooltip>
             <Tooltip title="Close">
-              <IconButton size="small" onClick={onClose} aria-label="Close">
-                <FaXmark size={14} />
+              <IconButton
+                size="small"
+                onClick={onClose}
+                aria-label="Close"
+                sx={{
+                  width: 36,
+                  height: 36,
+                  p: 0,
+                  color: "#6b6b6b",
+                  "&:hover": { color: "#ededed", backgroundColor: "rgba(255,255,255,0.04)" },
+                }}
+              >
+                <FaXmark size={16} />
               </IconButton>
             </Tooltip>
           </Box>
@@ -314,7 +353,14 @@ export default forwardRef(function ObsidianFileDialog(
                     sx={{
                       display: "flex",
                       alignItems: "center",
-                      px: 1,
+                      mx: 1,
+                      px: 0.5,
+                      borderRadius: "6px",
+                      backgroundColor: isActive ? "rgba(255,255,255,0.06)" : "transparent",
+                      transition: "background-color 120ms ease-out",
+                      "&:hover": {
+                        backgroundColor: "rgba(255,255,255,0.05)",
+                      },
                       "&:hover .unpin-btn": { opacity: 1 },
                     }}
                   >
@@ -325,8 +371,9 @@ export default forwardRef(function ObsidianFileDialog(
                         borderRadius: "6px",
                         py: "5px",
                         px: 1,
-                        backgroundColor: isActive ? "rgba(255,255,255,0.06)" : "transparent",
-                        "&:hover": { backgroundColor: "rgba(255,255,255,0.05)" },
+                        minWidth: 0,
+                        backgroundColor: "transparent",
+                        "&:hover": { backgroundColor: "transparent" },
                       }}
                     >
                       <Typography
@@ -351,10 +398,10 @@ export default forwardRef(function ObsidianFileDialog(
                         aria-label={`Unpin ${name}`}
                         sx={{
                           flexShrink: 0,
-                          ml: 0.5,
+                          ml: 0.25,
                           p: "4px",
                           color: "#6b6b6b",
-                          opacity: 0,
+                          opacity: isActive ? 1 : 0,
                           transition: "opacity 120ms ease-out",
                           "&:hover": { color: "#ededed" },
                         }}

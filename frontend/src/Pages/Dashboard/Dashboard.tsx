@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { useParams, useNavigate } from "react-router-dom";
 import Typography from "@mui/material/Typography";
 import Box from "@mui/material/Box";
@@ -7,6 +8,7 @@ import { FaTableColumns } from "react-icons/fa6";
 import SidebarLayout from "../../Components/Layout/SidebarLayout";
 import ModulePanel from "../../Components/ModulePannel/ModulePannel";
 import api from "../../Utils/api";
+import { staggerContainer, staggerItem } from "../../Utils/motion";
 
 import type { PrimaryTag } from "../../Utils/types/api.schemas";
 
@@ -81,12 +83,17 @@ export default function Dashboard() {
       onTagsChanged={triggerRefresh}
       selectedTagId={selectedTag?.id ?? null}
       refreshKey={refresh}
+      contentMaxWidth={selectedTag ? "none" : "1100px"}
     >
       {selectedTag && !loading ? (
         <ModulePanel moduleId={selectedTag} refresh={refresh} onNotesChanged={triggerRefresh} />
       ) : (
         !loading && (
           <Box
+            component={motion.div}
+            variants={staggerContainer}
+            initial="hidden"
+            animate="visible"
             sx={{
               display: "flex",
               flexDirection: "column",
@@ -96,9 +103,11 @@ export default function Dashboard() {
               gap: 2,
             }}
           >
-            <FaTableColumns size={40} style={{ color: "#6b6b6b" }} />
-            <Typography variant="body1" color="text.secondary">
-              Open the sidebar and select a module to get started.
+            <Box component={motion.div} variants={staggerItem}>
+              <FaTableColumns size={40} style={{ color: "#6b6b6b" }} />
+            </Box>
+            <Typography component={motion.p} variants={staggerItem} variant="body1" color="text.secondary">
+              Use the Modules menu in the top bar to get started.
             </Typography>
           </Box>
         )

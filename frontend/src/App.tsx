@@ -1,9 +1,11 @@
 import { createTheme, ThemeProvider, CssBaseline } from "@mui/material";
-import { Routes, Route } from "react-router-dom";
+import { AnimatePresence, MotionConfig, motion } from "framer-motion";
+import { Routes, Route, useLocation } from "react-router-dom";
 import "./App.css";
 import Dashboard from "./Pages/Dashboard/Dashboard";
 import OrganizationToolPage from "./Pages/OrganizationTool/OrganizationToolPage";
 import RAGPage from "./Pages/RAG/RAGPage";
+import { pageVariants } from "./Utils/motion";
 
 const theme = createTheme({
   palette: {
@@ -76,10 +78,9 @@ const theme = createTheme({
       styleOverrides: {
         root: {
           boxShadow: "none",
-          transition: "all 150ms ease-out",
+          transition: "background-color 150ms ease-out, border-color 150ms ease-out, color 150ms ease-out",
           "&:hover": {
             boxShadow: "none",
-            transform: "scale(1.01)",
           },
         },
         containedPrimary: {
@@ -237,15 +238,30 @@ const theme = createTheme({
 });
 
 export default function App() {
+  const location = useLocation();
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <Routes>
-        <Route path="/" element={<Dashboard />} />
-        <Route path="/modules/:moduleId" element={<Dashboard />} />
-        <Route path="/rag" element={<RAGPage />} />
-        <Route path="/organization-tool" element={<OrganizationToolPage />} />
-      </Routes>
+      <MotionConfig reducedMotion="user">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={location.pathname}
+            variants={pageVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            style={{ minHeight: "100vh" }}
+          >
+            <Routes location={location}>
+              <Route path="/" element={<Dashboard />} />
+              <Route path="/modules/:moduleId" element={<Dashboard />} />
+              <Route path="/rag" element={<RAGPage />} />
+              <Route path="/organization-tool" element={<OrganizationToolPage />} />
+            </Routes>
+          </motion.div>
+        </AnimatePresence>
+      </MotionConfig>
     </ThemeProvider>
   );
 }

@@ -6,7 +6,7 @@ describe("getNoteTitleLayout", () => {
   it("centers the title vertically with the leading icon", () => {
     expect(getNoteTitleLayout({ completed: false })).toMatchObject({
       titleRowAlignItems: "center",
-      iconSize: 32,
+      iconSize: 18,
       titleLineHeight: 1.2,
     });
   });
@@ -14,7 +14,7 @@ describe("getNoteTitleLayout", () => {
   it("keeps the larger title treatment for completed notes too", () => {
     expect(getNoteTitleLayout({ completed: true })).toMatchObject({
       titleVariant: "h5",
-      iconSize: 32,
+      iconSize: 18,
     });
   });
 });

@@ -13,8 +13,10 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import { FaRegFileLines } from "react-icons/fa6";
 import { useNavigate } from "react-router-dom";
 
+import PageHeaderCard from "../../Components/Layout/PageHeaderCard";
 import SidebarLayout from "../../Components/Layout/SidebarLayout";
 import ChatMessage, { type ChatMessageItem } from "../../Components/RAG/ChatMessage";
 import ObsidianFileDialog, {
@@ -74,77 +76,64 @@ function IndexCard({
   const statusColour = indexing ? "#e0e0e0" : "#6b6b6b";
 
   return (
-    <Paper
-      elevation={0}
-      sx={{
-        p: 2,
-        border: "1px solid rgba(255,255,255,0.07)",
-        borderRadius: "6px",
-        backgroundColor: "#141414",
-      }}
-    >
-      <Stack spacing={1.5}>
-        {/* Health row */}
-        <Stack direction="row" alignItems="center" spacing={1}>
-          <Box
-            sx={{
-              width: 8,
-              height: 8,
-              borderRadius: "50%",
-              flexShrink: 0,
-              backgroundColor:
-                healthy === null ? "#6b6b6b" : healthy ? "#ededed" : "rgba(255,80,80,0.8)",
-            }}
-          />
-          <Typography variant="caption" sx={{ color: "#6b6b6b" }}>
-            {healthy === null
-              ? "Checking Ollama…"
-              : healthy
-              ? "Ollama ready"
-              : `Ollama unavailable — ${healthError}`}
-          </Typography>
-        </Stack>
-
-        {/* Action row */}
-        <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-          <Button
-            size="small"
-            variant="contained"
-            onClick={onStartIndex}
-            disabled={indexing}
-            sx={{ minWidth: 160 }}
-          >
-            {indexing ? (
-              <Stack direction="row" spacing={1} alignItems="center">
-                <CircularProgress size={12} color="inherit" />
-                <span>Indexing…</span>
-              </Stack>
-            ) : (
-              "Update Vector Index"
-            )}
-          </Button>
-          <Button
-            size="small"
-            variant="outlined"
-            color="inherit"
-            onClick={onClearIndex}
-            disabled={indexing}
-          >
-            Clear
-          </Button>
-        </Stack>
-
-        {/* Status text */}
-        <Typography variant="caption" sx={{ color: statusColour }}>
-          {status}
+    <Stack spacing={1.5}>
+      <Stack direction="row" alignItems="center" spacing={1}>
+        <Box
+          sx={{
+            width: 8,
+            height: 8,
+            borderRadius: "50%",
+            flexShrink: 0,
+            backgroundColor:
+              healthy === null ? "#6b6b6b" : healthy ? "#ededed" : "rgba(255,80,80,0.8)",
+          }}
+        />
+        <Typography variant="caption" sx={{ color: "#6b6b6b" }}>
+          {healthy === null
+            ? "Checking Ollama..."
+            : healthy
+            ? "Ollama ready"
+            : `Ollama unavailable — ${healthError}`}
         </Typography>
-        {errors.length > 0 && (
-          <Typography variant="caption" sx={{ color: "rgba(255,80,80,0.9)" }}>
-            {errors[0]}
-          </Typography>
-        )}
       </Stack>
-    </Paper>
+
+      <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+        <Button
+          size="small"
+          variant="contained"
+          onClick={onStartIndex}
+          disabled={indexing}
+          sx={{ minWidth: 160 }}
+        >
+          {indexing ? (
+            <Stack direction="row" spacing={1} alignItems="center">
+              <CircularProgress size={12} color="inherit" />
+              <span>Indexing...</span>
+            </Stack>
+          ) : (
+            "Update Vector Index"
+          )}
+        </Button>
+        <Button
+          size="small"
+          variant="outlined"
+          color="inherit"
+          onClick={onClearIndex}
+          disabled={indexing}
+        >
+          Clear
+        </Button>
+      </Stack>
+
+      <Typography variant="caption" sx={{ color: statusColour }}>
+        {status}
+      </Typography>
+      {errors.length > 0 && (
+        <Typography variant="caption" sx={{ color: "rgba(255,80,80,0.9)" }}>
+          {errors[0]}
+        </Typography>
+      )}
+    </Stack>
   );
 }
 
@@ -152,7 +141,6 @@ function IndexCard({
 
 export default function RAGPage() {
   const navigate = useNavigate();
-  const [selectedTagId, setSelectedTagId] = useState<number | null>(null);
 
   const [messages, setMessages] = useState<ChatMessageItem[]>([]);
   const [query, setQuery] = useState("");
@@ -182,6 +170,7 @@ export default function RAGPage() {
   const queryInputRef = useRef<HTMLTextAreaElement | null>(null);
   const mentionAnchorRef = useRef<HTMLDivElement | null>(null);
   const noteDialogRef = useRef<ObsidianFileDialogHandle>(null);
+  const hasMountedMessagesRef = useRef(false);
 
   // ── Bootstrap ──────────────────────────────────────────────────────────────
 
@@ -190,7 +179,6 @@ export default function RAGPage() {
     if (!saved) return;
     try {
       const parsed: PrimaryTag = JSON.parse(saved);
-      setSelectedTagId(parsed.id);
       setScopeModule(parsed.name);
     } catch {
       localStorage.removeItem("selectedTag");
@@ -283,7 +271,16 @@ export default function RAGPage() {
   // ── Scroll to latest message ───────────────────────────────────────────────
 
   useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (!hasMountedMessagesRef.current) {
+      hasMountedMessagesRef.current = true;
+      return;
+    }
+
+    if (messages.length === 0) {
+      return;
+    }
+
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages]);
 
   // ── Handlers ───────────────────────────────────────────────────────────────
@@ -470,77 +467,72 @@ export default function RAGPage() {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <SidebarLayout selectedTagId={selectedTagId} onSelectTag={handleSelectTag} onTagsChanged={() => {}} refreshKey={0}>
-      <Stack spacing={2} sx={{ maxWidth: "900px", mx: "auto" }}>
-        {/* Page header */}
-        <Box>
-          <Typography variant="h6" sx={{ fontWeight: 600 }}>
-            Ask Vault
-          </Typography>
-          <Typography variant="body2" sx={{ color: "#6b6b6b", mt: 0.5 }}>
-            Ask questions about your notes. Mention specific files inline with @filename.md.
-          </Typography>
-        </Box>
-
-        {/* Index + health card */}
-        <IndexCard
-          status={indexStatus}
-          errors={indexErrors}
-          healthy={healthy}
-          healthError={healthError}
-          indexing={indexing}
-          onStartIndex={handleStartIndexing}
-          onClearIndex={handleClearIndex}
-        />
-
-        {/* Scope filters */}
-        <Paper
-          elevation={0}
-          sx={{
-            p: 2,
-            border: "1px solid rgba(255,255,255,0.07)",
-            borderRadius: "6px",
-            backgroundColor: "#141414",
-          }}
+    <SidebarLayout
+      selectedTagId={null}
+      onSelectTag={handleSelectTag}
+      onTagsChanged={() => {}}
+      refreshKey={0}
+      contentMaxWidth="none"
+    >
+      <Stack spacing={2} sx={{ width: "100%" }}>
+        <PageHeaderCard
+          icon={<FaRegFileLines size={18} style={{ color: "#6b6b6b" }} />}
+          title="Ask Vault"
+          titleVariant="h5"
+          description="Ask questions about your notes. Mention specific files inline with @filename.md."
         >
-          <Stack direction={{ xs: "column", md: "row" }} spacing={1.5}>
-            <TextField
-              select
-              label="Module"
-              size="small"
-              value={scopeModule}
-              onChange={(e) => {
-                setScopeModule(e.target.value);
-                setScopeCategory("");
-              }}
-              sx={{ minWidth: "200px" }}
-            >
-              <MenuItem value="">All modules</MenuItem>
-              {moduleOptions.map((name) => (
-                <MenuItem key={name} value={name}>
-                  {name}
-                </MenuItem>
-              ))}
-            </TextField>
+          <Stack spacing={3}>
+            <Stack direction={{ xs: "column", md: "row" }} spacing={1.5}>
+              <TextField
+                select
+                label="Module"
+                size="small"
+                value={scopeModule}
+                onChange={(e) => {
+                  setScopeModule(e.target.value);
+                  setScopeCategory("");
+                }}
+                sx={{ minWidth: "200px" }}
+              >
+                <MenuItem value="">All modules</MenuItem>
+                {moduleOptions.map((name) => (
+                  <MenuItem key={name} value={name}>
+                    {name}
+                  </MenuItem>
+                ))}
+              </TextField>
 
-            <TextField
-              select
-              label="Category"
-              size="small"
-              value={scopeCategory}
-              onChange={(e) => setScopeCategory(e.target.value)}
-              disabled={!scopeModule}
-              sx={{ minWidth: "200px" }}
-            >
+              <TextField
+                select
+                label="Category"
+                size="small"
+                value={scopeCategory}
+                onChange={(e) => setScopeCategory(e.target.value)}
+                disabled={!scopeModule}
+                sx={{ minWidth: "200px" }}
+              >
                 <MenuItem value="">All categories</MenuItem>
                 {categoryOptions.map((name) => (
                   <MenuItem key={name} value={name}>
                     {name}
                   </MenuItem>
                 ))}
-            </TextField>
+              </TextField>
+            </Stack>
+
+            <Divider sx={{ borderColor: "rgba(255,255,255,0.07)" }} />
+
+            <IndexCard
+              status={indexStatus}
+              errors={indexErrors}
+              healthy={healthy}
+              healthError={healthError}
+              indexing={indexing}
+              onStartIndex={handleStartIndexing}
+              onClearIndex={handleClearIndex}
+            />
           </Stack>
-        </Paper>
+        </PageHeaderCard>
 
         {/* Chat area */}
         <Paper

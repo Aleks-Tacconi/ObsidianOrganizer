@@ -1,10 +1,11 @@
+import { motion } from "framer-motion";
 import type { Note } from "../../../Utils/types/api.schemas";
 import { Box, Button, Divider, Link, Stack, Typography } from "@mui/material";
-import { alpha } from "@mui/material/styles";
 import { useState } from "react";
-import { FaBookOpen, FaChevronDown, FaChevronUp, FaLink } from "react-icons/fa6";
+import { FaChevronDown, FaLink } from "react-icons/fa6";
 import ReactMarkdown from "react-markdown";
 
+import { motionTransitions } from "../../../Utils/motion";
 import { getNoteTitleLayout } from "./noteTitleLayout";
 
 type NoteDisplayProps = {
@@ -15,9 +16,15 @@ const DESCRIPTION_PREVIEW_LENGTH = 220;
 const DESCRIPTION_PREVIEW_LINES = 3;
 const DESCRIPTION_COLLAPSED_MAX_HEIGHT = 288;
 
+function startsWithMarkdownHeading(description: string): boolean {
+  return /^\s{0,3}#{1,6}\s+\S/.test(description.trimStart());
+}
+
 export default function NoteDisplay({ note }: NoteDisplayProps) {
   const [expanded, setExpanded] = useState(false);
   const titleLayout = getNoteTitleLayout({ completed: Boolean(note.completed) });
+  const showsLeadingHeading = note.description ? startsWithMarkdownHeading(note.description) : false;
+  const showDescriptionLabel = Boolean(note.description && !showsLeadingHeading);
   const descriptionLineCount = note.description
     ? note.description.split(/\r?\n/).filter((line) => line.trim()).length
     : 0;
@@ -30,36 +37,21 @@ export default function NoteDisplay({ note }: NoteDisplayProps) {
     <Box>
       <Stack
         direction="row"
-        spacing={1.5}
+        spacing={0}
         alignItems={titleLayout.titleRowAlignItems}
-        sx={{ mb: note.description ? 1.5 : 0 }}
+        sx={{ mb: note.description || note.urls.length > 0 ? 2 : 0 }}
         data-testid="note-title-row"
       >
-        <Box
-          data-testid="note-title-icon"
-          sx={{
-            width: titleLayout.iconSize,
-            height: titleLayout.iconSize,
-            borderRadius: "6px",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            flexShrink: 0,
-            backgroundColor: note.primary_tag?.color ? alpha(note.primary_tag.color, 0.14) : "rgba(255,255,255,0.06)",
-            color: note.primary_tag?.color ?? "text.secondary",
-            border: note.primary_tag?.color ? `1px solid ${alpha(note.primary_tag.color, 0.32)}` : "1px solid rgba(255,255,255,0.07)",
-          }}
-        >
-          <FaBookOpen size={14} />
-        </Box>
-
         <Typography
           variant={titleLayout.titleVariant}
+          component="h3"
           sx={{
             fontWeight: 600,
-            textDecoration: note.completed ? "line-through" : "none",
+            textDecoration: "none",
             color: note.completed ? "text.secondary" : "text.primary",
             lineHeight: titleLayout.titleLineHeight,
+            minWidth: 0,
+            textWrap: "balance",
           }}
         >
           {note.name}
@@ -68,26 +60,84 @@ export default function NoteDisplay({ note }: NoteDisplayProps) {
 
       {note.description && (
         <Box sx={{ color: "text.primary" }}>
+          {showDescriptionLabel && (
+            <Typography
+              variant="subtitle2"
+              color="text.secondary"
+              sx={{ mb: 1.5, letterSpacing: "0.12em", textTransform: "uppercase" }}
+            >
+              Description
+            </Typography>
+          )}
           <Box
+            component={motion.div}
             sx={{
               position: "relative",
-              maxHeight: expanded || !isDescriptionCollapsible ? "none" : DESCRIPTION_COLLAPSED_MAX_HEIGHT,
               overflow: "hidden",
               mb: isDescriptionCollapsible ? 0.5 : 0,
             }}
+            initial={false}
+            animate={{
+              height: expanded || !isDescriptionCollapsible ? "auto" : DESCRIPTION_COLLAPSED_MAX_HEIGHT,
+            }}
+            transition={motionTransitions.base}
           >
             <ReactMarkdown
               components={{
+                h1: ({ children }) => (
+                  <Typography
+                    component="h4"
+                    sx={{
+                      color: "text.primary",
+                      mb: 1.5,
+                      fontSize: "1.125rem",
+                      fontWeight: 600,
+                      lineHeight: 1.35,
+                      textWrap: "balance",
+                    }}
+                  >
+                    {children}
+                  </Typography>
+                ),
+                h2: ({ children }) => (
+                  <Typography
+                    component="h5"
+                    sx={{
+                      color: "text.primary",
+                      mb: 1.5,
+                      fontSize: "1rem",
+                      fontWeight: 600,
+                      lineHeight: 1.4,
+                      textWrap: "balance",
+                    }}
+                  >
+                    {children}
+                  </Typography>
+                ),
+                h3: ({ children }) => (
+                  <Typography
+                    component="h6"
+                    sx={{
+                      color: "text.primary",
+                      mb: 1,
+                      fontSize: "0.9375rem",
+                      fontWeight: 600,
+                      lineHeight: 1.45,
+                    }}
+                  >
+                    {children}
+                  </Typography>
+                ),
                 p: ({ children }) => (
-                  <Typography variant="body2" component="div" sx={{ mb: 1 }}>
+                  <Typography variant="body2" component="div" sx={{ mb: 1.5, lineHeight: 1.7 }}>
                     {children}
                   </Typography>
                 ),
                 ul: ({ children }) => (
-                  <ul style={{ paddingLeft: "1.4em", margin: "4px 0 12px" }}>{children}</ul>
+                  <ul style={{ paddingLeft: "1.4em", margin: "0 0 12px" }}>{children}</ul>
                 ),
                 ol: ({ children }) => (
-                  <ol style={{ paddingLeft: "1.4em", margin: "4px 0 12px" }}>{children}</ol>
+                  <ol style={{ paddingLeft: "1.4em", margin: "0 0 12px" }}>{children}</ol>
                 ),
                 li: ({ children }) => (
                   <li style={{ marginBottom: "4px" }}>
@@ -99,21 +149,6 @@ export default function NoteDisplay({ note }: NoteDisplayProps) {
               {note.description}
             </ReactMarkdown>
 
-            {!expanded && isDescriptionCollapsible && (
-              <Box
-                sx={{
-                  position: "absolute",
-                  inset: "auto 0 0 0",
-                  height: 28,
-                  background: "linear-gradient(to bottom, rgba(20,20,20,0), rgba(20,20,20,0.72) 72%, #141414 100%)",
-                  transition: "background 150ms ease-out",
-                  ".MuiCard-root:hover &": {
-                    background: "linear-gradient(to bottom, rgba(23,23,23,0), rgba(23,23,23,0.72) 72%, #171717 100%)",
-                  },
-                  pointerEvents: "none",
-                }}
-              />
-            )}
           </Box>
 
           {isDescriptionCollapsible && (
@@ -122,7 +157,17 @@ export default function NoteDisplay({ note }: NoteDisplayProps) {
               size="small"
               onClick={() => setExpanded((prev) => !prev)}
               aria-expanded={expanded}
-              endIcon={expanded ? <FaChevronUp size={11} /> : <FaChevronDown size={11} />}
+              endIcon={(
+                <Box
+                  component={motion.span}
+                  initial={false}
+                  animate={{ rotate: expanded ? 180 : 0 }}
+                  transition={motionTransitions.base}
+                  sx={{ display: "inline-flex" }}
+                >
+                  <FaChevronDown size={11} />
+                </Box>
+              )}
               sx={{
                 px: 0,
                 minWidth: 0,
@@ -144,7 +189,11 @@ export default function NoteDisplay({ note }: NoteDisplayProps) {
       {note.urls.length > 0 && (
         <Box sx={{ mt: 2 }}>
           <Divider sx={{ mb: 2 }} />
-          <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1.5 }}>
+          <Typography
+            variant="subtitle2"
+            color="text.secondary"
+            sx={{ mb: 1.5, letterSpacing: "0.12em", textTransform: "uppercase" }}
+          >
             Related Resources
           </Typography>
           <Stack spacing={1.5}>

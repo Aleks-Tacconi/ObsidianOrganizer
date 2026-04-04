@@ -15,7 +15,9 @@ import {
   Typography,
 } from "@mui/material";
 import Fuse from "fuse.js";
+import { FaTableColumns } from "react-icons/fa6";
 
+import PageHeaderCard from "../Layout/PageHeaderCard";
 import api from "../../Utils/api";
 import type {
   ApplyTagsBulkRequest,
@@ -269,20 +271,13 @@ export default function OrganisationPanel() {
   const selectionMissing = !selectedModule || !selectedCategory;
 
   return (
-    <Stack spacing={3} sx={{ mt: 6, px: { xs: 0, sm: 2 }, width: "100%" }}>
-      <Box>
-        <Typography variant="h5" sx={{ mb: 1 }}>
-          Organisation Tool
-        </Typography>
-        <Typography variant="body2" color="text.secondary">
-          Select a module and category, then add or remove notes in bulk.
-        </Typography>
-      </Box>
-
-      {error && <Alert severity="error">{error}</Alert>}
-      {success && <Alert severity="success">{success}</Alert>}
-
-      <Paper elevation={0} sx={{ borderRadius: "6px", p: 2 }}>
+    <Stack spacing={3} sx={{ px: { xs: 0, sm: 2 }, width: "100%" }}>
+      <PageHeaderCard
+        icon={<FaTableColumns size={18} style={{ color: "#6b6b6b" }} />}
+        title="Organisation Tool"
+        titleVariant="h5"
+        description="Select a module and category, then add or remove notes in bulk."
+      >
         <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 1 }}>
@@ -346,7 +341,10 @@ export default function OrganisationPanel() {
             </List>
           </Box>
         </Stack>
-      </Paper>
+      </PageHeaderCard>
+
+      {error && <Alert severity="error">{error}</Alert>}
+      {success && <Alert severity="success">{success}</Alert>}
 
       <Paper elevation={0} sx={{ borderRadius: "6px", p: 2 }}>
         <Stack direction={{ xs: "column", md: "row" }} spacing={2}>

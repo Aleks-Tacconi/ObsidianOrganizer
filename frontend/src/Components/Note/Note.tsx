@@ -1,4 +1,5 @@
-import { Card, CardContent, CardActions, IconButton, Stack, Tooltip, CircularProgress } from "@mui/material";
+import { Box, CircularProgress, Divider, IconButton, Stack, Tooltip } from "@mui/material";
+import { motion } from "framer-motion";
 import { FaPenToSquare, FaTrashCan, FaCircleCheck, FaRegCircle } from "react-icons/fa6";
 
 import api from "../../Utils/api";
@@ -7,6 +8,7 @@ import NoteDisplay from "./Components/NoteDisplay";
 import NoteDialog from "../NoteDialogue/NoteDialogue";
 import ConfirmDialogue from "../ConfirmDialogue/ConfirmDialogue";
 import { useState } from "react";
+import { motionTransitions, staggerItem } from "../../Utils/motion";
 
 type Props = {
   note: NoteType;
@@ -60,24 +62,34 @@ export default function Note({ note, onUpdate, onDelete, onChanged, refresh }: P
 
   return (
     <>
-      <Card
+      <Box
+        component={motion.article}
+        variants={staggerItem}
+        layout
+        transition={motionTransitions.layout}
         sx={{
-          mb: 3,
-          border: "1px solid rgba(255,255,255,0.07)",
-          backgroundColor: "#141414",
-          opacity: note.completed ? 0.55 : 1,
-          transition: "opacity 150ms ease-out, border-color 150ms ease-out, background-color 150ms ease-out",
+          mb: 2,
+          px: 2.5,
+          py: 2.5,
+          borderRadius: "6px",
+          border: note.completed ? "1px solid rgba(255,255,255,0.05)" : "1px solid rgba(255,255,255,0.07)",
+          backgroundColor: note.completed ? "rgba(255,255,255,0.015)" : "rgba(255,255,255,0.02)",
+          transition: "border-color 150ms ease-out, background-color 150ms ease-out",
           "&:hover": {
-            borderColor: "rgba(255,255,255,0.12)",
-            backgroundColor: "#171717",
+            borderColor: note.completed ? "rgba(255,255,255,0.07)" : "rgba(255,255,255,0.1)",
+          },
+          "&:last-of-type": {
+            mb: 0,
           },
         }}
       >
-        <CardContent sx={{ pb: 2 }}>
+        <Box>
           <NoteDisplay note={note} />
-        </CardContent>
+        </Box>
 
-        <CardActions sx={{ justifyContent: "space-between" }}>
+        <Divider sx={{ mt: 2.5, mb: 1.25, borderColor: note.completed ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.06)" }} />
+
+        <Stack direction="row" justifyContent="space-between" alignItems="center">
           {/* Completion toggle — left side */}
           <Tooltip title={note.completed ? "Mark as incomplete" : "Mark as complete"}>
             <span>
@@ -87,7 +99,14 @@ export default function Note({ note, onUpdate, onDelete, onChanged, refresh }: P
                 aria-label={note.completed ? "Mark as incomplete" : "Mark as complete"}
                 sx={{
                   color: note.completed ? "#e0e0e0" : "text.secondary",
-                  "&:hover": { color: note.completed ? "#c8c8c8" : "#ededed" },
+                  "&:hover": {
+                    color: note.completed ? "#c8c8c8" : "#ededed",
+                    backgroundColor: "rgba(255,255,255,0.04)",
+                  },
+                  "&:focus-visible": {
+                    outline: "2px solid #e0e0e0",
+                    outlineOffset: 2,
+                  },
                 }}
               >
                 {toggling ? (
@@ -104,7 +123,18 @@ export default function Note({ note, onUpdate, onDelete, onChanged, refresh }: P
           {/* Edit + Delete — right side */}
           <Stack direction="row" spacing={0.5}>
             <Tooltip title="Edit">
-              <IconButton onClick={() => setEditing(true)} aria-label="Edit note" size="small">
+              <IconButton
+                onClick={() => setEditing(true)}
+                aria-label="Edit note"
+                size="small"
+                sx={{
+                  "&:hover": { backgroundColor: "rgba(255,255,255,0.04)" },
+                  "&:focus-visible": {
+                    outline: "2px solid #e0e0e0",
+                    outlineOffset: 2,
+                  },
+                }}
+              >
                 <FaPenToSquare size={15} />
               </IconButton>
             </Tooltip>
@@ -116,14 +146,21 @@ export default function Note({ note, onUpdate, onDelete, onChanged, refresh }: P
                   aria-label="Delete note"
                   disabled={deleting}
                   size="small"
+                  sx={{
+                    "&:hover": { backgroundColor: "rgba(255,255,255,0.04)" },
+                    "&:focus-visible": {
+                      outline: "2px solid #e0e0e0",
+                      outlineOffset: 2,
+                    },
+                  }}
                 >
                   {deleting ? <CircularProgress size={15} color="inherit" /> : <FaTrashCan size={15} />}
                 </IconButton>
               </span>
             </Tooltip>
           </Stack>
-        </CardActions>
-      </Card>
+        </Stack>
+      </Box>
 
       <NoteDialog
         open={editing}

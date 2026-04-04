@@ -10,10 +10,10 @@ export type NoteTitleLayoutResult = {
 };
 
 export function getNoteTitleLayout(input: NoteTitleLayoutInput): NoteTitleLayoutResult {
-    void input;
-    return {
-        titleRowAlignItems: "center",
-        iconSize: 32,
+  void input;
+  return {
+    titleRowAlignItems: "center",
+    iconSize: 18,
     titleVariant: "h5",
     titleLineHeight: 1.2,
   };
