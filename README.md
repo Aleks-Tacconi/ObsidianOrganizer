@@ -12,11 +12,11 @@ A note-taking app for organizing an Obsidian vault with a consistent module/topi
 
 **1. Modules Page**
 
-![Screenshot 1](./assets/1.png)
+![Screenshot 2](./assets/2.png)
 
 **2. Organisation tool**
 
-![Screenshot 2](./assets/2.png)
+![Screenshot 1](./assets/1.png)
 
 **3. RAG chat**
 
