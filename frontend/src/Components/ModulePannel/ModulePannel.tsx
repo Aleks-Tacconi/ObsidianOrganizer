@@ -38,15 +38,15 @@ import ConfirmDialogue from "../ConfirmDialogue/ConfirmDialogue";
 import Note from "../Note/Note";
 import NoteDialog from "../NoteDialogue/NoteDialogue";
 import PageHeaderCard from "../Layout/PageHeaderCard";
+import Grades, { type GradeFormValues } from "./Components/Grades";
 import ProgressBar from "./Components/ProgressBar";
 import SectionFiles from "./Components/SectionFiles";
-import Grades from "./Components/Grades";
 import ObsidianFileDialog, { type ObsidianFileDialogHandle } from "./Components/ObsidianFileDialog";
 import api from "../../Utils/api";
 import { motionTransitions, staggerContainer, staggerItem } from "../../Utils/motion";
 
 import type { Note as NoteType, PrimaryTag } from "../../Utils/types/api.schemas";
-import { useModuleNotes } from "../../Utils/useModuleNotes";
+import { type RuntimeGrade, useModuleNotes } from "../../Utils/useModuleNotes";
 
 function readStoredNumber(key: string): number | null {
   try {
@@ -81,7 +81,7 @@ export default function ModulePanel({
   refresh: number;
   onNotesChanged?: () => void;
 }) {
-  const { moduleInfo, updateNote, deleteNote, addOrReplaceNote } = useModuleNotes(
+  const { moduleInfo, updateNote, deleteNote, addOrReplaceNote, addOrReplaceGrade, deleteGrade } = useModuleNotes(
     moduleId,
     refresh,
   );
@@ -271,6 +271,37 @@ export default function ModulePanel({
     }
   };
 
+  const handleSaveGrade = async (gradeId: number | null, values: GradeFormValues) => {
+    if (!moduleInfo) {
+      throw new Error("Module details are still loading.");
+    }
+
+    const payload = {
+      ...values,
+      module_info_id: moduleInfo.primary_tag.id,
+    };
+
+    const response = gradeId === null
+      ? await api.post<RuntimeGrade>("grades/", payload)
+      : await api.put<RuntimeGrade>(`grades/${gradeId}/`, payload);
+
+    if (!response?.data) {
+      throw new Error(gradeId === null ? "Failed to add grade. Please try again." : "Failed to update grade. Please try again.");
+    }
+
+    addOrReplaceGrade(response.data);
+  };
+
+  const handleDeleteGrade = async (gradeId: number) => {
+    const response = await api.del(`grades/${gradeId}/`);
+
+    if (response === undefined) {
+      throw new Error("Failed to delete grade. Please try again.");
+    }
+
+    deleteGrade(gradeId);
+  };
+
   const loading = moduleInfo === null;
 
   return (
@@ -369,7 +400,12 @@ export default function ModulePanel({
                   <Divider />
 
                   <Box>
-                    <Grades moduleInfo={moduleInfo} embedded />
+                    <Grades
+                      moduleInfo={moduleInfo}
+                      embedded
+                      onSaveGrade={handleSaveGrade}
+                      onDeleteGrade={handleDeleteGrade}
+                    />
                   </Box>
                 </Stack>
               </PageHeaderCard>
