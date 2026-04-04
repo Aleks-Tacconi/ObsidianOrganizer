@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "./api";
-import type { ModuleInfo, Note as NoteType, PrimaryTag, Section } from "./types/api.schemas";
+import type { Grade, ModuleInfo, Note as NoteType, PrimaryTag, Section } from "./types/api.schemas";
 
 /**
  * The generated Section type has `notes: string` because the OpenAPI spec
@@ -9,7 +9,11 @@ import type { ModuleInfo, Note as NoteType, PrimaryTag, Section } from "./types/
  * intact while giving us correct types for the notes array.
  */
 export type RuntimeSection = Omit<Section, "notes"> & { notes: NoteType[] };
-export type RuntimeModuleInfo = Omit<ModuleInfo, "sections"> & { sections: readonly RuntimeSection[] };
+export type RuntimeGrade = Omit<Grade, "module_info_id"> & { module_info_id?: number };
+export type RuntimeModuleInfo = Omit<ModuleInfo, "grades" | "sections"> & {
+  grades: readonly RuntimeGrade[];
+  sections: readonly RuntimeSection[];
+};
 
 export function useModuleNotes(moduleId: PrimaryTag, refresh: number) {
   const [moduleInfo, setModuleInfo] = useState<RuntimeModuleInfo | null>(null);
@@ -60,10 +64,33 @@ export function useModuleNotes(moduleId: PrimaryTag, refresh: number) {
     );
   };
 
+  const addOrReplaceGrade = (grade: RuntimeGrade) => {
+    setModuleInfo(
+      (prev) =>
+        prev && {
+          ...prev,
+          grades: [...prev.grades.filter((existing) => existing.id !== grade.id), grade]
+            .sort((left, right) => left.name.localeCompare(right.name)),
+        },
+    );
+  };
+
+  const deleteGrade = (id: number) => {
+    setModuleInfo(
+      (prev) =>
+        prev && {
+          ...prev,
+          grades: prev.grades.filter((grade) => grade.id !== id),
+        },
+    );
+  };
+
   return {
     moduleInfo,
     updateNote,
     deleteNote,
     addOrReplaceNote,
+    addOrReplaceGrade,
+    deleteGrade,
   };
 }
