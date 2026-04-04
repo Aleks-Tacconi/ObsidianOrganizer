@@ -325,7 +325,7 @@ export default function Grades({
 
       <Dialog open={dialogOpen} onClose={closeDialog} fullWidth maxWidth="xs">
         <DialogTitle>{editingGrade ? "Edit Grade" : "Add Grade"}</DialogTitle>
-        <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1 }}>
+        <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, mt: 1, pt: 1 }}>
           {formError && (
             <Alert severity="error" onClose={() => setFormError(null)}>
               {formError}
