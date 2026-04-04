@@ -145,5 +145,4 @@ cd backend && poetry run python backend/manage.py test
 
 ## TODO / Upcoming Features
 
-- Logging grades
 - Rearranging modules
