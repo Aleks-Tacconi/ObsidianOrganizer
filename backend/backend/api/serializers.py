@@ -1,3 +1,4 @@
+from django.db.models import Sum
 from rest_framework import serializers
 
 from .models import Grade, ModuleInfo, Note, NoteURL, PrimaryTag, Section, SubTag
@@ -23,6 +24,45 @@ class GradeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Grade
         fields = ["id", "name", "percentage", "scored", "module_info_id"]
+
+    def validate(self, attrs):
+        module_info = attrs.get(
+            "module_info", getattr(self.instance, "module_info", None)
+        )
+        percentage = attrs.get("percentage", getattr(self.instance, "percentage", None))
+        scored = attrs.get("scored", getattr(self.instance, "scored", None))
+        name = attrs.get("name", getattr(self.instance, "name", ""))
+
+        cleaned_name = str(name).strip()
+        if not cleaned_name:
+            raise serializers.ValidationError({"name": "Assessment name is required."})
+
+        if percentage is None or not 0 <= percentage <= 100:
+            raise serializers.ValidationError(
+                {"percentage": "Weight must be between 0 and 100."}
+            )
+
+        if scored is None or not 0 <= scored <= 100:
+            raise serializers.ValidationError(
+                {"scored": "Score must be between 0 and 100."}
+            )
+
+        if module_info is not None:
+            other_total = (
+                module_info.grades.exclude(
+                    pk=getattr(self.instance, "pk", None)
+                ).aggregate(total=Sum("percentage"))["total"]
+                or 0
+            )
+            if other_total + percentage > 100.000001:
+                raise serializers.ValidationError(
+                    {
+                        "percentage": "Tracked grade weights cannot exceed 100% for a module."
+                    }
+                )
+
+        attrs["name"] = cleaned_name
+        return attrs
 
 
 class SectionSerializer(serializers.ModelSerializer):
