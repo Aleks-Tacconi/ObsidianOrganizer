@@ -14,29 +14,13 @@ A note-taking app for organizing an Obsidian vault with a consistent module/topi
 
 ![Screenshot 1](./assets/1.png)
 
-**2. Category Search**
+**2. Organisation tool**
 
 ![Screenshot 2](./assets/2.png)
 
-**3. Sidebar**
+**3. RAG chat**
 
 ![Screenshot 3](./assets/3.png)
-
-**4. Edit / New note modal**
-
-![Screenshot 4](./assets/4.png)
-
-**5. Note view**
-
-![Screenshot 5](./assets/5.png)
-
-**6. RAG chat**
-
-![Screenshot 6](./assets/6.png)
-
-**7. Organisation tool**
-
-![Screenshot 7](./assets/7.png)
 
 ## Prerequisites
 
