@@ -120,6 +120,9 @@ export default function Grades({
 
   const na = Math.max(100 - gradeProgress.totalWeight, 0);
   const hasOverflow = gradeProgress.totalWeight > 100;
+  const weightedAverage = gradeProgress.totalWeight > 0
+    ? (gradeProgress.completed / gradeProgress.totalWeight) * 100
+    : 0;
   const segments = [
     { label: "Completed", value: gradeProgress.completed, color: moduleInfo.primary_tag.color },
     { label: "Missed", value: gradeProgress.missed, color: "rgba(255,255,255,0.2)" },
@@ -314,6 +317,10 @@ export default function Grades({
         </Typography>
         <Typography variant="caption" color="text.secondary">
           {na.toFixed(1)}% N/A
+        </Typography>
+        <Box sx={{ flex: 1 }} />
+        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
+          {weightedAverage.toFixed(1)}% average
         </Typography>
       </Stack>
 
