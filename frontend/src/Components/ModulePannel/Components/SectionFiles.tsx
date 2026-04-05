@@ -1,8 +1,34 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Box, List, ListItemButton, ListItemIcon, ListItemText, Skeleton, Stack, Typography } from "@mui/material";
 import api from "../../../Utils/api";
 import ObsidianFileDialog, { type ObsidianFileDialogHandle } from "./ObsidianFileDialog";
 import { FaRegFileLines } from "react-icons/fa6";
+
+type SnippetResult = {
+  name: string;
+  snippets: string[];
+  score: number;
+};
+
+function getFileName(path: string): string {
+  return path.split("/").pop()?.replace(/\.md$/, "") ?? path;
+}
+
+function scoreFileName(name: string, query: string): number {
+  const normalizedName = name.toLowerCase();
+  const normalizedQuery = query.trim().toLowerCase();
+
+  if (!normalizedQuery) return 0;
+  if (normalizedName === normalizedQuery) return 400;
+  if (normalizedName.startsWith(normalizedQuery)) return 320;
+
+  const matchIndex = normalizedName.indexOf(normalizedQuery);
+  if (matchIndex !== -1) {
+    return 260 - matchIndex;
+  }
+
+  return 0;
+}
 
 function highlightSnippet(text: string, query: string): React.ReactNode {
   if (!query.trim()) return text;
@@ -49,7 +75,7 @@ export default function SectionFiles({
   const [activeFile, setActiveFile] = useState<{ name: string; content: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [fileError, setFileError] = useState<string | null>(null);
-  const [snippetCache, setSnippetCache] = useState<Record<string, string[]>>({});
+  const [snippetResults, setSnippetResults] = useState<SnippetResult[]>([]);
   const dialogRef = useRef<ObsidianFileDialogHandle>(null);
 
   const openFile = (path: string) => {
@@ -109,67 +135,67 @@ export default function SectionFiles({
   const fetchSnippets = useCallback((query: string, fileNames: string[]) => {
     if (!query.trim() || fileNames.length === 0) return;
     api
-      .post<{ results: { name: string; snippets: string[] }[] }>("search-in-files/", {
+      .post<{ results: SnippetResult[] }>("search-in-files/", {
         query,
         files: fileNames,
       })
       .then((res) => {
         if (res?.data) {
-          const cache: Record<string, string[]> = {};
-          res.data.results.forEach(({ name, snippets }) => {
-            cache[name] = snippets;
-          });
-          setSnippetCache(cache);
+          setSnippetResults(res.data.results);
         }
       })
       .catch(() => {/* silently ignore */});
   }, []);
 
-  const filenameMatches = fileFilter?.trim()
-    ? files.filter((f) => {
-        const name = f.split("/").pop()?.replace(/\.md$/, "") ?? f;
-        return name.toLowerCase().includes(fileFilter.toLowerCase());
-      })
-    : files;
-
   // When preview is on, search ALL files by content so content-only hits are found
   useEffect(() => {
     if (!showSnippets || !sectionQuery?.trim() || files.length === 0) {
-      setSnippetCache({});
+      setSnippetResults([]);
       return;
     }
-    const allNames = files.map((f) => f.split("/").pop()?.replace(/\.md$/, "") ?? f);
+    const allNames = files.map((file) => getFileName(file));
     fetchSnippets(sectionQuery, allNames);
   }, [showSnippets, sectionQuery, files, fetchSnippets]);
 
-  // Merge filename matches with content-only hits when preview is on,
-  // then sort: filename matches first (by match position), content-only after.
-  const displayFiles = (() => {
-    if (!fileFilter?.trim()) return filenameMatches;
+  const snippetCache = useMemo(
+    () => Object.fromEntries(snippetResults.map((result) => [result.name, result.snippets])),
+    [snippetResults],
+  );
 
-    const filterLower = fileFilter.toLowerCase();
-    const filenameSet = new Set(filenameMatches.map((f) => f));
+  const displayFiles = useMemo(() => {
+    const query = fileFilter?.trim() ?? "";
+    if (!query) return files;
 
-    // Start with filename matches, sorted by how early the query appears
-    const sorted = [...filenameMatches].sort((a, b) => {
-      const nameA = (a.split("/").pop()?.replace(/\.md$/, "") ?? a).toLowerCase();
-      const nameB = (b.split("/").pop()?.replace(/\.md$/, "") ?? b).toLowerCase();
-      return nameA.indexOf(filterLower) - nameB.indexOf(filterLower);
+    const filesByName = new Map(files.map((file) => [getFileName(file), file]));
+    const ranked = new Map<string, number>();
+
+    files.forEach((file) => {
+      const score = scoreFileName(getFileName(file), query);
+      if (score > 0) {
+        ranked.set(file, score);
+      }
     });
 
-    // Append content-only hits when preview is on
     if (showSnippets) {
-      const contentHits = new Set(Object.keys(snippetCache));
-      files.forEach((f) => {
-        const basename = f.split("/").pop()?.replace(/\.md$/, "") ?? f;
-        if (contentHits.has(basename) && !filenameSet.has(f)) {
-          sorted.push(f);
-        }
+      snippetResults.forEach((result) => {
+        const file = filesByName.get(result.name);
+        if (!file) return;
+
+        const contentScore = result.score * 300;
+        ranked.set(file, Math.max(ranked.get(file) ?? 0, contentScore));
       });
     }
 
-    return sorted;
-  })();
+    return [...ranked.entries()]
+      .sort((left, right) => {
+        if (right[1] !== left[1]) {
+          return right[1] - left[1];
+        }
+
+        return getFileName(left[0]).localeCompare(getFileName(right[0]));
+      })
+      .map(([file]) => file);
+  }, [fileFilter, files, showSnippets, snippetResults]);
 
   if (loading) {
     return (
@@ -205,7 +231,7 @@ export default function SectionFiles({
       )}
       <List dense disablePadding sx={{ display: "flex", flexDirection: "column", gap: compact ? 0.25 : 0.5 }}>
         {displayFiles.map((file) => {
-          const fileName = file.split("/").pop()?.replace(/\.md$/, "") ?? file;
+          const fileName = getFileName(file);
           const snippets = showSnippets ? (snippetCache[fileName] ?? []) : [];
           return (
             <ListItemButton

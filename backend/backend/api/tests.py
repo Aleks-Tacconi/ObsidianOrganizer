@@ -73,6 +73,46 @@ class GradeApiTests(TestCase):
         )
 
 
+class SearchInFilesTests(TestCase):
+    def test_search_in_files_prefers_exact_matches_and_drops_weak_fuzzy_hits(self):
+        with tempfile.TemporaryDirectory() as temp_dir:
+            vault_path = Path(temp_dir)
+            (vault_path / "Clickjacking.md").write_text(
+                (
+                    "---\ntags:\n  - SEC101\n  - Browser\n---\n"
+                    "The page is loaded in an iframe.\n"
+                ),
+                encoding="utf-8",
+            )
+            (vault_path / "UI Redressing Mitigations.md").write_text(
+                (
+                    "---\ntags:\n  - SEC101\n  - Browser\n---\n"
+                    "Use the X-Frame-Options header to block framing.\n"
+                ),
+                encoding="utf-8",
+            )
+
+            with patch("api.views.VAULT", f"{temp_dir}/"):
+                response = self.client.post(
+                    "/api/search-in-files/",
+                    data={
+                        "query": "x-frame",
+                        "files": ["Clickjacking", "UI Redressing Mitigations"],
+                    },
+                    content_type="application/json",
+                )
+
+        self.assertEqual(response.status_code, 200)
+        results = response.json()["results"]
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]["name"], "UI Redressing Mitigations")
+        self.assertEqual(
+            results[0]["snippets"],
+            ["Use the X-Frame-Options header to block framing."],
+        )
+        self.assertGreater(results[0]["score"], 0.9)
+
+
 class VaultTagToolsApiTests(TestCase):
     def setUp(self):
         super().setUp()

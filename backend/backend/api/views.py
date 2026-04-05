@@ -1,5 +1,6 @@
 import json
 import os
+import re
 import tempfile
 from difflib import SequenceMatcher
 from typing import Dict, List, Optional, Set, Tuple
@@ -665,27 +666,64 @@ def _line_fuzzy_score(query_lower: str, line_lower: str) -> float:
     return best_ratio
 
 
+def _query_tokens(text: str) -> List[str]:
+    return [token for token in re.split(r"[^a-z0-9]+", text.lower()) if token]
+
+
+def _line_match_score(query_lower: str, line_lower: str) -> float:
+    stripped = line_lower.strip()
+    if not stripped:
+        return 0.0
+
+    if query_lower in stripped:
+        position = stripped.index(query_lower)
+        return 1.0 - (position / max(len(stripped), 1)) * 0.05
+
+    tokens = _query_tokens(query_lower)
+    if len(tokens) > 1 and all(token in stripped for token in tokens):
+        first_position = min(stripped.index(token) for token in tokens)
+        return 0.9 - (first_position / max(len(stripped), 1)) * 0.05
+
+    fuzzy_score = _line_fuzzy_score(query_lower, stripped)
+    return fuzzy_score if fuzzy_score >= 0.82 else 0.0
+
+
 def _extract_snippets(
     all_lines: List[str], query_lower: str, context: int = 2
-) -> List[str]:
-    """Return up to 3 context blocks around fuzzy-matched lines."""
-    match_indices = [
-        i
+) -> Tuple[float, List[str]]:
+    """Return relevance score and up to 3 context blocks around matched lines."""
+    matches = [
+        (i, _line_match_score(query_lower, line.strip().lower()))
         for i, line in enumerate(all_lines)
-        if line.strip() and _line_fuzzy_score(query_lower, line.strip().lower()) >= 0.6
+        if line.strip()
     ]
-    snippets: List[str] = []
-    covered_up_to = -1
-    for idx in match_indices[:3]:
+    ranked_matches = [match for match in matches if match[1] > 0]
+    if not ranked_matches:
+        return 0.0, []
+
+    ranked_matches.sort(key=lambda match: (-match[1], match[0]))
+
+    snippets_with_ranges: List[Tuple[int, str]] = []
+    used_ranges: List[Tuple[int, int]] = []
+
+    for idx, _ in ranked_matches:
         start = max(0, idx - context)
         end = min(len(all_lines) - 1, idx + context)
-        if start <= covered_up_to:
-            start = covered_up_to + 1
-        if start > end:
+        overlaps_existing = any(
+            not (end < existing_start or start > existing_end)
+            for existing_start, existing_end in used_ranges
+        )
+        if overlaps_existing:
             continue
-        snippets.append("\n".join(line.rstrip() for line in all_lines[start : end + 1]))
-        covered_up_to = end
-    return snippets
+        snippets_with_ranges.append(
+            (start, "\n".join(line.rstrip() for line in all_lines[start : end + 1]))
+        )
+        used_ranges.append((start, end))
+        if len(snippets_with_ranges) == 3:
+            break
+
+    snippets_with_ranges.sort(key=lambda item: item[0])
+    return ranked_matches[0][1], [snippet for _, snippet in snippets_with_ranges]
 
 
 @csrf_exempt
@@ -713,9 +751,11 @@ def search_in_files(request):
         except OSError:
             continue
 
-        snippets = _extract_snippets(content.splitlines(), query_lower)
+        score, snippets = _extract_snippets(content.splitlines(), query_lower)
         if snippets:
-            results.append({"name": bare, "snippets": snippets})
+            results.append({"name": bare, "snippets": snippets, "score": score})
+
+    results.sort(key=lambda result: (-result["score"], result["name"]))
 
     return JsonResponse({"results": results})
 
