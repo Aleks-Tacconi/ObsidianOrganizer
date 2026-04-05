@@ -89,6 +89,40 @@ function moveItem<T extends { id: number }>(items: readonly T[], draggedId: numb
   return nextItems;
 }
 
+function getMostVisibleNoteId(
+  noteIds: readonly number[],
+  visibilityRatios: ReadonlyMap<number, number>,
+  currentNoteId: number | null,
+): number | null {
+  const minimumVisibleRatio = 0.15;
+  const switchMargin = 0.1;
+  let bestNoteId: number | null = null;
+  let bestRatio = minimumVisibleRatio;
+
+  for (const noteId of noteIds) {
+    const ratio = visibilityRatios.get(noteId) ?? 0;
+    if (ratio > bestRatio) {
+      bestRatio = ratio;
+      bestNoteId = noteId;
+    }
+  }
+
+  if (bestNoteId === null) {
+    return null;
+  }
+
+  if (currentNoteId === null || bestNoteId === currentNoteId) {
+    return bestNoteId;
+  }
+
+  const currentRatio = visibilityRatios.get(currentNoteId) ?? 0;
+  if (currentRatio >= minimumVisibleRatio && bestRatio - currentRatio < switchMargin) {
+    return currentNoteId;
+  }
+
+  return bestNoteId;
+}
+
 export default function ModulePanel({
   moduleId,
   refresh,
@@ -142,6 +176,10 @@ export default function ModulePanel({
   const [searchActiveFile, setSearchActiveFile] = useState<{ name: string; content: string } | null>(null);
   const [lastNote, setLastNote] = useState<string | null>(() => localStorage.getItem("obsidian-last-note"));
   const searchDialogRef = useRef<ObsidianFileDialogHandle>(null);
+  const noteElementsRef = useRef(new Map<number, HTMLDivElement>());
+  const noteVisibilityRef = useRef(new Map<number, number>());
+  const manualNoteSelectionUntilRef = useRef(0);
+  const activeNoteIdRef = useRef<number | null>(null);
 
   const allSections = useMemo(() => moduleInfo?.sections ?? [], [moduleInfo]);
   const allNotes = useMemo(() => allSections.flatMap((section) => section.notes), [allSections]);
@@ -219,6 +257,59 @@ export default function ModulePanel({
   }, [activeNoteId, filteredNotes]);
 
   useEffect(() => {
+    activeNoteIdRef.current = activeNoteId;
+  }, [activeNoteId]);
+
+  useEffect(() => {
+    const filteredNoteIds = filteredNotes.map((note) => note.id);
+    noteVisibilityRef.current = new Map(
+      filteredNoteIds.map((noteId) => [noteId, noteVisibilityRef.current.get(noteId) ?? 0]),
+    );
+
+    if (filteredNoteIds.length === 0 || typeof IntersectionObserver === "undefined") {
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          const noteId = Number((entry.target as HTMLElement).dataset.noteId);
+          if (Number.isNaN(noteId)) {
+            continue;
+          }
+
+          noteVisibilityRef.current.set(noteId, entry.isIntersecting ? entry.intersectionRatio : 0);
+        }
+
+        if (Date.now() < manualNoteSelectionUntilRef.current) {
+          return;
+        }
+
+        const nextNoteId = getMostVisibleNoteId(
+          filteredNoteIds,
+          noteVisibilityRef.current,
+          activeNoteIdRef.current,
+        );
+        if (nextNoteId !== null && nextNoteId !== activeNoteIdRef.current) {
+          setActiveNoteId(nextNoteId);
+        }
+      },
+      { threshold: [0, 0.15, 0.3, 0.45, 0.6, 0.75, 0.9, 1] },
+    );
+
+    for (const noteId of filteredNoteIds) {
+      const element = noteElementsRef.current.get(noteId);
+      if (element) {
+        observer.observe(element);
+      }
+    }
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [filteredNotes]);
+
+  useEffect(() => {
     if (!renameSectionOpen || !activeSection) return;
 
     setRenameSectionValue(activeSection.subtag.name);
@@ -255,8 +346,13 @@ export default function ModulePanel({
     }));
   };
 
-  const focusNote = (noteId: number) => {
+  const selectNoteManually = (noteId: number) => {
+    manualNoteSelectionUntilRef.current = Date.now() + 500;
     setActiveNoteId(noteId);
+  };
+
+  const focusNote = (noteId: number) => {
+    selectNoteManually(noteId);
     requestAnimationFrame(() => {
       document.getElementById(`module-note-${noteId}`)?.scrollIntoView({
         behavior: "smooth",
@@ -1034,7 +1130,15 @@ export default function ModulePanel({
                               <Box
                                 key={note.id}
                                 id={`module-note-${note.id}`}
-                                onClick={() => setActiveNoteId(note.id)}
+                                data-note-id={note.id}
+                                ref={(element: HTMLDivElement | null) => {
+                                  if (element) {
+                                    noteElementsRef.current.set(note.id, element);
+                                  } else {
+                                    noteElementsRef.current.delete(note.id);
+                                  }
+                                }}
+                                onClick={() => selectNoteManually(note.id)}
                                 sx={{ scrollMarginTop: 104 }}
                               >
                                 <Note
