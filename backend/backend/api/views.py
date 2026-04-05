@@ -4,11 +4,14 @@ import tempfile
 from difflib import SequenceMatcher
 from typing import Dict, List, Optional, Set, Tuple
 
+from django.db import transaction
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.db.models import Count, Q
-from rest_framework import viewsets
+from rest_framework import status, viewsets
+from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
 
 from .models import Grade, ModuleInfo, Note, NoteURL, PrimaryTag, Section, SubTag
 from .serializers import (
@@ -38,6 +41,70 @@ class SectionView(viewsets.ModelViewSet):
     queryset = Section.objects.all()
     serializer_class = SectionSerializer
     permission_classes = [AllowAny]
+
+    @action(detail=False, methods=["post"], url_path="reorder")
+    def reorder(self, request):
+        module_info_id = request.data.get("module_info_id")
+        section_ids = request.data.get("section_ids")
+
+        if not isinstance(module_info_id, int) or not isinstance(section_ids, list):
+            return Response(
+                {"detail": "module_info_id and section_ids are required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if len(section_ids) != len(set(section_ids)):
+            return Response(
+                {"detail": "section_ids must be unique."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        sections = list(Section.objects.filter(module_info_id=module_info_id))
+        current_ids = {section.id for section in sections}
+        if current_ids != set(section_ids):
+            return Response(
+                {"detail": "section_ids must match the module sections."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        with transaction.atomic():
+            for position, section_id in enumerate(section_ids):
+                Section.objects.filter(id=section_id).update(position=position)
+
+        return Response({"updated": len(section_ids)})
+
+    @action(detail=True, methods=["post"], url_path="reorder-notes")
+    def reorder_notes(self, request, pk=None):
+        _ = pk
+        note_ids = request.data.get("note_ids")
+        if not isinstance(note_ids, list):
+            return Response(
+                {"detail": "note_ids is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if len(note_ids) != len(set(note_ids)):
+            return Response(
+                {"detail": "note_ids must be unique."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        section = self.get_object()
+        current_note_ids = set(
+            Note.objects.filter(
+                subtags=section.subtag,
+                primary_tag=section.module_info.primary_tag,
+            ).values_list("id", flat=True)
+        )
+        if current_note_ids != set(note_ids):
+            return Response(
+                {"detail": "note_ids must match the section notes."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        section.note_order = note_ids
+        section.save(update_fields=["note_order"])
+        return Response({"updated": len(note_ids)})
 
 
 class PrimaryTagView(viewsets.ModelViewSet):  # pylint: disable=R0901

@@ -47,6 +47,11 @@ class Section(models.Model):
     subtag = models.ForeignKey(
         "SubTag", related_name="sections", on_delete=models.CASCADE, null=True
     )
+    position = models.PositiveIntegerField(default=0)
+    note_order = models.JSONField(default=list, blank=True)
+
+    class Meta:
+        ordering = ["position", "id"]
 
     def __str__(self) -> str:
         return f"{self.subtag.name if self.subtag else 'No subtag'} Section"

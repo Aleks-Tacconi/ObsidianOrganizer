@@ -1,3 +1,4 @@
+from django.db.models import Max
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 
@@ -20,4 +21,12 @@ def create_section(sender, instance: SubTag, created: bool, **kwargs):
 
     if created:
         module_info = ModuleInfo.objects.get(primary_tag=instance.parent)
-        Section.objects.create(module_info=module_info, subtag=instance)
+        max_position = (
+            module_info.sections.aggregate(max_position=Max("position"))["max_position"]
+            or -1
+        )
+        Section.objects.create(
+            module_info=module_info,
+            subtag=instance,
+            position=max_position + 1,
+        )

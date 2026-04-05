@@ -4,6 +4,27 @@ from rest_framework import serializers
 from .models import Grade, ModuleInfo, Note, NoteURL, PrimaryTag, Section, SubTag
 
 
+def _section_notes(obj: Section) -> list[Note]:
+    """Return section notes in persisted order with dated fallback."""
+
+    notes = list(
+        Note.objects.filter(
+            subtags=obj.subtag, primary_tag=obj.module_info.primary_tag
+        ).order_by("date", "id")
+    )
+    order_lookup = {note_id: index for index, note_id in enumerate(obj.note_order)}
+    fallback_index = len(order_lookup)
+
+    notes.sort(
+        key=lambda note: (
+            order_lookup.get(note.id, fallback_index),
+            note.date,
+            note.id,
+        )
+    )
+    return notes
+
+
 class NoteURLSerializer(serializers.ModelSerializer):
     class Meta:
         model = NoteURL
@@ -81,11 +102,7 @@ class SectionSerializer(serializers.ModelSerializer):
         fields = ["id", "subtag", "subtag_id", "module_info_id", "notes", "median_date"]
 
     def get_notes(self, obj):
-        notes = Note.objects.filter(
-            subtags=obj.subtag, primary_tag=obj.module_info.primary_tag
-        ).order_by("date")
-
-        return NoteSerializer(notes, many=True).data
+        return NoteSerializer(_section_notes(obj), many=True).data
 
     def get_median_date(self, obj):
         notes = Note.objects.filter(

@@ -6,6 +6,8 @@ A note-taking app for organizing an Obsidian vault with a consistent module/topi
 - One section per topic
 - Note descriptions stay compact until content actually overflows
 - Rename module categories directly from the module page
+- Reorder module categories and lecture notes with persisted drag-and-drop sorting
+- Keep the active lecture in sync with the most visible note while scrolling
 - Notes grouped by tags and still fully Obsidian-compatible (wikilinks, markdown, etc.)
 - Built-in RAG chat over your vault notes
 - Organisation tool to quickly and easily tag repositories
@@ -147,4 +149,4 @@ cd backend && poetry run python backend/manage.py test
 
 ## TODO / Upcoming Features
 
-- Rearranging modules
+- Expand module-level organisation controls further
