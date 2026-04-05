@@ -5,7 +5,72 @@ from unittest.mock import patch
 from django.test import TestCase
 from django.utils import timezone
 
-from .models import Note, PrimaryTag, SubTag
+from .models import Grade, Note, PrimaryTag, SubTag
+
+
+class GradeApiTests(TestCase):
+    def setUp(self):
+        super().setUp()
+        self.module = PrimaryTag.objects.create(name="COMP101", color="#111111")  # pylint: disable=E1101
+        self.module_info = self.module.module_info
+
+    def test_create_grade_persists_valid_weighted_grade(self):
+        response = self.client.post(
+            "/api/grades/",
+            data={
+                "name": "Midterm",
+                "percentage": 15,
+                "scored": 50,
+                "module_info_id": self.module_info.pk,
+            },
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(Grade.objects.count(), 1)  # pylint: disable=E1101
+        self.assertEqual(Grade.objects.get().name, "Midterm")  # pylint: disable=E1101
+
+    def test_create_grade_rejects_invalid_score(self):
+        response = self.client.post(
+            "/api/grades/",
+            data={
+                "name": "Midterm",
+                "percentage": 15,
+                "scored": 120,
+                "module_info_id": self.module_info.pk,
+            },
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.json()["scored"], ["Score must be between 0 and 100."]
+        )
+
+    def test_create_grade_rejects_total_weight_above_one_hundred(self):
+        Grade.objects.create(  # pylint: disable=E1101
+            module_info=self.module_info,
+            name="Coursework",
+            percentage=70,
+            scored=80,
+        )
+
+        response = self.client.post(
+            "/api/grades/",
+            data={
+                "name": "Final",
+                "percentage": 40,
+                "scored": 70,
+                "module_info_id": self.module_info.pk,
+            },
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(
+            response.json()["percentage"],
+            ["Tracked grade weights cannot exceed 100% for a module."],
+        )
 
 
 class VaultTagToolsApiTests(TestCase):
