@@ -85,6 +85,26 @@ export function useModuleNotes(moduleId: PrimaryTag, refresh: number) {
     );
   };
 
+  const updateSectionName = (sectionId: number, name: string) => {
+    setModuleInfo(
+      (prev) =>
+        prev && {
+          ...prev,
+          sections: prev.sections.map((section) => (
+            section.id === sectionId
+              ? {
+                ...section,
+                subtag: {
+                  ...section.subtag,
+                  name,
+                },
+              }
+              : section
+          )),
+        },
+    );
+  };
+
   return {
     moduleInfo,
     updateNote,
@@ -92,5 +112,6 @@ export function useModuleNotes(moduleId: PrimaryTag, refresh: number) {
     addOrReplaceNote,
     addOrReplaceGrade,
     deleteGrade,
+    updateSectionName,
   };
 }

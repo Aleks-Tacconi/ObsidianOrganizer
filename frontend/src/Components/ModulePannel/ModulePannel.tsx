@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
+  Chip,
   Alert,
   Box,
   Button,
@@ -26,8 +27,10 @@ import {
 import {
   FaBars,
   FaBookOpen,
+  FaCheck,
   FaFolder,
   FaMagnifyingGlass,
+  FaPenToSquare,
   FaPlus,
   FaRegFileLines,
   FaTrashCan,
@@ -81,7 +84,7 @@ export default function ModulePanel({
   refresh: number;
   onNotesChanged?: () => void;
 }) {
-  const { moduleInfo, updateNote, deleteNote, addOrReplaceNote, addOrReplaceGrade, deleteGrade } = useModuleNotes(
+  const { moduleInfo, updateNote, deleteNote, addOrReplaceNote, addOrReplaceGrade, deleteGrade, updateSectionName } = useModuleNotes(
     moduleId,
     refresh,
   );
@@ -98,6 +101,10 @@ export default function ModulePanel({
   const [categorySubmitting, setCategorySubmitting] = useState(false);
   const [categoryError, setCategoryError] = useState<string | null>(null);
   const [moduleActionError, setModuleActionError] = useState<string | null>(null);
+  const [renameSectionOpen, setRenameSectionOpen] = useState(false);
+  const [renameSectionValue, setRenameSectionValue] = useState("");
+  const [renameSectionError, setRenameSectionError] = useState<string | null>(null);
+  const [renameSectionSubmitting, setRenameSectionSubmitting] = useState(false);
   const [confirmCategoryDeleteOpen, setConfirmCategoryDeleteOpen] = useState(false);
   const [deletingCategory, setDeletingCategory] = useState(false);
   const [pendingCategorySubtagId, setPendingCategorySubtagId] = useState<number | null>(null);
@@ -178,6 +185,12 @@ export default function ModulePanel({
       setActiveNoteId(filteredNotes[0].id);
     }
   }, [activeNoteId, filteredNotes]);
+
+  useEffect(() => {
+    if (!renameSectionOpen || !activeSection) return;
+
+    setRenameSectionValue(activeSection.subtag.name);
+  }, [activeSection, renameSectionOpen]);
 
   const openSearchFile = (name: string) => {
     api
@@ -268,6 +281,67 @@ export default function ModulePanel({
       setModuleActionError("Failed to delete category. Please try again.");
     } finally {
       setDeletingCategory(false);
+    }
+  };
+
+  const startRenameSection = () => {
+    if (!activeSection) return;
+
+    setRenameSectionOpen(true);
+    setRenameSectionValue(activeSection.subtag.name);
+    setRenameSectionError(null);
+  };
+
+  const cancelRenameSection = () => {
+    setRenameSectionOpen(false);
+    setRenameSectionValue(activeSection?.subtag.name ?? "");
+    setRenameSectionError(null);
+  };
+
+  const handleRenameSection = async () => {
+    if (!activeSection || renameSectionSubmitting) return;
+
+    const trimmed = renameSectionValue.trim();
+    if (!trimmed) {
+      setRenameSectionError("Category name is required.");
+      return;
+    }
+
+    const duplicateName = allSections.some((section) => (
+      section.id !== activeSection.id
+      && section.subtag.name.toLowerCase() === trimmed.toLowerCase()
+    ));
+    if (duplicateName) {
+      setRenameSectionError("A category with that name already exists in this module.");
+      return;
+    }
+
+    if (trimmed === activeSection.subtag.name) {
+      setRenameSectionOpen(false);
+      setRenameSectionError(null);
+      return;
+    }
+
+    setRenameSectionSubmitting(true);
+    setRenameSectionError(null);
+    setModuleActionError(null);
+
+    try {
+      const response = await api.patch<{ id: number; name: string; parent: number }>(
+        `subtags/${activeSection.subtag.id}/`,
+        { name: trimmed },
+      );
+
+      if (!response?.data) {
+        throw new Error("Missing rename response");
+      }
+
+      updateSectionName(activeSection.id, response.data.name);
+      setRenameSectionOpen(false);
+    } catch {
+      setRenameSectionError("Failed to rename category. Please try again.");
+    } finally {
+      setRenameSectionSubmitting(false);
     }
   };
 
@@ -648,15 +722,83 @@ export default function ModulePanel({
                           alignItems={{ xs: "flex-start", md: "flex-start" }}
                           spacing={1.5}
                         >
-                          <Box>
-                            <Typography variant="h5" component="h2" sx={{ mb: 0.75, textWrap: "balance" }}>
-                              {activeSection.subtag.name}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              {filteredNotes.length} of {activeSection.notes.length} lectures visible
-                              {activeSectionQuery.trim() ? ` for "${activeSectionQuery}"` : ""}
-                            </Typography>
-                          </Box>
+                          <Stack spacing={1.25} sx={{ minWidth: 0, flex: 1 }}>
+                            {renameSectionOpen ? (
+                              <Stack spacing={1} sx={{ width: "100%", maxWidth: 360 }}>
+                                <TextField
+                                  value={renameSectionValue}
+                                  onChange={(event) => {
+                                    setRenameSectionValue(event.target.value);
+                                    if (renameSectionError) setRenameSectionError(null);
+                                  }}
+                                  autoFocus
+                                  size="small"
+                                  fullWidth
+                                  placeholder="Rename category"
+                                  disabled={renameSectionSubmitting}
+                                  error={Boolean(renameSectionError)}
+                                  helperText={renameSectionError}
+                                  onKeyDown={(event) => {
+                                    if (event.key === "Enter") {
+                                      event.preventDefault();
+                                      void handleRenameSection();
+                                    }
+
+                                    if (event.key === "Escape") {
+                                      event.preventDefault();
+                                      cancelRenameSection();
+                                    }
+                                  }}
+                                />
+                                <Stack direction="row" spacing={1}>
+                                  <Button
+                                    variant="contained"
+                                    onClick={() => void handleRenameSection()}
+                                    disabled={renameSectionSubmitting || !renameSectionValue.trim()}
+                                    startIcon={renameSectionSubmitting ? <CircularProgress size={14} color="inherit" /> : <FaCheck size={12} />}
+                                    sx={{ textTransform: "none" }}
+                                  >
+                                    {renameSectionSubmitting ? "Saving..." : "Save"}
+                                  </Button>
+                                  <Button
+                                    color="inherit"
+                                    onClick={cancelRenameSection}
+                                    disabled={renameSectionSubmitting}
+                                    sx={{ textTransform: "none" }}
+                                  >
+                                    Cancel
+                                  </Button>
+                                </Stack>
+                              </Stack>
+                            ) : (
+                              <>
+                                <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
+                                  <Typography variant="h5" component="h2" sx={{ textWrap: "balance" }}>
+                                    {activeSection.subtag.name}
+                                  </Typography>
+                                  <Chip
+                                    label="Rename"
+                                    size="small"
+                                    onClick={startRenameSection}
+                                    icon={<FaPenToSquare size={11} />}
+                                    sx={{
+                                      borderRadius: "6px",
+                                      backgroundColor: "rgba(255,255,255,0.04)",
+                                      color: "text.secondary",
+                                      "&:hover": {
+                                        backgroundColor: "rgba(255,255,255,0.06)",
+                                        color: "text.primary",
+                                      },
+                                    }}
+                                  />
+                                </Stack>
+                                <Typography variant="body2" color="text.secondary">
+                                  {filteredNotes.length} of {activeSection.notes.length} lectures visible
+                                  {activeSectionQuery.trim() ? ` for "${activeSectionQuery}"` : ""}
+                                </Typography>
+                              </>
+                            )}
+                          </Stack>
 
                           <Stack direction="row" spacing={1} alignItems="center" sx={{ minHeight: 32 }}>
                             <Typography
