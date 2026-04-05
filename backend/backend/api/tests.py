@@ -1,4 +1,5 @@
 import tempfile
+from datetime import timedelta
 from pathlib import Path
 from unittest.mock import patch
 
@@ -702,3 +703,67 @@ class PrimaryTagSidebarSummaryApiTests(TestCase):
             updated = file_path.read_text(encoding="utf-8")
             self.assertIn("ComputerAndNetworkSecurity", updated)
             self.assertIn("SecurityPoliciesandUNIXAccessControlMechanisms", updated)
+
+
+class SectionReorderingApiTests(TestCase):
+    def setUp(self):
+        super().setUp()
+        self.module = PrimaryTag.objects.create(name="COMP202", color="#123456")  # pylint: disable=E1101
+        self.module_info = self.module.module_info
+        self.first_topic = SubTag.objects.create(name="Intro", parent=self.module)  # pylint: disable=E1101
+        self.second_topic = SubTag.objects.create(name="Advanced", parent=self.module)  # pylint: disable=E1101
+        self.first_section = self.module_info.sections.get(subtag=self.first_topic)
+        self.second_section = self.module_info.sections.get(subtag=self.second_topic)
+
+    def test_section_reorder_endpoint_persists_module_section_order(self):
+        response = self.client.post(
+            "/api/sections/reorder/",
+            data={
+                "module_info_id": self.module_info.pk,
+                "section_ids": [self.second_section.id, self.first_section.id],
+            },
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        module_response = self.client.get(f"/api/module-info/{self.module_info.pk}/")
+        self.assertEqual(module_response.status_code, 200)
+        self.assertEqual(
+            [
+                section["subtag"]["name"]
+                for section in module_response.json()["sections"]
+            ],
+            ["Advanced", "Intro"],
+        )
+
+    def test_note_reorder_endpoint_persists_section_note_order(self):
+        first_note = Note.objects.create(  # pylint: disable=E1101
+            name="Lecture 1",
+            description="",
+            date=timezone.now(),
+            completed=False,
+            primary_tag=self.module,
+        )
+        second_note = Note.objects.create(  # pylint: disable=E1101
+            name="Lecture 2",
+            description="",
+            date=timezone.now() + timedelta(days=1),
+            completed=False,
+            primary_tag=self.module,
+        )
+        first_note.subtags.add(self.first_topic)
+        second_note.subtags.add(self.first_topic)
+
+        response = self.client.post(
+            f"/api/sections/{self.first_section.id}/reorder-notes/",
+            data={"note_ids": [second_note.id, first_note.id]},
+            content_type="application/json",
+        )
+
+        self.assertEqual(response.status_code, 200)
+
+        module_response = self.client.get(f"/api/module-info/{self.module_info.pk}/")
+        self.assertEqual(module_response.status_code, 200)
+        notes = module_response.json()["sections"][0]["notes"]
+        self.assertEqual([note["name"] for note in notes], ["Lecture 2", "Lecture 1"])

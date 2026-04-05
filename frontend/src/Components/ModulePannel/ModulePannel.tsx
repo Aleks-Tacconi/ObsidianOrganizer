@@ -75,6 +75,20 @@ function matchesNoteQuery(note: NoteType, query: string): boolean {
   return searchableText.includes(normalized);
 }
 
+function moveItem<T extends { id: number }>(items: readonly T[], draggedId: number, targetId: number): T[] {
+  const sourceIndex = items.findIndex((item) => item.id === draggedId);
+  const targetIndex = items.findIndex((item) => item.id === targetId);
+
+  if (sourceIndex === -1 || targetIndex === -1 || sourceIndex === targetIndex) {
+    return [...items];
+  }
+
+  const nextItems = [...items];
+  const [draggedItem] = nextItems.splice(sourceIndex, 1);
+  nextItems.splice(targetIndex, 0, draggedItem);
+  return nextItems;
+}
+
 export default function ModulePanel({
   moduleId,
   refresh,
@@ -84,7 +98,17 @@ export default function ModulePanel({
   refresh: number;
   onNotesChanged?: () => void;
 }) {
-  const { moduleInfo, updateNote, deleteNote, addOrReplaceNote, addOrReplaceGrade, deleteGrade, updateSectionName } = useModuleNotes(
+  const {
+    moduleInfo,
+    updateNote,
+    deleteNote,
+    addOrReplaceNote,
+    addOrReplaceGrade,
+    deleteGrade,
+    updateSectionName,
+    reorderSections,
+    reorderSectionNotes,
+  } = useModuleNotes(
     moduleId,
     refresh,
   );
@@ -105,6 +129,12 @@ export default function ModulePanel({
   const [renameSectionValue, setRenameSectionValue] = useState("");
   const [renameSectionError, setRenameSectionError] = useState<string | null>(null);
   const [renameSectionSubmitting, setRenameSectionSubmitting] = useState(false);
+  const [reorderingSections, setReorderingSections] = useState(false);
+  const [draggedSectionId, setDraggedSectionId] = useState<number | null>(null);
+  const [sectionDropTargetId, setSectionDropTargetId] = useState<number | null>(null);
+  const [reorderingNotes, setReorderingNotes] = useState(false);
+  const [draggedNoteId, setDraggedNoteId] = useState<number | null>(null);
+  const [noteDropTargetId, setNoteDropTargetId] = useState<number | null>(null);
   const [confirmCategoryDeleteOpen, setConfirmCategoryDeleteOpen] = useState(false);
   const [deletingCategory, setDeletingCategory] = useState(false);
   const [pendingCategorySubtagId, setPendingCategorySubtagId] = useState<number | null>(null);
@@ -174,6 +204,8 @@ export default function ModulePanel({
     () => activeSection?.notes.filter((note) => matchesNoteQuery(note, activeSectionQuery)) ?? [],
     [activeSection, activeSectionQuery],
   );
+  const canReorderSections = normalizedTreeQuery.length === 0 && !renameSectionOpen;
+  const canReorderNotes = activeSection !== null && activeSectionQuery.trim().length === 0 && !renameSectionOpen;
 
   useEffect(() => {
     if (filteredNotes.length === 0) {
@@ -342,6 +374,87 @@ export default function ModulePanel({
       setRenameSectionError("Failed to rename category. Please try again.");
     } finally {
       setRenameSectionSubmitting(false);
+    }
+  };
+
+  const resetSectionDrag = () => {
+    setDraggedSectionId(null);
+    setSectionDropTargetId(null);
+  };
+
+  const handleSectionDrop = async (targetSectionId: number) => {
+    if (!moduleInfo || !canReorderSections || draggedSectionId === null) {
+      resetSectionDrag();
+      return;
+    }
+
+    if (draggedSectionId === targetSectionId) {
+      resetSectionDrag();
+      return;
+    }
+
+    const previousSectionIds = allSections.map((section) => section.id);
+    const nextSectionIds = moveItem(allSections, draggedSectionId, targetSectionId).map((section) => section.id);
+
+    reorderSections(nextSectionIds);
+    setReorderingSections(true);
+    setModuleActionError(null);
+
+    try {
+      const response = await api.post<{ updated: number }>("sections/reorder/", {
+        module_info_id: moduleInfo.primary_tag.id,
+        section_ids: nextSectionIds,
+      });
+
+      if (!response?.data) {
+        throw new Error("Missing section reorder response");
+      }
+    } catch {
+      reorderSections(previousSectionIds);
+      setModuleActionError("Failed to reorder categories. Please try again.");
+    } finally {
+      setReorderingSections(false);
+      resetSectionDrag();
+    }
+  };
+
+  const resetNoteDrag = () => {
+    setDraggedNoteId(null);
+    setNoteDropTargetId(null);
+  };
+
+  const handleNoteDrop = async (targetNoteId: number) => {
+    if (!activeSection || !canReorderNotes || draggedNoteId === null) {
+      resetNoteDrag();
+      return;
+    }
+
+    if (draggedNoteId === targetNoteId) {
+      resetNoteDrag();
+      return;
+    }
+
+    const previousNoteIds = activeSection.notes.map((note) => note.id);
+    const nextNoteIds = moveItem(activeSection.notes, draggedNoteId, targetNoteId).map((note) => note.id);
+
+    reorderSectionNotes(activeSection.id, nextNoteIds);
+    setReorderingNotes(true);
+    setModuleActionError(null);
+
+    try {
+      const response = await api.post<{ updated: number }>(`sections/${activeSection.id}/reorder-notes/`, {
+        note_ids: nextNoteIds,
+      });
+
+      if (!response?.data) {
+        throw new Error("Missing note reorder response");
+      }
+    } catch {
+      reorderSectionNotes(activeSection.id, previousNoteIds);
+      setModuleActionError("Failed to reorder lectures. Please try again.");
+    } finally {
+      setReorderingNotes(false);
+      resetNoteDrag();
     }
   };
 
@@ -542,6 +655,12 @@ export default function ModulePanel({
                     }}
                   />
 
+                  {normalizedTreeQuery.length > 0 && (
+                    <Typography variant="caption" color="text.secondary">
+                      Clear the section filter to reorder categories.
+                    </Typography>
+                  )}
+
                   {visibleSections.length === 0 ? (
                     <Stack spacing={1} alignItems="flex-start" sx={{ py: 3 }}>
                       <Typography variant="body2" color="text.secondary">
@@ -569,13 +688,37 @@ export default function ModulePanel({
                             <ListItemButton
                               selected={sectionIsActive}
                               onClick={() => setActiveSectionId(section.id)}
+                              draggable={canReorderSections && !reorderingSections}
+                              onDragStart={(event) => {
+                                if (!canReorderSections || reorderingSections) return;
+                                event.dataTransfer.effectAllowed = "move";
+                                setDraggedSectionId(section.id);
+                                setSectionDropTargetId(section.id);
+                              }}
+                              onDragOver={(event) => {
+                                if (!canReorderSections || draggedSectionId === null) return;
+                                event.preventDefault();
+                                event.dataTransfer.dropEffect = "move";
+                                if (sectionDropTargetId !== section.id) {
+                                  setSectionDropTargetId(section.id);
+                                }
+                              }}
+                              onDrop={(event) => {
+                                event.preventDefault();
+                                void handleSectionDrop(section.id);
+                              }}
+                              onDragEnd={resetSectionDrag}
                               sx={{
                                 borderRadius: "6px",
                                 alignItems: "center",
                                 px: 1.25,
                                 py: 1.125,
                                 gap: 1,
+                                opacity: draggedSectionId === section.id ? 0.55 : 1,
                                 transition: "background-color 150ms ease-out",
+                                border: sectionDropTargetId === section.id && draggedSectionId !== section.id
+                                  ? "1px dashed rgba(255,255,255,0.18)"
+                                  : "1px solid transparent",
                                 "&:hover": {
                                   backgroundColor: "rgba(255,255,255,0.03)",
                                 },
@@ -600,6 +743,11 @@ export default function ModulePanel({
                                 }}
                                 secondaryTypographyProps={{ fontSize: "0.75rem", color: "text.secondary" }}
                               />
+                              {canReorderSections && (
+                                <Box sx={{ color: "text.secondary", display: "flex", alignItems: "center" }}>
+                                  <FaBars size={11} />
+                                </Box>
+                              )}
                             </ListItemButton>
 
                             <AnimatePresence initial={false}>
@@ -630,6 +778,26 @@ export default function ModulePanel({
                                         key={note.id}
                                         selected={note.id === activeNoteId}
                                         onClick={() => focusNote(note.id)}
+                                        draggable={canReorderNotes && !reorderingNotes}
+                                        onDragStart={(event) => {
+                                          if (!canReorderNotes || reorderingNotes) return;
+                                          event.dataTransfer.effectAllowed = "move";
+                                          setDraggedNoteId(note.id);
+                                          setNoteDropTargetId(note.id);
+                                        }}
+                                        onDragOver={(event) => {
+                                          if (!canReorderNotes || draggedNoteId === null) return;
+                                          event.preventDefault();
+                                          event.dataTransfer.dropEffect = "move";
+                                          if (noteDropTargetId !== note.id) {
+                                            setNoteDropTargetId(note.id);
+                                          }
+                                        }}
+                                        onDrop={(event) => {
+                                          event.preventDefault();
+                                          void handleNoteDrop(note.id);
+                                        }}
+                                        onDragEnd={resetNoteDrag}
                                         sx={{
                                           minHeight: 34,
                                           borderRadius: "6px",
@@ -637,7 +805,11 @@ export default function ModulePanel({
                                           py: 0.625,
                                           position: "relative",
                                           color: note.id === activeNoteId ? "text.primary" : "text.secondary",
+                                          opacity: draggedNoteId === note.id ? 0.55 : 1,
                                           transition: "background-color 150ms ease-out, color 150ms ease-out",
+                                          border: noteDropTargetId === note.id && draggedNoteId !== note.id
+                                            ? "1px dashed rgba(255,255,255,0.18)"
+                                            : "1px solid transparent",
                                           "&:hover": {
                                             backgroundColor: "rgba(255,255,255,0.03)",
                                             color: "text.primary",
@@ -660,23 +832,28 @@ export default function ModulePanel({
                                             backgroundColor: "rgba(255,255,255,0.05)",
                                           },
                                         }}
-                                      >
-                                        <ListItemIcon sx={{ minWidth: 22, color: "inherit" }}>
-                                          <FaRegFileLines size={12} />
-                                        </ListItemIcon>
-                                        <ListItemText
+                                        >
+                                          <ListItemIcon sx={{ minWidth: 22, color: "inherit" }}>
+                                            <FaRegFileLines size={12} />
+                                          </ListItemIcon>
+                                          <ListItemText
                                           primary={note.name}
                                           primaryTypographyProps={{
                                             fontSize: "0.8125rem",
                                             fontWeight: note.id === activeNoteId ? 500 : 400,
                                             lineHeight: 1.35,
                                             color: "inherit",
-                                            sx: { overflowWrap: "anywhere" },
-                                          }}
-                                        />
-                                      </ListItemButton>
-                                    ))}
-                                  </List>
+                                              sx: { overflowWrap: "anywhere" },
+                                            }}
+                                          />
+                                          {canReorderNotes && (
+                                            <Box sx={{ display: "flex", alignItems: "center", color: "inherit" }}>
+                                              <FaBars size={10} />
+                                            </Box>
+                                          )}
+                                        </ListItemButton>
+                                      ))}
+                                    </List>
                                 </Box>
                               )}
                             </AnimatePresence>
@@ -796,6 +973,11 @@ export default function ModulePanel({
                                   {filteredNotes.length} of {activeSection.notes.length} lectures visible
                                   {activeSectionQuery.trim() ? ` for "${activeSectionQuery}"` : ""}
                                 </Typography>
+                                {!canReorderNotes && activeSectionQuery.trim() && (
+                                  <Typography variant="caption" color="text.secondary">
+                                    Clear the section search to reorder lectures.
+                                  </Typography>
+                                )}
                               </>
                             )}
                           </Stack>
