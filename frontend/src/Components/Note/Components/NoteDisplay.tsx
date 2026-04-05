@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import type { Note } from "../../../Utils/types/api.schemas";
 import { Box, Button, Divider, Link, Stack, Typography } from "@mui/material";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FaChevronDown, FaLink } from "react-icons/fa6";
 import ReactMarkdown from "react-markdown";
 
@@ -12,8 +12,6 @@ type NoteDisplayProps = {
   note: Note;
 };
 
-const DESCRIPTION_PREVIEW_LENGTH = 220;
-const DESCRIPTION_PREVIEW_LINES = 3;
 const DESCRIPTION_COLLAPSED_MAX_HEIGHT = 288;
 
 function startsWithMarkdownHeading(description: string): boolean {
@@ -22,16 +20,38 @@ function startsWithMarkdownHeading(description: string): boolean {
 
 export default function NoteDisplay({ note }: NoteDisplayProps) {
   const [expanded, setExpanded] = useState(false);
+  const [descriptionHeight, setDescriptionHeight] = useState(0);
+  const descriptionContentRef = useRef<HTMLDivElement | null>(null);
   const titleLayout = getNoteTitleLayout({ completed: Boolean(note.completed) });
   const showsLeadingHeading = note.description ? startsWithMarkdownHeading(note.description) : false;
   const showDescriptionLabel = Boolean(note.description && !showsLeadingHeading);
-  const descriptionLineCount = note.description
-    ? note.description.split(/\r?\n/).filter((line) => line.trim()).length
-    : 0;
-  const isDescriptionCollapsible = Boolean(
-    note.description
-    && (note.description.length > DESCRIPTION_PREVIEW_LENGTH || descriptionLineCount > DESCRIPTION_PREVIEW_LINES),
-  );
+  const isDescriptionCollapsible = descriptionHeight > DESCRIPTION_COLLAPSED_MAX_HEIGHT;
+
+  useEffect(() => {
+    if (!note.description) {
+      setDescriptionHeight(0);
+      return;
+    }
+
+    const measureDescriptionHeight = () => {
+      setDescriptionHeight(descriptionContentRef.current?.scrollHeight ?? 0);
+    };
+
+    measureDescriptionHeight();
+
+    if (typeof ResizeObserver === "undefined" || !descriptionContentRef.current) {
+      return undefined;
+    }
+
+    const observer = new ResizeObserver(() => {
+      measureDescriptionHeight();
+    });
+    observer.observe(descriptionContentRef.current);
+
+    return () => {
+      observer.disconnect();
+    };
+  }, [note.description]);
 
   return (
     <Box>
@@ -82,73 +102,74 @@ export default function NoteDisplay({ note }: NoteDisplayProps) {
             }}
             transition={motionTransitions.base}
           >
-            <ReactMarkdown
-              components={{
-                h1: ({ children }) => (
-                  <Typography
-                    component="h4"
-                    sx={{
-                      color: "text.primary",
-                      mb: 1.5,
-                      fontSize: "1.125rem",
-                      fontWeight: 600,
-                      lineHeight: 1.35,
-                      textWrap: "balance",
-                    }}
-                  >
-                    {children}
-                  </Typography>
-                ),
-                h2: ({ children }) => (
-                  <Typography
-                    component="h5"
-                    sx={{
-                      color: "text.primary",
-                      mb: 1.5,
-                      fontSize: "1rem",
-                      fontWeight: 600,
-                      lineHeight: 1.4,
-                      textWrap: "balance",
-                    }}
-                  >
-                    {children}
-                  </Typography>
-                ),
-                h3: ({ children }) => (
-                  <Typography
-                    component="h6"
-                    sx={{
-                      color: "text.primary",
-                      mb: 1,
-                      fontSize: "0.9375rem",
-                      fontWeight: 600,
-                      lineHeight: 1.45,
-                    }}
-                  >
-                    {children}
-                  </Typography>
-                ),
-                p: ({ children }) => (
-                  <Typography variant="body2" component="div" sx={{ mb: 1.5, lineHeight: 1.7 }}>
-                    {children}
-                  </Typography>
-                ),
-                ul: ({ children }) => (
-                  <ul style={{ paddingLeft: "1.4em", margin: "0 0 12px" }}>{children}</ul>
-                ),
-                ol: ({ children }) => (
-                  <ol style={{ paddingLeft: "1.4em", margin: "0 0 12px" }}>{children}</ol>
-                ),
-                li: ({ children }) => (
-                  <li style={{ marginBottom: "4px" }}>
-                    <Typography variant="body2" component="span">{children}</Typography>
-                  </li>
-                ),
-              }}
-            >
-              {note.description}
-            </ReactMarkdown>
-
+            <Box ref={descriptionContentRef}>
+              <ReactMarkdown
+                components={{
+                  h1: ({ children }) => (
+                    <Typography
+                      component="h4"
+                      sx={{
+                        color: "text.primary",
+                        mb: 1.5,
+                        fontSize: "1.125rem",
+                        fontWeight: 600,
+                        lineHeight: 1.35,
+                        textWrap: "balance",
+                      }}
+                    >
+                      {children}
+                    </Typography>
+                  ),
+                  h2: ({ children }) => (
+                    <Typography
+                      component="h5"
+                      sx={{
+                        color: "text.primary",
+                        mb: 1.5,
+                        fontSize: "1rem",
+                        fontWeight: 600,
+                        lineHeight: 1.4,
+                        textWrap: "balance",
+                      }}
+                    >
+                      {children}
+                    </Typography>
+                  ),
+                  h3: ({ children }) => (
+                    <Typography
+                      component="h6"
+                      sx={{
+                        color: "text.primary",
+                        mb: 1,
+                        fontSize: "0.9375rem",
+                        fontWeight: 600,
+                        lineHeight: 1.45,
+                      }}
+                    >
+                      {children}
+                    </Typography>
+                  ),
+                  p: ({ children }) => (
+                    <Typography variant="body2" component="div" sx={{ mb: 1.5, lineHeight: 1.7 }}>
+                      {children}
+                    </Typography>
+                  ),
+                  ul: ({ children }) => (
+                    <ul style={{ paddingLeft: "1.4em", margin: "0 0 12px" }}>{children}</ul>
+                  ),
+                  ol: ({ children }) => (
+                    <ol style={{ paddingLeft: "1.4em", margin: "0 0 12px" }}>{children}</ol>
+                  ),
+                  li: ({ children }) => (
+                    <li style={{ marginBottom: "4px" }}>
+                      <Typography variant="body2" component="span">{children}</Typography>
+                    </li>
+                  ),
+                }}
+              >
+                {note.description}
+              </ReactMarkdown>
+            </Box>
           </Box>
 
           {isDescriptionCollapsible && (
