@@ -105,6 +105,11 @@ const put = async <T>(path: string, data: object): Promise<AxiosResponse<T> | un
     return _helper(prefix, async () => axios.put<T>(APIUrl + path, data));
 };
 
+const patch = async <T>(path: string, data: object): Promise<AxiosResponse<T> | undefined> => {
+    const prefix = "Error in axios patch request: ";
+    return _helper(prefix, async () => axios.patch<T>(APIUrl + path, data));
+};
+
 const del = async <T>(path: string): Promise<AxiosResponse<T> | undefined> => {
     const prefix = "Error in axios delete request: ";
     return _helper(prefix, async () => axios.delete<T>(APIUrl + path));
@@ -224,4 +229,4 @@ const organisation = {
     },
 };
 
-export default { post, get, put, del, organisation, rag };
+export default { post, get, put, patch, del, organisation, rag };
