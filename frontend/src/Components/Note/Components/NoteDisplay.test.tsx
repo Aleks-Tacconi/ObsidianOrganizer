@@ -1,11 +1,49 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
-import { describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 
 import type { Note } from "../../../Utils/types/api.schemas";
 import NoteDisplay from "./NoteDisplay";
 
 const theme = createTheme();
+
+const originalScrollHeight = Object.getOwnPropertyDescriptor(HTMLElement.prototype, "scrollHeight");
+
+class ResizeObserverMock {
+  observe() {}
+
+  disconnect() {}
+}
+
+beforeAll(() => {
+  vi.stubGlobal("ResizeObserver", ResizeObserverMock);
+  Object.defineProperty(HTMLElement.prototype, "scrollHeight", {
+    configurable: true,
+    get() {
+      const text = this.textContent ?? "";
+      if (text.includes("Line 4")) {
+        return 360;
+      }
+
+      if (text.includes("Changing view of software engineering")) {
+        return 180;
+      }
+
+      return 120;
+    },
+  });
+});
+
+afterAll(() => {
+  vi.unstubAllGlobals();
+
+  if (originalScrollHeight) {
+    Object.defineProperty(HTMLElement.prototype, "scrollHeight", originalScrollHeight);
+    return;
+  }
+
+  Reflect.deleteProperty(HTMLElement.prototype, "scrollHeight");
+});
 
 const makeNote = (overrides: Partial<Note> = {}): Note => ({
   completed: false,
@@ -86,7 +124,7 @@ describe("NoteDisplay", () => {
     expect(screen.getByRole("heading", { level: 4, name: "Web basics" })).toBeInTheDocument();
   });
 
-  it("expands long descriptions on demand", () => {
+  it("expands long descriptions on demand", async () => {
     const longDescription = Array.from({ length: 4 }, (_, index) => `Line ${index + 1}`).join("\n\n");
 
     render(
@@ -95,6 +133,10 @@ describe("NoteDisplay", () => {
       </ThemeProvider>,
     );
 
+    await waitFor(() => {
+      expect(screen.getByRole("button", { name: "Show more" })).toBeInTheDocument();
+    });
+
     const toggle = screen.getByRole("button", { name: "Show more" });
     expect(toggle).toHaveAttribute("aria-expanded", "false");
 
@@ -102,6 +144,21 @@ describe("NoteDisplay", () => {
 
     expect(screen.getByRole("button", { name: "Show less" })).toHaveAttribute("aria-expanded", "true");
     expect(screen.getByText("Line 4")).toBeInTheDocument();
+  });
+
+  it("keeps short markdown list descriptions fully expanded without a toggle", () => {
+    render(
+      <ThemeProvider theme={theme}>
+        <NoteDisplay
+          note={makeNote({
+            description: "Looked at:\n\n- What is software engineering\n  - Changing view of software engineering: Traditional vs Agile\n\n- What is agile and the agile manifesto",
+          })}
+        />
+      </ThemeProvider>,
+    );
+
+    expect(screen.queryByRole("button", { name: "Show more" })).not.toBeInTheDocument();
+    expect(screen.getByText("What is agile and the agile manifesto")).toBeInTheDocument();
   });
 
   it("renders related resources when note urls are present", () => {

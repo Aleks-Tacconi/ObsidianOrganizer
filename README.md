@@ -4,6 +4,7 @@ A note-taking app for organizing an Obsidian vault with a consistent module/topi
 
 - One web page per module
 - One section per topic
+- Note descriptions stay compact until content actually overflows
 - Notes grouped by tags and still fully Obsidian-compatible (wikilinks, markdown, etc.)
 - Built-in RAG chat over your vault notes
 - Organisation tool to quickly and easily tag repositories
