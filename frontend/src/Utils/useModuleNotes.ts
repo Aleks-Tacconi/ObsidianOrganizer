@@ -105,6 +105,39 @@ export function useModuleNotes(moduleId: PrimaryTag, refresh: number) {
     );
   };
 
+  const reorderSections = (sectionIds: number[]) => {
+    setModuleInfo(
+      (prev) =>
+        prev && {
+          ...prev,
+          sections: sectionIds
+            .map((sectionId) => prev.sections.find((section) => section.id === sectionId))
+            .filter((section): section is RuntimeSection => section !== undefined),
+        },
+    );
+  };
+
+  const reorderSectionNotes = (sectionId: number, noteIds: number[]) => {
+    setModuleInfo(
+      (prev) =>
+        prev && {
+          ...prev,
+          sections: prev.sections.map((section) => {
+            if (section.id !== sectionId) {
+              return section;
+            }
+
+            return {
+              ...section,
+              notes: noteIds
+                .map((noteId) => section.notes.find((note) => note.id === noteId))
+                .filter((note): note is NoteType => note !== undefined),
+            };
+          }),
+        },
+    );
+  };
+
   return {
     moduleInfo,
     updateNote,
@@ -113,5 +146,7 @@ export function useModuleNotes(moduleId: PrimaryTag, refresh: number) {
     addOrReplaceGrade,
     deleteGrade,
     updateSectionName,
+    reorderSections,
+    reorderSectionNotes,
   };
 }
