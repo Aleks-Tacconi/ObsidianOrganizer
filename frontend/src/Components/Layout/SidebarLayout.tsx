@@ -149,7 +149,7 @@ export default function SidebarLayout({
               direction="row"
               spacing={1.25}
               alignItems="center"
-              sx={{ justifySelf: "end", gridColumn: { xs: "1 / -1", md: "auto" }, flexWrap: "wrap" }}
+              sx={{ justifySelf: "end", justifyContent: "flex-end", gridColumn: { xs: "1 / -1", md: "auto" }, flexWrap: "wrap" }}
             >
               {topBarLink({
                 label: "Ask Vault",

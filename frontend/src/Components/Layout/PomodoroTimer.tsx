@@ -107,7 +107,6 @@ function playCompletionBeep(audioContextRef: MutableRefObject<AudioContext | nul
 export default function PomodoroTimer() {
   const [timerState, setTimerState] = useState<TimerState>(() => loadStoredState());
   const audioContextRef = useRef<AudioContext | null>(null);
-  const phaseLabel = timerState.phase === "work" ? "Focus" : "Break";
   const timerDisplay = useMemo(() => formatTime(timerState.remainingSeconds), [timerState.remainingSeconds]);
 
   useEffect(() => {
@@ -191,31 +190,59 @@ export default function PomodoroTimer() {
     setTimerState(createTimerState(timerState.phase, false, getPhaseDuration(timerState.phase)));
   };
 
+  const cycleTimerLength = () => {
+    setTimerState((currentState) => {
+      const nextPhase = getNextPhase(currentState.phase);
+      return createTimerState(nextPhase, false, getPhaseDuration(nextPhase));
+    });
+  };
+
   return (
     <Box
       sx={{
         justifySelf: "center",
-        minWidth: { xs: "auto", md: 220 },
+        display: "flex",
+        justifyContent: "center",
       }}
     >
       <Stack
         direction="row"
-        spacing={1}
+        spacing={0.25}
         alignItems="center"
         sx={{
-          px: 1.25,
+          px: 0.75,
           py: 0.5,
           borderRadius: "6px",
           border: "1px solid rgba(255,255,255,0.07)",
           backgroundColor: "#141414",
         }}
       >
-        <Box sx={{ minWidth: { xs: 64, sm: 72 } }}>
-          <Typography variant="caption" color="text.secondary" sx={{ display: "block", lineHeight: 1.1 }}>
-            Pomodoro
-          </Typography>
+        <Box
+          component="button"
+          onClick={cycleTimerLength}
+          sx={{
+            border: 0,
+            backgroundColor: "transparent",
+            color: "text.primary",
+            cursor: "pointer",
+            borderRadius: "6px",
+            px: 1,
+            py: 0.5,
+            minWidth: 72,
+            transition: "background-color 150ms ease-out, color 150ms ease-out",
+            "&:hover": {
+              backgroundColor: "rgba(255,255,255,0.04)",
+            },
+            "&:focus-visible": {
+              outline: "2px solid #e0e0e0",
+              outlineOffset: 2,
+            },
+          }}
+          aria-label="Cycle pomodoro timer length"
+          title="Cycle between 25 and 5 minutes"
+        >
           <Typography variant="body2" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
-            {phaseLabel} {timerDisplay}
+            {timerDisplay}
           </Typography>
         </Box>
 
