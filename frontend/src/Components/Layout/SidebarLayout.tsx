@@ -4,6 +4,7 @@ import { Box, Drawer, Stack, Tooltip, Typography } from "@mui/material";
 import { FaBars, FaRegFileLines, FaTableColumns } from "react-icons/fa6";
 import { useLocation, useNavigate } from "react-router-dom";
 
+import PomodoroTimer from "./PomodoroTimer";
 import TagList from "../TagList/TagList";
 import type { PrimaryTag } from "../../Utils/types/api.schemas";
 
@@ -127,14 +128,29 @@ export default function SidebarLayout({
             py: 1.5,
           }}
         >
-          <Stack direction="row" justifyContent="space-between" alignItems="center" spacing={2}>
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: { xs: "auto 1fr", md: "1fr auto 1fr" },
+              alignItems: "center",
+              columnGap: 2,
+              rowGap: 1.5,
+            }}
+          >
             <Tooltip title={open ? "Close modules" : "Open modules"}>
-              <Box>
+              <Box sx={{ justifySelf: "start" }}>
                 {modulesTrigger}
               </Box>
             </Tooltip>
 
-            <Stack direction="row" spacing={1.25} alignItems="center">
+            <PomodoroTimer />
+
+            <Stack
+              direction="row"
+              spacing={1.25}
+              alignItems="center"
+              sx={{ justifySelf: "end", justifyContent: "flex-end", gridColumn: { xs: "1 / -1", md: "auto" }, flexWrap: "wrap" }}
+            >
               {topBarLink({
                 label: "Ask Vault",
                 icon: <FaRegFileLines size={14} />,
@@ -148,7 +164,7 @@ export default function SidebarLayout({
                 onClick: () => navigate("/organization-tool"),
               })}
             </Stack>
-          </Stack>
+          </Box>
         </Box>
       </Box>
 
