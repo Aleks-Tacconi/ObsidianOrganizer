@@ -96,6 +96,7 @@ export default function Grades({
   onSaveGrade,
   onDeleteGrade,
 }: Props) {
+  const [areGradesVisible, setAreGradesVisible] = useState(false);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingGrade, setEditingGrade] = useState<RuntimeGrade | null>(null);
   const [confirmDeleteGrade, setConfirmDeleteGrade] = useState<RuntimeGrade | null>(null);
@@ -205,16 +206,28 @@ export default function Grades({
           </Typography>
         </Stack>
 
-        <Button
-          variant="outlined"
-          color="inherit"
-          size="small"
-          onClick={openCreateDialog}
-          startIcon={<FaPlus size={12} />}
-          sx={{ textTransform: "none", flexShrink: 0 }}
-        >
-          Add grade
-        </Button>
+        <Stack direction="row" spacing={1} sx={{ flexShrink: 0 }}>
+          <Button
+            variant="outlined"
+            color="inherit"
+            size="small"
+            onClick={() => setAreGradesVisible((previous) => !previous)}
+            sx={{ textTransform: "none" }}
+          >
+            {areGradesVisible ? "Hide grades" : "Show grades"}
+          </Button>
+
+          <Button
+            variant="outlined"
+            color="inherit"
+            size="small"
+            onClick={openCreateDialog}
+            startIcon={<FaPlus size={12} />}
+            sx={{ textTransform: "none" }}
+          >
+            Add grade
+          </Button>
+        </Stack>
       </Stack>
 
       {actionError && (
@@ -247,9 +260,11 @@ export default function Grades({
                   <Typography variant="body2" color="text.primary">
                     {grade.name}
                   </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontVariantNumeric: "tabular-nums" }}>
-                    {grade.percentage.toFixed(1)}% weight · {grade.scored.toFixed(1)}% score · {contribution.toFixed(1)}% earned
-                  </Typography>
+                  {areGradesVisible && (
+                    <Typography variant="body2" color="text.secondary" sx={{ fontVariantNumeric: "tabular-nums" }}>
+                      {grade.percentage.toFixed(1)}% weight · {grade.scored.toFixed(1)}% score · {contribution.toFixed(1)}% earned
+                    </Typography>
+                  )}
                 </Box>
 
                 <Stack direction="row" spacing={0.5} alignItems="center">
@@ -287,7 +302,9 @@ export default function Grades({
 
       <Box
         role="img"
-        aria-label={`Grade progress: ${gradeProgress.completed.toFixed(1)} percent completed, ${gradeProgress.missed.toFixed(1)} percent missed, ${na.toFixed(1)} percent not applicable`}
+        aria-label={areGradesVisible
+          ? `Grade progress: ${gradeProgress.completed.toFixed(1)} percent completed, ${gradeProgress.missed.toFixed(1)} percent missed, ${na.toFixed(1)} percent not applicable`
+          : "Grade progress bar"}
         sx={{
           display: "flex",
           width: "100%",
@@ -308,21 +325,23 @@ export default function Grades({
         ))}
       </Box>
 
-      <Stack direction={{ xs: "column", sm: "row" }} spacing={1} sx={{ mt: 1 }}>
-        <Typography variant="caption" color="text.secondary">
-          {gradeProgress.completed.toFixed(1)}% completed
-        </Typography>
-        <Typography variant="caption" color="text.secondary">
-          {gradeProgress.missed.toFixed(1)}% missed
-        </Typography>
-        <Typography variant="caption" color="text.secondary">
-          {na.toFixed(1)}% N/A
-        </Typography>
-        <Box sx={{ flex: 1 }} />
-        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
-          {weightedAverage.toFixed(1)}% average
-        </Typography>
-      </Stack>
+      {areGradesVisible && (
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={1} sx={{ mt: 1 }}>
+          <Typography variant="caption" color="text.secondary">
+            {gradeProgress.completed.toFixed(1)}% completed
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            {gradeProgress.missed.toFixed(1)}% missed
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            {na.toFixed(1)}% N/A
+          </Typography>
+          <Box sx={{ flex: 1 }} />
+          <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
+            {weightedAverage.toFixed(1)}% average
+          </Typography>
+        </Stack>
+      )}
 
       {hasOverflow && (
         <Typography variant="caption" color="warning.main" sx={{ mt: 1, display: "block" }}>
