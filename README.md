@@ -8,6 +8,7 @@ A note-taking app for organizing an Obsidian vault with a consistent module/topi
 - Rename module categories directly from the module page
 - Reorder module categories and lecture notes with persisted drag-and-drop sorting
 - Keep the active lecture in sync with the most visible note while scrolling
+- Module grade bars stay visible while numeric grade values can be toggled on demand
 - Notes grouped by tags and still fully Obsidian-compatible (wikilinks, markdown, etc.)
 - Built-in RAG chat over your vault notes
 - Organisation tool to quickly and easily tag repositories
