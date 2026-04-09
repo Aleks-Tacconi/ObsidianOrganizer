@@ -122,7 +122,6 @@ export default function SidebarLayout({
         <Box
           sx={{
             width: "100%",
-            maxWidth: contentMaxWidth,
             mx: "auto",
             px: { xs: 2, sm: 4 },
             py: 1.5,
