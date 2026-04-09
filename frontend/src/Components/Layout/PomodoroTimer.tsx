@@ -1,10 +1,14 @@
 import { useEffect, useMemo, useRef, useState, type MutableRefObject } from "react";
 import { Box, IconButton, Stack, Tooltip, Typography } from "@mui/material";
-import { FaPause, FaPlay, FaRotateLeft } from "react-icons/fa6";
+import { FaPause, FaPlay, FaRotateLeft, FaStop } from "react-icons/fa6";
 
 const WORK_DURATION_SECONDS = 25 * 60;
 const BREAK_DURATION_SECONDS = 5 * 60;
 const STORAGE_KEY = "obsidian-pomodoro-timer";
+const COMPLETION_BEEP_COUNT = 5;
+const COMPLETION_BEEP_INTERVAL_SECONDS = 0.24;
+const COMPLETION_BEEP_DURATION_SECONDS = 0.12;
+const COMPLETION_BEEP_REPEAT_MS = 1800;
 
 type PomodoroPhase = "work" | "break";
 
@@ -87,31 +91,83 @@ async function resumeAudioContext(audioContextRef: MutableRefObject<AudioContext
   }
 }
 
+async function requestNotificationPermission(): Promise<void> {
+  if (!("Notification" in window) || Notification.permission !== "default") {
+    return;
+  }
+
+  try {
+    await Notification.requestPermission();
+  } catch (error) {
+    console.error("Unable to request pomodoro notification permission", error);
+  }
+}
+
 function playCompletionBeep(audioContextRef: MutableRefObject<AudioContext | null>): void {
   const audioContext = audioContextRef.current ?? new AudioContext();
   audioContextRef.current = audioContext;
 
-  const oscillator = audioContext.createOscillator();
-  const gainNode = audioContext.createGain();
-  oscillator.type = "sine";
-  oscillator.frequency.setValueAtTime(880, audioContext.currentTime);
-  oscillator.connect(gainNode);
-  gainNode.connect(audioContext.destination);
-  gainNode.gain.setValueAtTime(0.0001, audioContext.currentTime);
-  gainNode.gain.exponentialRampToValueAtTime(0.08, audioContext.currentTime + 0.01);
-  gainNode.gain.exponentialRampToValueAtTime(0.0001, audioContext.currentTime + 0.35);
-  oscillator.start(audioContext.currentTime);
-  oscillator.stop(audioContext.currentTime + 0.35);
+  for (let index = 0; index < COMPLETION_BEEP_COUNT; index += 1) {
+    const startTime = audioContext.currentTime + index * COMPLETION_BEEP_INTERVAL_SECONDS;
+    const stopTime = startTime + COMPLETION_BEEP_DURATION_SECONDS;
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+
+    oscillator.type = "square";
+    oscillator.frequency.setValueAtTime(1046, startTime);
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    gainNode.gain.setValueAtTime(0.0001, startTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.12, startTime + 0.01);
+    gainNode.gain.exponentialRampToValueAtTime(0.0001, stopTime);
+    oscillator.start(startTime);
+    oscillator.stop(stopTime);
+  }
+}
+
+function sendCompletionNotification(phase: PomodoroPhase): void {
+  if (!("Notification" in window) || Notification.permission !== "granted") {
+    return;
+  }
+
+  const notificationCopy = phase === "work"
+    ? { title: "Pomodoro complete", body: "Time for a break." }
+    : { title: "Break complete", body: "Time to get back to work." };
+
+  try {
+    new Notification(notificationCopy.title, { body: notificationCopy.body });
+  } catch (error) {
+    console.error("Unable to send pomodoro notification", error);
+  }
 }
 
 export default function PomodoroTimer() {
   const [timerState, setTimerState] = useState<TimerState>(() => loadStoredState());
+  const [isAlarmActive, setIsAlarmActive] = useState(false);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const alarmIntervalRef = useRef<number | null>(null);
   const timerDisplay = useMemo(() => formatTime(timerState.remainingSeconds), [timerState.remainingSeconds]);
+
+  const stopAlarm = () => {
+    if (alarmIntervalRef.current !== null) {
+      window.clearInterval(alarmIntervalRef.current);
+      alarmIntervalRef.current = null;
+    }
+
+    setIsAlarmActive(false);
+  };
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(timerState));
   }, [timerState]);
+
+  useEffect(() => {
+    return () => {
+      if (alarmIntervalRef.current !== null) {
+        window.clearInterval(alarmIntervalRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!timerState.isRunning || timerState.endTime === null) {
@@ -131,6 +187,7 @@ export default function PomodoroTimer() {
       }
 
       window.clearInterval(intervalId);
+      const completedPhase = timerState.phase;
       const nextPhase = getNextPhase(timerState.phase);
       const nextDuration = getPhaseDuration(nextPhase);
 
@@ -141,10 +198,28 @@ export default function PomodoroTimer() {
         endTime: Date.now() + nextDuration * 1000,
       });
 
-      try {
-        playCompletionBeep(audioContextRef);
-      } catch (error) {
-        console.error("Unable to play pomodoro timer beep", error);
+      if (completedPhase === "work") {
+        if (alarmIntervalRef.current !== null) {
+          window.clearInterval(alarmIntervalRef.current);
+        }
+
+        setIsAlarmActive(true);
+
+        try {
+          playCompletionBeep(audioContextRef);
+        } catch (error) {
+          console.error("Unable to play pomodoro timer beep", error);
+        }
+
+        alarmIntervalRef.current = window.setInterval(() => {
+          try {
+            playCompletionBeep(audioContextRef);
+          } catch (error) {
+            console.error("Unable to play pomodoro timer beep", error);
+          }
+        }, COMPLETION_BEEP_REPEAT_MS);
+
+        sendCompletionNotification(completedPhase);
       }
     }, 250);
 
@@ -153,9 +228,12 @@ export default function PomodoroTimer() {
 
   const startTimer = async () => {
     try {
-      await resumeAudioContext(audioContextRef);
+      await Promise.all([
+        resumeAudioContext(audioContextRef),
+        requestNotificationPermission(),
+      ]);
     } catch (error) {
-      console.error("Unable to prepare pomodoro timer audio", error);
+      console.error("Unable to prepare pomodoro timer", error);
     }
 
     setTimerState((currentState) => {
@@ -247,6 +325,13 @@ export default function PomodoroTimer() {
         </Box>
 
         <Stack direction="row" spacing={0.25} alignItems="center">
+          {isAlarmActive ? (
+            <Tooltip title="Stop alarm">
+              <IconButton size="small" onClick={stopAlarm} aria-label="Stop pomodoro alarm">
+                <FaStop size={12} />
+              </IconButton>
+            </Tooltip>
+          ) : null}
           <Tooltip title={timerState.isRunning ? "Pause timer" : "Start timer"}>
             <IconButton
               size="small"
