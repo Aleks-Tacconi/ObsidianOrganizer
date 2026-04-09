@@ -15,7 +15,7 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { FaPenToSquare, FaPlus, FaTrashCan, FaTrophy } from "react-icons/fa6";
+import { FaPenToSquare, FaTrashCan, FaTrophy } from "react-icons/fa6";
 
 import ConfirmDialogue from "../../ConfirmDialogue/ConfirmDialogue";
 import { motionTransitions } from "../../../Utils/motion";
@@ -227,7 +227,6 @@ export default function Grades({
             color="inherit"
             size="small"
             onClick={openCreateDialog}
-            startIcon={<FaPlus size={12} />}
             sx={{ textTransform: "none" }}
           >
             Add grade
