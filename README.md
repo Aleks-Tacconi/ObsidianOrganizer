@@ -7,8 +7,6 @@ A note-taking app for organizing an Obsidian vault with a consistent module/topi
 - Note descriptions stay compact until content actually overflows
 - Rename module categories directly from the module page
 - Reorder module categories and lecture notes with persisted drag-and-drop sorting
-- Keep the active lecture in sync with the most visible note while scrolling
-- Full-width top navigation keeps module actions available before a module is open
 - Built-in 25/5 Pomodoro timer in the top bar with a repeating completion alarm and system notification on focus completion
 - Notes grouped by tags and still fully Obsidian-compatible (wikilinks, markdown, etc.)
 - Built-in RAG chat over your vault notes

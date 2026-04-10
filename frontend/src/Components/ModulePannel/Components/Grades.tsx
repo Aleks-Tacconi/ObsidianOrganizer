@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   Alert,
   Box,
@@ -14,9 +15,10 @@ import {
   Tooltip,
   Typography,
 } from "@mui/material";
-import { FaPenToSquare, FaPlus, FaTrashCan, FaTrophy } from "react-icons/fa6";
+import { FaPenToSquare, FaTrashCan, FaTrophy } from "react-icons/fa6";
 
 import ConfirmDialogue from "../../ConfirmDialogue/ConfirmDialogue";
+import { motionTransitions } from "../../../Utils/motion";
 import type { RuntimeGrade, RuntimeModuleInfo } from "../../../Utils/useModuleNotes";
 
 export type GradeFormValues = {
@@ -96,6 +98,8 @@ export default function Grades({
   onSaveGrade,
   onDeleteGrade,
 }: Props) {
+  const [areGradesVisible, setAreGradesVisible] = useState(false);
+  const shouldReduceMotion = useReducedMotion();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingGrade, setEditingGrade] = useState<RuntimeGrade | null>(null);
   const [confirmDeleteGrade, setConfirmDeleteGrade] = useState<RuntimeGrade | null>(null);
@@ -128,6 +132,8 @@ export default function Grades({
     { label: "Missed", value: gradeProgress.missed, color: "rgba(255,255,255,0.2)" },
     { label: "N/A", value: na, color: "rgba(255,255,255,0.08)" },
   ].filter((segment) => segment.value > 0);
+  const detailTransition = shouldReduceMotion ? { duration: 0 } : motionTransitions.base;
+  const rowTransition = shouldReduceMotion ? { duration: 0 } : motionTransitions.dialog;
 
   const openCreateDialog = () => {
     setEditingGrade(null);
@@ -205,16 +211,27 @@ export default function Grades({
           </Typography>
         </Stack>
 
-        <Button
-          variant="outlined"
-          color="inherit"
-          size="small"
-          onClick={openCreateDialog}
-          startIcon={<FaPlus size={12} />}
-          sx={{ textTransform: "none", flexShrink: 0 }}
-        >
-          Add grade
-        </Button>
+        <Stack direction="row" spacing={1} sx={{ flexShrink: 0, flexWrap: "wrap", justifyContent: "flex-end" }}>
+          <Button
+            variant="outlined"
+            color="inherit"
+            size="small"
+            onClick={() => setAreGradesVisible((previous) => !previous)}
+            sx={{ textTransform: "none" }}
+          >
+            {areGradesVisible ? "Hide grades" : "Show grades"}
+          </Button>
+
+          <Button
+            variant="outlined"
+            color="inherit"
+            size="small"
+            onClick={openCreateDialog}
+            sx={{ textTransform: "none" }}
+          >
+            Add grade
+          </Button>
+        </Stack>
       </Stack>
 
       {actionError && (
@@ -223,71 +240,93 @@ export default function Grades({
         </Alert>
       )}
 
-      {moduleInfo.grades.length > 0 ? (
-        <Stack spacing={embedded ? 0 : 1} sx={{ mb: 2.5 }}>
-          {moduleInfo.grades.map((grade) => {
-            const contribution = (grade.percentage * grade.scored) / 100;
+      <AnimatePresence initial={false}>
+        {areGradesVisible && (
+          <motion.div
+            key="grade-details"
+            initial={{ opacity: 0, height: 0, y: shouldReduceMotion ? 0 : -8 }}
+            animate={{ opacity: 1, height: "auto", y: 0 }}
+            exit={{ opacity: 0, height: 0, y: shouldReduceMotion ? 0 : -8 }}
+            transition={detailTransition}
+            style={{ overflow: "hidden" }}
+          >
+            {moduleInfo.grades.length > 0 ? (
+              <Stack spacing={embedded ? 0 : 1} sx={{ mb: 2.5 }}>
+                {moduleInfo.grades.map((grade) => {
+                  const contribution = (grade.percentage * grade.scored) / 100;
 
-            return (
-              <Stack
-                key={grade.id}
-                direction={{ xs: "column", sm: "row" }}
-                spacing={1}
-                justifyContent="space-between"
-                alignItems={{ xs: "flex-start", sm: "center" }}
-                sx={{
-                  py: embedded ? 0.875 : 0,
-                  borderBottom: embedded ? "1px solid rgba(255,255,255,0.05)" : "none",
-                  "&:last-of-type": {
-                    borderBottom: "none",
-                  },
-                }}
-              >
-                <Box sx={{ minWidth: 0 }}>
-                  <Typography variant="body2" color="text.primary">
-                    {grade.name}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary" sx={{ fontVariantNumeric: "tabular-nums" }}>
-                    {grade.percentage.toFixed(1)}% weight · {grade.scored.toFixed(1)}% score · {contribution.toFixed(1)}% earned
-                  </Typography>
-                </Box>
-
-                <Stack direction="row" spacing={0.5} alignItems="center">
-                  <Tooltip title={`Edit ${grade.name}`}>
-                    <IconButton aria-label={`Edit ${grade.name}`} onClick={() => openEditDialog(grade)}>
-                      <FaPenToSquare size={14} />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title={`Delete ${grade.name}`}>
-                    <span>
-                      <IconButton
-                        aria-label={`Delete ${grade.name}`}
-                        onClick={() => {
-                          setActionError(null);
-                          setConfirmDeleteGrade(grade);
+                  return (
+                    <motion.div
+                      key={grade.id}
+                      initial={{ opacity: 0, y: shouldReduceMotion ? 0 : 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: shouldReduceMotion ? 0 : -8 }}
+                      transition={rowTransition}
+                    >
+                      <Stack
+                        direction={{ xs: "column", sm: "row" }}
+                        spacing={1}
+                        justifyContent="space-between"
+                        alignItems={{ xs: "flex-start", sm: "center" }}
+                        sx={{
+                          py: embedded ? 0.875 : 0,
+                          borderBottom: embedded ? "1px solid rgba(255,255,255,0.05)" : "none",
+                          "&:last-of-type": {
+                            borderBottom: "none",
+                          },
                         }}
-                        disabled={deleting}
                       >
-                        {deleting && confirmDeleteGrade?.id === grade.id
-                          ? <CircularProgress size={14} color="inherit" />
-                          : <FaTrashCan size={14} />}
-                      </IconButton>
-                    </span>
-                  </Tooltip>
-                </Stack>
+                        <Box sx={{ minWidth: 0 }}>
+                          <Typography variant="body2" color="text.primary">
+                            {grade.name}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary" sx={{ fontVariantNumeric: "tabular-nums" }}>
+                            {grade.percentage.toFixed(1)}% weight · {grade.scored.toFixed(1)}% score · {contribution.toFixed(1)}% earned
+                          </Typography>
+                        </Box>
+
+                        <Stack direction="row" spacing={0.5} alignItems="center">
+                          <Tooltip title={`Edit ${grade.name}`}>
+                            <IconButton aria-label={`Edit ${grade.name}`} onClick={() => openEditDialog(grade)}>
+                              <FaPenToSquare size={14} />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title={`Delete ${grade.name}`}>
+                            <span>
+                              <IconButton
+                                aria-label={`Delete ${grade.name}`}
+                                onClick={() => {
+                                  setActionError(null);
+                                  setConfirmDeleteGrade(grade);
+                                }}
+                                disabled={deleting}
+                              >
+                                {deleting && confirmDeleteGrade?.id === grade.id
+                                  ? <CircularProgress size={14} color="inherit" />
+                                  : <FaTrashCan size={14} />}
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                        </Stack>
+                      </Stack>
+                    </motion.div>
+                  );
+                })}
               </Stack>
-            );
-          })}
-        </Stack>
-      ) : (
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
-          No grades tracked for this module yet.
-        </Typography>
-      )}
+            ) : (
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
+                No grades tracked for this module yet.
+              </Typography>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <Box
         role="img"
-        aria-label={`Grade progress: ${gradeProgress.completed.toFixed(1)} percent completed, ${gradeProgress.missed.toFixed(1)} percent missed, ${na.toFixed(1)} percent not applicable`}
+        aria-label={areGradesVisible
+          ? `Grade progress: ${gradeProgress.completed.toFixed(1)} percent completed, ${gradeProgress.missed.toFixed(1)} percent missed, ${na.toFixed(1)} percent not applicable`
+          : "Grade progress bar"}
         sx={{
           display: "flex",
           width: "100%",
@@ -308,23 +347,36 @@ export default function Grades({
         ))}
       </Box>
 
-      <Stack direction={{ xs: "column", sm: "row" }} spacing={1} sx={{ mt: 1 }}>
-        <Typography variant="caption" color="text.secondary">
-          {gradeProgress.completed.toFixed(1)}% completed
-        </Typography>
-        <Typography variant="caption" color="text.secondary">
-          {gradeProgress.missed.toFixed(1)}% missed
-        </Typography>
-        <Typography variant="caption" color="text.secondary">
-          {na.toFixed(1)}% N/A
-        </Typography>
-        <Box sx={{ flex: 1 }} />
-        <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
-          {weightedAverage.toFixed(1)}% average
-        </Typography>
-      </Stack>
+      <AnimatePresence initial={false}>
+        {areGradesVisible && (
+          <motion.div
+            key="grade-summary"
+            initial={{ opacity: 0, height: 0, y: shouldReduceMotion ? 0 : -6 }}
+            animate={{ opacity: 1, height: "auto", y: 0 }}
+            exit={{ opacity: 0, height: 0, y: shouldReduceMotion ? 0 : -6 }}
+            transition={detailTransition}
+            style={{ overflow: "hidden" }}
+          >
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={1} sx={{ mt: 1 }}>
+              <Typography variant="caption" color="text.secondary">
+                {gradeProgress.completed.toFixed(1)}% completed
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {gradeProgress.missed.toFixed(1)}% missed
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {na.toFixed(1)}% N/A
+              </Typography>
+              <Box sx={{ flex: 1 }} />
+              <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 500 }}>
+                {weightedAverage.toFixed(1)}% average
+              </Typography>
+            </Stack>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-      {hasOverflow && (
+      {areGradesVisible && hasOverflow && (
         <Typography variant="caption" color="warning.main" sx={{ mt: 1, display: "block" }}>
           Tracked assessments exceed 100% of this module.
         </Typography>
