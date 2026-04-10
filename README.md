@@ -2,10 +2,9 @@
 <br/>
 
 <p align="center">
-  <img src="./assets/obsidian-organizer.png" alt="Obsidian Organizer" width="320" />
+  <img src="./assets/obsidian-organizer.png" alt="Obsidian Organizer" width="400" />
 </p>
 
-<br/>
 <br/>
 <br/>
 <br/>
