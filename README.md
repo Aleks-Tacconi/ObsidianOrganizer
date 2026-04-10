@@ -1,7 +1,13 @@
+<br/>
+<br/>
+
 <p align="center">
   <img src="./assets/obsidian-organizer.png" alt="Obsidian Organizer" width="320" />
 </p>
 
+<br/>
+<br/>
+<br/>
 <br/>
 
 A note-taking app for organizing an Obsidian vault with a consistent module/topic structure.
