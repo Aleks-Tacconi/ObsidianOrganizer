@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="./assets/obsidian-organizer.png" alt="Obsidian Organizer" width="200" />
+  <img src="./assets/obsidian-organizer.png" alt="Obsidian Organizer" width="400" />
 </p>
 
 A note-taking app for organizing an Obsidian vault with a consistent module/topic structure.
