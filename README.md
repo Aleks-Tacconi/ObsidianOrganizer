@@ -9,6 +9,8 @@
 <br/>
 <br/>
 
+---
+
 A note-taking app for organizing an Obsidian vault with a consistent module/topic structure.
 
 - One web page per module
