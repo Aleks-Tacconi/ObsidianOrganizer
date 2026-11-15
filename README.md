@@ -1,3 +1,9 @@
+> **DEPRECATION NOTICE**
+> LAST UPDATED: Apr 10, 2026
+>
+> I'm now using a fully obsidian-native zettelkasten system for note-taking
+> inspired by: <https://youtu.be/Tyw6quANpiY?si=fD6NZ28CchYbaReU>
+
 <br/>
 <br/>
 
