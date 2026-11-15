@@ -4,17 +4,6 @@
 > I'm now using a fully obsidian-native zettelkasten system for note-taking
 > inspired by: <https://youtu.be/Tyw6quANpiY?si=fD6NZ28CchYbaReU>
 
-<br/>
-<br/>
-
-<p align="center">
-  <img src="./assets/obsidian-organizer.png" alt="Obsidian Organizer" width="400" />
-</p>
-
-<br/>
-<br/>
-<br/>
-
 ---
 
 A note-taking app for organizing an Obsidian vault with a consistent module/topic structure.
